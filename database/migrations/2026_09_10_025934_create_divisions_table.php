@@ -10,8 +10,8 @@ return new class extends Migration
     {
         Schema::create('divisions', function (Blueprint $table) {
             $table->id();
-            $table->string('nama');                 // e.g. "Divisi Bisnis & Teknologi"
-            $table->string('lini')->nullable();      // e.g. "SEVP" / "Direktur Langsung" - dipakai buat bagan struktur di dashboard Dirut
+            $table->string('nama');                
+            $table->string('lini')->nullable();     
             $table->timestamps();
 
             $table->unique('nama');

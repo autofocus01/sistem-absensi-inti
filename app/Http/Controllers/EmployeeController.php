@@ -8,11 +8,25 @@ use Illuminate\Http\Request;
 
 class EmployeeController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $employees = Employee::with('division')->orderBy('nama')->paginate(15);
+        $employees = Employee::with('division')
+            ->when($request->filled('q'), function ($query) use ($request) {
+                $query->where(function ($q) use ($request) {
+                    $q->where('nama', 'like', '%' . $request->input('q') . '%')
+                      ->orWhere('nipeg', 'like', '%' . $request->input('q') . '%');
+                });
+            })
+            ->when($request->filled('division_id'), function ($query) use ($request) {
+                $query->where('division_id', $request->input('division_id'));
+            })
+            ->orderBy('nama')
+            ->paginate(15)
+            ->withQueryString();
 
-        return view('employees.index', compact('employees'));
+        $divisions = Division::orderBy('nama')->get();
+
+        return view('employees.index', compact('employees', 'divisions'));
     }
 
     public function create()

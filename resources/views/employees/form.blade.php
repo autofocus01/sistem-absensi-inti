@@ -2,35 +2,40 @@
 @section('title', $employee->exists ? 'Edit Karyawan' : 'Tambah Karyawan')
 
 @section('content')
-<h1 class="text-2xl font-bold text-primary mb-6">{{ $employee->exists ? 'Edit Karyawan' : 'Tambah Karyawan' }}</h1>
+<div class="flex flex-col gap-1 pb-space-lg">
+  <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary-container text-surface-container-lowest font-label-sm text-label-sm uppercase tracking-wider w-fit">
+    <span class="material-symbols-outlined text-[14px]">badge</span> DATA MASTER &bull; SDM
+  </span>
+  <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">{{ $employee->exists ? 'Edit Karyawan' : 'Tambah Karyawan' }}</h1>
+</div>
 
 <form method="POST"
       action="{{ $employee->exists ? route('employees.update', $employee) : route('employees.store') }}"
-      class="bg-surface-container-lowest rounded-xl shadow-sm p-6 max-w-lg space-y-4">
+      class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg max-w-lg space-y-space-base">
   @csrf
   @if ($employee->exists) @method('PUT') @endif
 
   <div>
-    <label class="block text-sm font-semibold mb-1">NIPEG</label>
+    <label class="block font-title-sm text-title-sm text-on-surface mb-1">NIPEG</label>
     <input type="text" name="nipeg" value="{{ old('nipeg', $employee->nipeg) }}"
-           class="w-full rounded-lg border-gray-300" required>
+           class="w-full rounded-lg border-0 bg-surface-container-low font-body-md text-body-md focus:ring-2 focus:ring-primary-container" required>
   </div>
 
   <div>
-    <label class="block text-sm font-semibold mb-1">Nama</label>
+    <label class="block font-title-sm text-title-sm text-on-surface mb-1">Nama</label>
     <input type="text" name="nama" value="{{ old('nama', $employee->nama) }}"
-           class="w-full rounded-lg border-gray-300" required>
+           class="w-full rounded-lg border-0 bg-surface-container-low font-body-md text-body-md focus:ring-2 focus:ring-primary-container" required>
   </div>
 
   <div>
-    <label class="block text-sm font-semibold mb-1">Jabatan</label>
+    <label class="block font-title-sm text-title-sm text-on-surface mb-1">Jabatan</label>
     <input type="text" name="jabatan" value="{{ old('jabatan', $employee->jabatan) }}"
-           class="w-full rounded-lg border-gray-300">
+           class="w-full rounded-lg border-0 bg-surface-container-low font-body-md text-body-md focus:ring-2 focus:ring-primary-container">
   </div>
 
   <div>
-    <label class="block text-sm font-semibold mb-1">Divisi</label>
-    <select name="division_id" class="w-full rounded-lg border-gray-300" required>
+    <label class="block font-title-sm text-title-sm text-on-surface mb-1">Divisi</label>
+    <select name="division_id" class="w-full rounded-lg border-0 bg-surface-container-low font-body-md text-body-md focus:ring-2 focus:ring-primary-container" required>
       <option value="">-- Pilih Divisi --</option>
       @foreach ($divisions as $division)
         <option value="{{ $division->id }}" @selected(old('division_id', $employee->division_id) == $division->id)>
@@ -40,7 +45,9 @@
     </select>
   </div>
 
-  <button type="submit" class="px-4 py-2 rounded-lg bg-primary-container text-white font-semibold">Simpan</button>
-  <a href="{{ route('employees.index') }}" class="ml-2 text-on-surface-variant">Batal</a>
+  <div class="flex items-center gap-3 pt-2">
+    <button type="submit" class="px-4 py-2 rounded-lg bg-primary-container text-on-primary font-title-sm text-title-sm shadow-sm hover:bg-primary transition-colors">Simpan</button>
+    <a href="{{ route('employees.index') }}" class="font-title-sm text-title-sm text-on-surface-variant">Batal</a>
+  </div>
 </form>
 @endsection

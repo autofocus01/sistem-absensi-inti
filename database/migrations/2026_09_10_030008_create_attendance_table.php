@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('employee_id')->constrained()->cascadeOnDelete();
 
             $table->unsignedSmallInteger('tahun');
-            $table->unsignedTinyInteger('bulan'); // 1-12
+            $table->unsignedTinyInteger('bulan');
 
             $table->unsignedTinyInteger('hari_kerja');
             $table->unsignedTinyInteger('hadir')->default(0);
@@ -26,12 +26,11 @@ return new class extends Migration
             $table->unsignedTinyInteger('telat_hari')->default(0);
             $table->unsignedInteger('menit_telat')->default(0);
 
-            // Dihitung & dikunci server-side (lihat AttendanceRecap::boot()) - JANGAN diisi manual dari form/API.
             $table->decimal('persen_kehadiran', 5, 1)->default(0);
 
             $table->unsignedTinyInteger('lokasi_bandung')->default(0);
             $table->unsignedTinyInteger('lokasi_jakarta')->default(0);
-            $table->unsignedTinyInteger('koreksi_by_admin')->default(0); // counter, buat audit trail manipulasi
+            $table->unsignedTinyInteger('koreksi_by_admin')->default(0);
 
             $table->timestamps();
 

@@ -8,10 +8,6 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EnsureUserHasRole
 {
-    /**
-     * Contoh pakai di route: ->middleware('role:direktur_utama')
-     * atau beberapa role sekaligus: ->middleware('role:direktur_utama,hr_admin')
-     */
     public function handle(Request $request, Closure $next, string ...$roles): Response
     {
         if (! $request->user() || ! in_array($request->user()->role, $roles, true)) {

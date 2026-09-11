@@ -19,10 +19,6 @@ class DirekturDashboardController extends Controller
         return view('direktur.dashboard', $data);
     }
 
-    /**
-     * Data yang sama dipakai di halaman dashboard, export Excel, dan export PDF -
-     * biar angkanya selalu konsisten di mana pun ditampilkan.
-     */
     private function buildReportData(Request $request): array
     {
         $tahun = (int) $request->input('tahun', now()->year);

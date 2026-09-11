@@ -20,7 +20,7 @@
         "background":"#f8f9ff","surface-bright":"#f8f9ff","surface":"#f8f9ff","outline":"#74777e",
         "error":"#ba1a1a","surface-container-lowest":"#ffffff","primary-container":"#0f2942",
         "surface-container":"#e6eeff","surface-container-high":"#dce9ff","secondary-container":"#86f2e4",
-        "tertiary-container":"#401f00","on-tertiary":"#ffffff"},
+        "tertiary-container":"#401f00","on-tertiary":"#ffffff","tertiary":"#220e00","on-tertiary-container":"#d77503"},
       spacing: {"space-2xl":"3rem","space-md":"0.75rem","gutter-desktop":"1.5rem","space-lg":"1.5rem",
         "space-base":"1rem","space-sm":"0.5rem","space-xl":"2rem","space-xs":"0.25rem"},
       fontFamily: {"title-md":["Plus Jakarta Sans"],"label-md":["Plus Jakarta Sans"],
@@ -39,11 +39,32 @@
     }}
   }
 </script>
-<style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style>
+<style>
+  @layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}
+  ::-webkit-scrollbar{display:none;}
+  .material-symbols-outlined{
+    font-family:'Material Symbols Outlined';
+    font-weight:normal;
+    font-style:normal;
+    line-height:1;
+    letter-spacing:normal;
+    text-transform:none;
+    display:inline-block;
+    white-space:nowrap;
+    word-wrap:normal;
+    direction:ltr;
+    -webkit-font-feature-settings:'liga';
+    -webkit-font-smoothing:antialiased;
+    font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
+  }
+</style>
 </head>
 <body class="bg-background font-body-md text-body-md text-on-surface antialiased">
 
-<aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col justify-between select-none">
+<div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black/40 z-40 hidden md:hidden"></div>
+
+<aside id="sidebar" class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col justify-between select-none
+                            transform -translate-x-full transition-transform duration-200 ease-in-out md:translate-x-0">
   <div class="flex flex-col">
     <div class="h-20 px-space-lg flex items-center gap-space-md border-b border-surface-container-low/60">
       <img src="{{ asset('images/logo-inti.png') }}" alt="PT. INTI" class="h-8 w-auto object-contain">
@@ -73,11 +94,18 @@
   </div>
 </aside>
 
-<div class="pl-72 flex flex-col min-h-screen">
-  <header class="fixed top-0 left-72 right-0 h-20 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-space-xl">
+<div class="md:pl-72 flex flex-col min-h-screen">
+  <header class="fixed top-0 left-0 md:left-72 right-0 h-20 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-4 md:px-space-xl">
     <div class="flex items-center gap-3">
-      <span class="material-symbols-outlined text-[18px] text-secondary">shield</span>
-      <span class="font-title-sm text-title-sm text-primary">Portal Eksekutif</span>
+      <button onclick="toggleSidebar()" class="md:hidden p-2 -ml-2 text-primary" aria-label="Buka menu">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+      <span class="material-symbols-outlined text-[18px] text-secondary hidden sm:inline">shield</span>
+      <span class="font-title-sm text-title-sm text-primary hidden sm:inline">Portal Eksekutif</span>
+      <div class="h-5 w-[1px] bg-outline-variant/40 hidden lg:block"></div>
+      <span class="hidden lg:inline-flex items-center px-2.5 py-0.5 rounded-full bg-primary/10 text-primary font-label-sm text-label-sm font-semibold">BUMN Holding IT &amp; Telco</span>
     </div>
     <div class="flex items-center gap-space-md">
       <div class="hidden xl:flex items-center gap-space-xs px-space-md py-1.5 rounded-full bg-surface-container-low">
@@ -86,20 +114,40 @@
         <span class="text-outline text-xs">&bull;</span>
         <span class="font-body-sm text-body-sm text-on-surface-variant">WIB</span>
       </div>
-      <div class="h-8 w-[1px] bg-surface-container-low"></div>
-      <div class="flex items-center gap-space-sm">
-        <div class="flex flex-col text-right">
-          <span class="font-title-sm text-title-sm text-on-surface">{{ auth()->user()->name }}</span>
-          <span class="font-body-sm text-body-sm text-on-surface-variant">Direktur Utama &bull; PT. INTI</span>
-        </div>
-        <div class="w-10 h-10 rounded-full flex items-center justify-center bg-primary-container text-on-primary font-title-sm">
-          {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+      @php($divisiPerluDitinjau = $matriksDivisi->where('perlu_ditinjau', true)->count())
+      <a href="#matriks-divisi" class="relative p-2 rounded-lg hover:bg-surface-container-low text-on-surface-variant hover:text-primary transition-colors" title="Divisi yang perlu ditinjau">
+        <span class="material-symbols-outlined text-[20px]">notifications</span>
+        @if ($divisiPerluDitinjau > 0)
+          <span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-error ring-2 ring-surface-container-lowest"></span>
+        @endif
+      </a>
+      <div class="h-8 w-[1px] bg-surface-container-low hidden sm:block"></div>
+      <div class="relative">
+        <button onclick="toggleUserMenu()" class="flex items-center gap-space-sm">
+          <div class="hidden sm:flex flex-col text-right">
+            <span class="font-title-sm text-title-sm text-on-surface">{{ auth()->user()->name }}</span>
+            <span class="font-body-sm text-body-sm text-on-surface-variant">Direktur Utama &bull; PT. INTI</span>
+          </div>
+          <div class="w-10 h-10 rounded-full flex items-center justify-center bg-primary-container text-on-primary font-title-sm">
+            {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+          </div>
+        </button>
+        <div id="user-menu" class="hidden absolute right-0 top-14 w-52 bg-surface-container-lowest rounded-lg shadow-lg border border-surface-container-low py-1 z-50">
+          <div class="px-4 py-2 border-b border-surface-container-low sm:hidden">
+            <div class="font-title-sm text-title-sm text-on-surface truncate">{{ auth()->user()->name }}</div>
+            <div class="font-body-sm text-body-sm text-on-surface-variant truncate">{{ auth()->user()->email }}</div>
+          </div>
+          <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-on-surface hover:bg-surface-container-low">Profil Saya</a>
+          <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit" class="w-full text-left px-4 py-2 text-sm text-error hover:bg-surface-container-low">Logout</button>
+          </form>
         </div>
       </div>
     </div>
   </header>
 
-  <main class="w-full pt-28 px-space-xl pb-space-2xl bg-background flex-1">
+  <main class="w-full pt-28 px-4 md:px-space-xl pb-space-2xl bg-background flex-1">
 
     <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-space-base pb-space-lg">
       <div class="flex flex-col gap-1">
@@ -113,30 +161,30 @@
         </p>
       </div>
 
-      <form method="GET" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container-lowest shadow-sm">
-        <span class="material-symbols-outlined text-[18px] text-secondary">calendar_today</span>
-        <select name="bulan" onchange="this.form.submit()" class="border-0 bg-transparent font-title-sm text-title-sm text-primary focus:ring-0">
-          @foreach (range(1, 12) as $m)
-            <option value="{{ $m }}" @selected($bulan == $m)>{{ \Carbon\Carbon::create()->month($m)->translatedFormat('F') }}</option>
-          @endforeach
-        </select>
-        <select name="tahun" onchange="this.form.submit()" class="border-0 bg-transparent font-title-sm text-title-sm text-primary focus:ring-0">
-          @foreach (range(now()->year - 1, now()->year) as $y)
-            <option value="{{ $y }}" @selected($tahun == $y)>{{ $y }}</option>
-          @endforeach
-        </select>
-      </form>
+      <div class="flex flex-wrap items-center gap-2">
+        <form method="GET" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container-lowest shadow-sm">
+          <span class="material-symbols-outlined text-[18px] text-secondary">calendar_today</span>
+          <select name="bulan" onchange="this.form.submit()" class="border-0 bg-transparent font-title-sm text-title-sm text-primary focus:ring-0">
+            @foreach (range(1, 12) as $m)
+              <option value="{{ $m }}" @selected($bulan == $m)>{{ \Carbon\Carbon::create()->month($m)->translatedFormat('F') }}</option>
+            @endforeach
+          </select>
+          <select name="tahun" onchange="this.form.submit()" class="border-0 bg-transparent font-title-sm text-title-sm text-primary focus:ring-0">
+            @foreach (range(now()->year - 1, now()->year) as $y)
+              <option value="{{ $y }}" @selected($tahun == $y)>{{ $y }}</option>
+            @endforeach
+          </select>
+        </form>
 
-      <div class="flex items-center gap-2">
         <a href="{{ route('direktur.export-pdf', ['tahun' => $tahun, 'bulan' => $bulan]) }}"
            class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-container-lowest shadow-sm hover:bg-surface-container-low transition-colors text-primary font-title-sm text-title-sm">
           <span class="material-symbols-outlined text-[18px] text-primary">picture_as_pdf</span>
-          Unduh PDF
+          <span class="hidden sm:inline">Unduh PDF</span>
         </a>
         <a href="{{ route('direktur.export-excel', ['tahun' => $tahun, 'bulan' => $bulan]) }}"
            class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-primary-container text-on-primary font-title-sm text-title-sm shadow-sm hover:bg-primary transition-colors">
           <span class="material-symbols-outlined text-[18px] text-secondary-container">download</span>
-          Unduh Excel
+          <span class="hidden sm:inline">Unduh Excel</span>
         </a>
       </div>
     </div>
@@ -216,9 +264,10 @@
     </div>
 
     {{-- Matriks tabel per divisi --}}
-    <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
+    <div id="matriks-divisi" class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg scroll-mt-24">
       <h2 class="font-headline-md text-headline-md text-primary mb-space-base">Matriks Kehadiran per Divisi</h2>
-      <table class="w-full text-left">
+      <div class="overflow-x-auto">
+      <table class="w-full text-left min-w-[720px]">
         <thead>
           <tr class="bg-surface-container-low text-on-surface-variant text-xs uppercase tracking-wider">
             <th class="py-3 px-4 rounded-l-lg">Divisi</th>
@@ -248,6 +297,7 @@
           @endforeach
         </tbody>
       </table>
+      </div>
     </div>
   </main>
 </div>
@@ -261,6 +311,22 @@
   }
   tickJamRealtime();
   setInterval(tickJamRealtime, 1000);
+
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('-translate-x-full');
+    document.getElementById('sidebar-backdrop').classList.toggle('hidden');
+  }
+
+  function toggleUserMenu() {
+    document.getElementById('user-menu').classList.toggle('hidden');
+  }
+  document.addEventListener('click', function (e) {
+    const menu = document.getElementById('user-menu');
+    if (!menu || menu.classList.contains('hidden')) return;
+    if (!e.target.closest('#user-menu') && !e.target.closest('button[onclick="toggleUserMenu()"]')) {
+      menu.classList.add('hidden');
+    }
+  });
 </script>
 </body>
 </html>

@@ -9,8 +9,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            // 'direktur_utama' -> cuma bisa lihat dashboard eksekutif
-            // 'hr_admin'       -> yang input/kelola data karyawan & rekap absensi
             $table->enum('role', ['direktur_utama', 'hr_admin'])->default('hr_admin')->after('email');
         });
     }

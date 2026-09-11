@@ -2,15 +2,13 @@
 
 namespace App\Console\Commands;
 
+use App\Models\AttendanceImportError;
 use App\Models\AttendanceRecap;
 use App\Models\Division;
 use App\Models\Employee;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\IOFactory;
-
-// Butuh: composer require phpoffice/phpspreadsheet
-// Jalankan: php artisan import:absensi "/path/ke/Rekap_Kehadiran_2026.xlsx"
 
 class ImportAbsensiExcel extends Command
 {
@@ -36,7 +34,6 @@ class ImportAbsensiExcel extends Command
         }
 
         $rows = $sheet->toArray(null, true, true, false);
-        // Data mulai dari baris ke-7 di Excel (index 6, karena ada 2 baris judul + 2 baris header gabungan di atasnya).
         $dataRows = array_slice($rows, 6);
 
         $sukses = 0;
@@ -49,7 +46,7 @@ class ImportAbsensiExcel extends Command
              $pctMentah, $lokBandung, $lokJakarta, $koreksi] = array_pad($row, 20, null);
 
             if (blank($no) || blank($nipeg)) {
-                continue; // baris kosong / footer
+                continue; 
             }
 
             $division = Division::firstOrCreate(['nama' => trim((string) $divisiNama)]);
@@ -85,7 +82,23 @@ class ImportAbsensiExcel extends Command
 
                 $sukses++;
             } catch (\InvalidArgumentException $e) {
-                // Ini yang menangkap 35 baris anomali (menit telat tidak wajar, total hari != hari kerja, dst).
+                AttendanceImportError::create([
+                    'nipeg'       => trim((string) $nipeg),
+                    'nama'        => trim((string) $nama),
+                    'tahun'       => (int) $tahun,
+                    'bulan'       => (int) $bulan,
+                    'jenis'       => 'rekap_bulanan',
+                    'baris_excel' => $i + 7,
+                    'alasan'      => $e->getMessage(),
+                    'data_mentah' => [
+                        'hari_kerja' => $hariKerja, 'hadir' => $hadir, 'perdin' => $perdin,
+                        'cuti' => $cuti, 'sakit' => $sakit, 'ijin' => $ijin, 'alpha' => $alpha,
+                        'telat_hari' => $telatHari, 'menit_telat' => $menitTelat,
+                        'lokasi_bandung' => $lokBandung, 'lokasi_jakarta' => $lokJakarta,
+                        'koreksi_by_admin' => $koreksi,
+                    ],
+                ]);
+
                 $ditolak[] = [
                     'baris_excel' => $i + 7,
                     'nama'        => $nama,
@@ -98,7 +111,7 @@ class ImportAbsensiExcel extends Command
         $this->info("Berhasil diimport: {$sukses} rekap.");
 
         if ($ditolak) {
-            $this->warn(count($ditolak) . ' baris ditolak karena melanggar validasi:');
+            $this->warn(count($ditolak) . ' baris ditolak & disimpan ke tabel attendance_import_errors untuk ditinjau lewat halaman /attendance/import-errors:');
             $this->table(['Baris Excel', 'Nama', 'Periode', 'Alasan'], $ditolak);
         }
 

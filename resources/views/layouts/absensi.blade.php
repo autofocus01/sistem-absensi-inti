@@ -4,42 +4,151 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>@yield('title', 'Sistem Absensi PT. INTI')</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script>
-  tailwind.config = { theme: { extend: {
-    colors: {"primary":"#001428","primary-container":"#0f2942","secondary":"#006a61",
-      "background":"#f8f9ff","surface-container-lowest":"#ffffff","surface-container-low":"#eff4ff",
-      "on-surface":"#0d1c2e","on-surface-variant":"#43474d","error":"#ba1a1a"},
-    fontFamily: { sans: ["Plus Jakarta Sans"] }
-  }}}
+  // Token desain SAMA PERSIS dengan dashboard Direktur, biar satu bahasa visual di semua halaman.
+  tailwind.config = {
+    darkMode: "class",
+    theme: { extend: {
+      colors: {"on-surface-variant":"#43474d","primary":"#001428","on-primary":"#ffffff",
+        "surface-container-low":"#eff4ff","on-background":"#0d1c2e","surface-container-highest":"#d5e3fc",
+        "on-surface":"#0d1c2e","outline-variant":"#c3c6ce","secondary":"#006a61","error-container":"#ffdad6",
+        "background":"#f8f9ff","surface-bright":"#f8f9ff","surface":"#f8f9ff","outline":"#74777e",
+        "error":"#ba1a1a","surface-container-lowest":"#ffffff","primary-container":"#0f2942",
+        "surface-container":"#e6eeff","surface-container-high":"#dce9ff","secondary-container":"#86f2e4",
+        "tertiary-container":"#401f00","on-tertiary":"#ffffff","tertiary":"#220e00","on-tertiary-container":"#d77503"},
+      spacing: {"space-2xl":"3rem","space-md":"0.75rem","gutter-desktop":"1.5rem","space-lg":"1.5rem",
+        "space-base":"1rem","space-sm":"0.5rem","space-xl":"2rem","space-xs":"0.25rem"},
+      fontFamily: {"title-md":["Plus Jakarta Sans"],"label-md":["Plus Jakarta Sans"],
+        "headline-sm":["Plus Jakarta Sans"],"body-sm":["Plus Jakarta Sans"],
+        "headline-lg":["Plus Jakarta Sans"],"body-md":["Plus Jakarta Sans"],
+        "title-sm":["Plus Jakarta Sans"],"label-sm":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"]},
+      fontSize: {"title-md":["16px",{"lineHeight":"22px","fontWeight":"600"}],
+        "label-md":["13px",{"lineHeight":"16px","fontWeight":"500"}],
+        "headline-sm":["18px",{"lineHeight":"24px","fontWeight":"600"}],
+        "body-sm":["12px",{"lineHeight":"16px","fontWeight":"400"}],
+        "headline-lg":["28px",{"lineHeight":"36px","letterSpacing":"-0.015em","fontWeight":"600"}],
+        "body-md":["14px",{"lineHeight":"20px","fontWeight":"400"}],
+        "title-sm":["14px",{"lineHeight":"20px","fontWeight":"600"}],
+        "label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],
+        "headline-md":["22px",{"lineHeight":"28px","letterSpacing":"-0.01em","fontWeight":"600"}]}
+    }}
+  }
 </script>
+<style>
+  @layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}}
+  ::-webkit-scrollbar{display:none;}
+  .material-symbols-outlined{
+    font-family:'Material Symbols Outlined';
+    font-weight:normal;
+    font-style:normal;
+    line-height:1;
+    letter-spacing:normal;
+    text-transform:none;
+    display:inline-block;
+    white-space:nowrap;
+    word-wrap:normal;
+    direction:ltr;
+    -webkit-font-feature-settings:'liga';
+    -webkit-font-smoothing:antialiased;
+    font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
+  }
+</style>
 </head>
-<body class="bg-background font-sans text-on-surface antialiased">
-<div class="flex min-h-screen">
-  <aside class="w-64 bg-primary text-white p-6 flex flex-col gap-2">
-    <div class="mb-6 bg-white rounded-lg p-2 w-fit">
-      <img src="{{ asset('images/logo-inti.png') }}" alt="PT. INTI" class="h-6 w-auto object-contain">
-    </div>
-    @if (auth()->user()->isHrAdmin())
-      <a href="{{ route('employees.index') }}" class="px-3 py-2 rounded-lg hover:bg-primary-container">Data Karyawan</a>
-      <a href="{{ route('attendance.index') }}" class="px-3 py-2 rounded-lg hover:bg-primary-container">Rekap Absensi</a>
-    @endif
-    @if (auth()->user()->isDirekturUtama())
-      <a href="{{ route('direktur.dashboard') }}" class="px-3 py-2 rounded-lg hover:bg-primary-container">Dashboard Direktur</a>
-    @endif
-  </aside>
+<body class="bg-background font-body-md text-body-md text-on-surface antialiased">
 
-  <main class="flex-1 p-8">
+<div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black/40 z-40 hidden md:hidden"></div>
+
+<aside id="sidebar" class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col justify-between select-none
+                            transform -translate-x-full transition-transform duration-200 ease-in-out md:translate-x-0">
+  <div class="flex flex-col overflow-y-auto">
+    <div class="h-20 px-space-lg flex items-center gap-space-md border-b border-surface-container-low/60 shrink-0">
+      <img src="{{ asset('images/logo-inti.png') }}" alt="PT. INTI" class="h-8 w-auto object-contain">
+    </div>
+    <div class="px-space-md py-space-xs">
+      <div class="px-space-sm pb-space-xs flex items-center justify-between">
+        <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">HR &amp; Administrasi</span>
+        <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-tertiary-container text-on-tertiary">HR</span>
+      </div>
+      <nav class="flex flex-col gap-space-xs">
+        <a href="{{ route('employees.index') }}" class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm {{ request()->routeIs('employees.*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+          <span class="material-symbols-outlined text-[20px]">badge</span> Data Karyawan
+        </a>
+        <a href="{{ route('divisions.index') }}" class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm {{ request()->routeIs('divisions.*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+          <span class="material-symbols-outlined text-[20px]">account_tree</span> Data Divisi
+        </a>
+        <a href="{{ route('attendance.index') }}" class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm {{ request()->routeIs('attendance.index') || request()->routeIs('attendance.create') || request()->routeIs('attendance.edit') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+          <span class="material-symbols-outlined text-[20px]">event_available</span> Rekap Absensi
+        </a>
+        <a href="{{ route('timesheet.index') }}" class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm {{ request()->routeIs('timesheet.*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+          <span class="material-symbols-outlined text-[20px]">calendar_clock</span> Riwayat &amp; Timesheet
+        </a>
+        <a href="{{ route('team-recap.index') }}" class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm justify-between {{ request()->routeIs('team-recap.*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+          <span class="flex items-center gap-2"><span class="material-symbols-outlined text-[20px]">groups</span> Rekapitulasi Tim</span>
+          @php($lemburPendingCount = \App\Models\AttendanceLog::where('status_lembur', 'pending')->whereNotNull('jam_pulang')->get()->filter(fn ($log) => $log->menitLembur() > 0)->count())
+          @if ($lemburPendingCount > 0)
+            <span class="px-1.5 py-0.5 rounded-full bg-error text-white text-[10px] font-bold">{{ $lemburPendingCount }}</span>
+          @endif
+        </a>
+        <a href="{{ route('attendance.import-errors') }}" class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm justify-between {{ request()->routeIs('attendance.import-errors*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+          <span class="flex items-center gap-2"><span class="material-symbols-outlined text-[20px]">fact_check</span> Review Anomali</span>
+          @php($pendingCount = \App\Models\AttendanceImportError::where('status', 'pending')->count())
+          @if ($pendingCount > 0)
+            <span class="px-1.5 py-0.5 rounded-full bg-error text-white text-[10px] font-bold">{{ $pendingCount }}</span>
+          @endif
+        </a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="p-space-md shrink-0 border-t border-surface-container-low">
+    <div class="flex items-center gap-2 px-1 pb-2">
+      <div class="w-9 h-9 shrink-0 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-title-sm text-title-sm">
+        {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+      </div>
+      <div class="min-w-0">
+        <div class="font-title-sm text-title-sm text-on-surface truncate">{{ auth()->user()->name }}</div>
+        <div class="font-body-sm text-body-sm text-on-surface-variant truncate">{{ auth()->user()->email }}</div>
+      </div>
+    </div>
+    <a href="{{ route('profile.edit') }}" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-surface-container-low font-body-sm text-body-sm text-on-surface">
+      <span class="material-symbols-outlined text-[18px]">account_circle</span> Profil Saya
+    </a>
+    <form method="POST" action="{{ route('logout') }}">
+      @csrf
+      <button type="submit" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-surface-container-low font-body-sm text-body-sm text-error">
+        <span class="material-symbols-outlined text-[18px]">logout</span> Logout
+      </button>
+    </form>
+  </div>
+</aside>
+
+<div class="md:pl-72 flex flex-col min-h-screen">
+  <header class="fixed top-0 left-0 md:left-72 right-0 h-20 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-30 flex items-center justify-between px-4 md:px-space-xl">
+    <div class="flex items-center gap-3">
+      <button onclick="toggleSidebar()" class="md:hidden p-2 -ml-2 text-primary" aria-label="Buka menu">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+      <span class="material-symbols-outlined text-[18px] text-secondary hidden sm:inline">shield</span>
+      <span class="font-title-sm text-title-sm text-primary">Portal HR &amp; Administrasi</span>
+    </div>
+  </header>
+
+  <main class="w-full pt-28 px-4 md:px-space-xl pb-space-2xl bg-background flex-1">
     @if (session('status'))
-      <div class="mb-4 px-4 py-3 rounded-lg bg-secondary/10 text-secondary font-semibold">
+      <div class="mb-space-base px-space-base py-3 rounded-lg bg-secondary/10 text-secondary font-title-sm text-title-sm">
         {{ session('status') }}
       </div>
     @endif
 
     @if ($errors->any())
-      <div class="mb-4 px-4 py-3 rounded-lg bg-error/10 text-error">
+      <div class="mb-space-base px-space-base py-3 rounded-lg bg-error/10 text-error font-body-md text-body-md">
         <ul class="list-disc list-inside">
           @foreach ($errors->all() as $error)
             <li>{{ $error }}</li>
@@ -51,5 +160,12 @@
     @yield('content')
   </main>
 </div>
+
+<script>
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('-translate-x-full');
+    document.getElementById('sidebar-backdrop').classList.toggle('hidden');
+  }
+</script>
 </body>
 </html>

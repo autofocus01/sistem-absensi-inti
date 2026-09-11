@@ -2,43 +2,66 @@
 @section('title', 'Data Karyawan')
 
 @section('content')
-<div class="flex items-center justify-between mb-6">
-  <h1 class="text-2xl font-bold text-primary">Data Karyawan</h1>
-  <a href="{{ route('employees.create') }}" class="px-4 py-2 rounded-lg bg-primary-container text-white font-semibold">+ Tambah Karyawan</a>
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-base pb-space-lg">
+  <div class="flex flex-col gap-1">
+    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary-container text-surface-container-lowest font-label-sm text-label-sm uppercase tracking-wider w-fit">
+      <span class="material-symbols-outlined text-[14px]">badge</span> DATA MASTER &bull; SDM PT. INTI
+    </span>
+    <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">Data Karyawan</h1>
+    <p class="font-body-md text-body-md text-on-surface-variant">{{ $employees->total() }} karyawan terdaftar di sistem.</p>
+  </div>
+  <a href="{{ route('employees.create') }}" class="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary-container text-on-primary font-title-sm text-title-sm shadow-sm hover:bg-primary transition-colors w-fit">
+    <span class="material-symbols-outlined text-[18px]">person_add</span> Tambah Karyawan
+  </a>
 </div>
 
-<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
-  <table class="w-full text-left">
+<form method="GET" class="flex flex-col sm:flex-row gap-2 mb-space-lg bg-surface-container-lowest rounded-xl shadow-sm p-space-sm">
+  <input type="text" name="q" value="{{ request('q') }}" placeholder="Cari nama atau NIPEG..."
+         class="flex-1 rounded-lg border-0 bg-surface-container-low font-body-md text-body-md focus:ring-2 focus:ring-primary-container">
+  <select name="division_id" onchange="this.form.submit()" class="rounded-lg border-0 bg-surface-container-low font-body-md text-body-md">
+    <option value="">Semua Divisi</option>
+    @foreach ($divisions as $division)
+      <option value="{{ $division->id }}" @selected(request('division_id') == $division->id)>{{ $division->nama }}</option>
+    @endforeach
+  </select>
+  <button type="submit" class="px-4 py-2 rounded-lg bg-primary-container text-on-primary font-title-sm text-title-sm">Cari</button>
+  @if (request('q') || request('division_id'))
+    <a href="{{ route('employees.index') }}" class="px-4 py-2 rounded-lg text-on-surface-variant font-title-sm text-title-sm text-center">Reset</a>
+  @endif
+</form>
+
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-x-auto">
+  <table class="w-full text-left min-w-[640px]">
     <thead>
-      <tr class="bg-surface-container-low text-on-surface-variant text-xs uppercase tracking-wider">
-        <th class="py-3 px-4">NIPEG</th>
-        <th class="py-3 px-4">Nama</th>
-        <th class="py-3 px-4">Jabatan</th>
-        <th class="py-3 px-4">Divisi</th>
-        <th class="py-3 px-4 text-right">Aksi</th>
+      <tr class="bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
+        <th class="py-3 px-space-base rounded-l-lg">NIPEG</th>
+        <th class="py-3 px-space-base">Nama</th>
+        <th class="py-3 px-space-base">Jabatan</th>
+        <th class="py-3 px-space-base">Divisi</th>
+        <th class="py-3 px-space-base text-right rounded-r-lg">Aksi</th>
       </tr>
     </thead>
-    <tbody class="divide-y divide-surface-container-low">
+    <tbody class="divide-y divide-surface-container-low font-body-md text-body-md">
       @forelse ($employees as $employee)
-      <tr>
-        <td class="py-3 px-4 tabular-nums">{{ $employee->nipeg }}</td>
-        <td class="py-3 px-4 font-semibold">{{ $employee->nama }}</td>
-        <td class="py-3 px-4">{{ $employee->jabatan }}</td>
-        <td class="py-3 px-4">{{ $employee->division->nama }}</td>
-        <td class="py-3 px-4 text-right space-x-2">
-          <a href="{{ route('employees.edit', $employee) }}" class="text-secondary font-semibold">Edit</a>
+      <tr class="hover:bg-surface-container-low/40 transition-colors">
+        <td class="py-space-base px-space-base tabular-nums text-on-surface-variant">{{ $employee->nipeg }}</td>
+        <td class="py-space-base px-space-base font-title-sm text-title-sm text-primary">{{ $employee->nama }}</td>
+        <td class="py-space-base px-space-base">{{ $employee->jabatan }}</td>
+        <td class="py-space-base px-space-base"><span class="px-2 py-0.5 rounded bg-surface-container text-primary font-label-sm text-xs font-semibold">{{ $employee->division->nama }}</span></td>
+        <td class="py-space-base px-space-base text-right space-x-3 whitespace-nowrap">
+          <a href="{{ route('employees.edit', $employee) }}" class="text-secondary font-title-sm text-title-sm">Edit</a>
           <form action="{{ route('employees.destroy', $employee) }}" method="POST" class="inline" onsubmit="return confirm('Hapus karyawan ini?')">
             @csrf @method('DELETE')
-            <button type="submit" class="text-error font-semibold">Hapus</button>
+            <button type="submit" class="text-error font-title-sm text-title-sm">Hapus</button>
           </form>
         </td>
       </tr>
       @empty
-      <tr><td colspan="5" class="py-6 px-4 text-center text-on-surface-variant">Belum ada data karyawan.</td></tr>
+      <tr><td colspan="5" class="py-8 px-4 text-center text-on-surface-variant">Belum ada data karyawan.</td></tr>
       @endforelse
     </tbody>
   </table>
 </div>
 
-<div class="mt-4">{{ $employees->links() }}</div>
+<div class="mt-space-base">{{ $employees->links() }}</div>
 @endsection
