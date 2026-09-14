@@ -4,9 +4,7 @@
 @section('content')
 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-base pb-space-lg">
   <div class="flex flex-col gap-1">
-    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary-container text-surface-container-lowest font-label-sm text-label-sm uppercase tracking-wider w-fit">
-      <span class="material-symbols-outlined text-[14px]">event_available</span> REKAP KEHADIRAN BULANAN
-    </span>
+    <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">REKAP KEHADIRAN BULANAN</span>
     <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">Rekap Absensi</h1>
     <p class="font-body-md text-body-md text-on-surface-variant">{{ $recaps->total() }} rekap tercatat, terverifikasi otomatis lewat sistem.</p>
   </div>
@@ -30,19 +28,25 @@
       <option value="{{ $tahun }}" @selected(request('tahun') == $tahun)>{{ $tahun }}</option>
     @endforeach
   </select>
+  <select name="lokasi" onchange="this.form.submit()" class="rounded-lg border-0 bg-surface-container-low font-body-md text-body-md">
+    <option value="">Semua Lokasi</option>
+    <option value="bandung" @selected(request('lokasi') === 'bandung')>Bandung</option>
+    <option value="jakarta" @selected(request('lokasi') === 'jakarta')>Jakarta</option>
+  </select>
   <button type="submit" class="px-4 py-2 rounded-lg bg-primary-container text-on-primary font-title-sm text-title-sm">Cari</button>
-  @if (request('q') || request('bulan') || request('tahun'))
+  @if (request('q') || request('bulan') || request('tahun') || request('lokasi'))
     <a href="{{ route('attendance.index') }}" class="px-4 py-2 rounded-lg text-on-surface-variant font-title-sm text-title-sm text-center">Reset</a>
   @endif
 </form>
 
 <div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-x-auto">
-  <table class="w-full text-left min-w-[860px]">
+  <table class="w-full text-left min-w-[980px]">
     <thead>
       <tr class="bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
         <th class="py-3 px-space-base rounded-l-lg">Periode</th>
         <th class="py-3 px-space-base">Karyawan</th>
         <th class="py-3 px-space-base">Divisi</th>
+        <th class="py-3 px-space-base">Lokasi</th>
         <th class="py-3 px-space-base">Hadir/Hari Kerja</th>
         <th class="py-3 px-space-base">Kehadiran</th>
         <th class="py-3 px-space-base">Menit Telat</th>
@@ -56,6 +60,24 @@
         <td class="py-space-base px-space-base">{{ \Carbon\Carbon::create()->month($recap->bulan)->translatedFormat('F') }} {{ $recap->tahun }}</td>
         <td class="py-space-base px-space-base font-title-sm text-title-sm text-primary">{{ $recap->employee->nama }}</td>
         <td class="py-space-base px-space-base"><span class="px-2 py-0.5 rounded bg-surface-container text-primary font-label-sm text-xs font-semibold">{{ $recap->employee->division->nama }}</span></td>
+        <td class="py-space-base px-space-base whitespace-nowrap">
+          @if ($recap->lokasi_bandung > 0)
+            <span class="inline-flex items-center gap-1 font-body-sm text-body-sm text-on-surface">
+              <span class="material-symbols-outlined text-[14px] text-on-surface-variant">corporate_fare</span> Bandung ({{ $recap->lokasi_bandung }})
+            </span>
+          @endif
+          @if ($recap->lokasi_bandung > 0 && $recap->lokasi_jakarta > 0)
+            <br>
+          @endif
+          @if ($recap->lokasi_jakarta > 0)
+            <span class="inline-flex items-center gap-1 font-body-sm text-body-sm text-on-surface">
+              <span class="material-symbols-outlined text-[14px] text-on-surface-variant">apartment</span> Jakarta ({{ $recap->lokasi_jakarta }})
+            </span>
+          @endif
+          @if ($recap->lokasi_bandung == 0 && $recap->lokasi_jakarta == 0)
+            <span class="font-body-sm text-body-sm text-on-surface-variant">-</span>
+          @endif
+        </td>
         <td class="py-space-base px-space-base tabular-nums">{{ $recap->hadir }}/{{ $recap->hari_kerja }}</td>
         <td class="py-space-base px-space-base">
           <div class="flex items-center gap-2">
@@ -76,7 +98,7 @@
         </td>
       </tr>
       @empty
-      <tr><td colspan="7" class="py-8 px-4 text-center text-on-surface-variant">Belum ada rekap absensi.</td></tr>
+      <tr><td colspan="8" class="py-8 px-4 text-center text-on-surface-variant">Belum ada rekap absensi.</td></tr>
       @endforelse
     </tbody>
   </table>

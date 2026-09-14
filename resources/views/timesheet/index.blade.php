@@ -4,9 +4,7 @@
 @section('content')
 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-base pb-space-lg">
   <div class="flex flex-col gap-1">
-    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary-container text-surface-container-lowest font-label-sm text-label-sm uppercase tracking-wider w-fit">
-      <span class="material-symbols-outlined text-[14px]">calendar_clock</span> RIWAYAT &amp; TIMESHEET
-    </span>
+    <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">RIWAYAT &amp; TIMESHEET</span>
     <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">Riwayat Presensi &amp; Lembur</h1>
     <p class="font-body-md text-body-md text-on-surface-variant">
       Jam operasional 07:30 &ndash; 16:30 WIB, Senin&ndash;Jumat. Data jam masuk/pulang diimport dari mesin fingerprint/Face ID.
@@ -36,14 +34,14 @@
   <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-base">
     <div class="flex items-center justify-between">
       <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Lembur Disetujui</span>
-      <span class="material-symbols-outlined text-[20px] text-tertiary">more_time</span>
+      <span class="material-symbols-outlined text-[20px] text-primary">more_time</span>
     </div>
     <p class="font-headline-md text-headline-md text-primary mt-1">{{ $totalJamLembur }} <span class="font-body-md text-body-md text-on-surface-variant">Jam</span></p>
   </div>
   <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-base">
     <div class="flex items-center justify-between">
       <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Hari Hadir</span>
-      <span class="material-symbols-outlined text-[20px] text-secondary">fact_check</span>
+      <span class="material-symbols-outlined text-[20px] text-primary">fact_check</span>
     </div>
     <p class="font-headline-md text-headline-md text-primary mt-1">{{ $totalHariHadir }} <span class="font-body-md text-body-md text-on-surface-variant">Hari</span></p>
   </div>
@@ -87,7 +85,7 @@
             {{ $status }}
           </span>
         </td>
-        <td class="py-space-base px-space-base text-right tabular-nums font-title-sm text-title-sm {{ $log->menitLembur() > 0 ? 'text-tertiary' : 'text-on-surface-variant' }}">
+        <td class="py-space-base px-space-base text-right tabular-nums font-title-sm text-title-sm {{ $log->menitLembur() > 0 ? 'text-primary' : 'text-on-surface-variant' }}">
           {{ $log->lemburFormat() }}
         </td>
       </tr>

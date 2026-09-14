@@ -34,7 +34,7 @@
         <td class="py-space-base px-space-base tabular-nums">{{ $error->baris_excel ?? '-' }}</td>
         <td class="py-space-base px-space-base">
           @if ($error->jenis === 'absensi_harian')
-            <span class="px-2 py-0.5 rounded bg-tertiary-container text-on-tertiary font-label-sm text-xs font-semibold">Absensi Harian</span>
+            <span class="px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-label-sm text-xs font-semibold">Absensi Harian</span>
           @else
             <span class="px-2 py-0.5 rounded bg-surface-container text-primary font-label-sm text-xs font-semibold">Rekap Bulanan</span>
           @endif

@@ -3,9 +3,7 @@
 
 @section('content')
 <div class="flex flex-col gap-1 pb-space-lg">
-  <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary-container text-surface-container-lowest font-label-sm text-label-sm uppercase tracking-wider w-fit">
-    <span class="material-symbols-outlined text-[14px]">account_tree</span> STRUKTUR ORGANISASI
-  </span>
+  <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">STRUKTUR ORGANISASI</span>
   <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">{{ $division->exists ? 'Edit Divisi' : 'Tambah Divisi' }}</h1>
 </div>
 

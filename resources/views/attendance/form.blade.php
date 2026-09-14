@@ -3,9 +3,7 @@
 
 @section('content')
 <div class="flex flex-col gap-1 pb-space-lg">
-  <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary-container text-surface-container-lowest font-label-sm text-label-sm uppercase tracking-wider w-fit">
-    <span class="material-symbols-outlined text-[14px]">event_available</span> REKAP KEHADIRAN BULANAN
-  </span>
+  <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">REKAP KEHADIRAN BULANAN</span>
   <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">{{ $recap->exists ? 'Edit Rekap Absensi' : 'Input Rekap Absensi' }}</h1>
   <p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">
     % Kehadiran dihitung otomatis dari Hadir / Hari Kerja &mdash; tidak bisa diisi manual.

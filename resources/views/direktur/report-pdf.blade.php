@@ -24,6 +24,11 @@
     <tr><td><strong>Rata-rata Kehadiran</strong></td><td>{{ $rataKehadiran }}%</td></tr>
     <tr><td><strong>Total Alpha/Mangkir</strong></td><td>{{ $totalAlpha }}</td></tr>
     <tr><td><strong>Total Menit Telat</strong></td><td>{{ number_format($totalMenitTelat) }} menit (&asymp; {{ round($totalMenitTelat / 60, 1) }} jam)</td></tr>
+    <tr><td><strong>Disiplin &amp; On-Time Rate</strong></td><td>{{ $tingkatOnTime }}%</td></tr>
+    <tr><td><strong>Total Jam Lembur Bulan Ini</strong></td><td>{{ $totalJamLembur }} Jam</td></tr>
+    <tr><td><strong>Kelengkapan Data Rekap</strong></td><td>{{ $kelengkapanRekap }}% ({{ $karyawanDenganRekap }}/{{ $totalKaryawan }} karyawan)</td></tr>
+    <tr><td><strong>Sebaran Lokasi - Bandung</strong></td><td>{{ $totalHariBandung }} hari ({{ $persenBandung }}%)</td></tr>
+    <tr><td><strong>Sebaran Lokasi - Jakarta</strong></td><td>{{ $totalHariJakarta }} hari ({{ $persenJakarta }}%)</td></tr>
   </table>
 
   <table>

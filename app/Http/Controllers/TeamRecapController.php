@@ -62,6 +62,10 @@ class TeamRecapController extends Controller
 
     public function approve(Request $request, AttendanceLog $attendanceLog)
     {
+        if ($attendanceLog->butuhOtorisasiKhusus()) {
+            return back()->withErrors(['status' => 'Lembur di atas 3 jam butuh otorisasi khusus Direktur Utama, tidak bisa disetujui lewat halaman ini.']);
+        }
+
         $attendanceLog->approve(Auth::user());
 
         return back()->with('status', 'Lembur disetujui.');
@@ -69,6 +73,10 @@ class TeamRecapController extends Controller
 
     public function reject(Request $request, AttendanceLog $attendanceLog)
     {
+        if ($attendanceLog->butuhOtorisasiKhusus()) {
+            return back()->withErrors(['status' => 'Lembur di atas 3 jam butuh otorisasi khusus Direktur Utama, tidak bisa ditolak lewat halaman ini.']);
+        }
+
         $attendanceLog->reject(Auth::user());
 
         return back()->with('status', 'Lembur ditolak.');
@@ -86,12 +94,12 @@ class TeamRecapController extends Controller
             ->where('status_lembur', 'pending')
             ->when($divisionId, fn ($q) => $q->whereHas('employee', fn ($e) => $e->where('division_id', $divisionId)))
             ->get()
-            ->filter(fn (AttendanceLog $log) => $log->menitLembur() > 0);
+            ->filter(fn (AttendanceLog $log) => $log->menitLembur() > 0 && ! $log->butuhOtorisasiKhusus());
 
         foreach ($logs as $log) {
             $log->approve(Auth::user());
         }
 
-        return back()->with('status', "{$logs->count()} lembur pending berhasil disetujui sekaligus.");
+        return back()->with('status', "{$logs->count()} lembur pending berhasil disetujui sekaligus (lembur >3 jam dilewati, butuh otorisasi Direktur).");
     }
 }

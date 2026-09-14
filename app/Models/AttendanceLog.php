@@ -39,6 +39,17 @@ class AttendanceLog extends Model
         return $this->belongsTo(User::class, 'disetujui_oleh');
     }
 
+    /**
+     * Lembur di atas ambang ini (dalam menit) butuh otorisasi khusus Direktur Utama,
+     * tidak cukup disetujui HR biasa lewat halaman Rekapitulasi Tim.
+     */
+    public const OTORISASI_KHUSUS_MENIT = 180; // 3 jam
+
+    public function butuhOtorisasiKhusus(): bool
+    {
+        return $this->menitLembur() > self::OTORISASI_KHUSUS_MENIT;
+    }
+
     public function approve(User $user): void
     {
         $this->update([

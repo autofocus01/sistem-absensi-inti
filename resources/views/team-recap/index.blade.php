@@ -3,9 +3,7 @@
 
 @section('content')
 <div class="flex flex-col gap-1 pb-space-lg">
-  <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary-container text-surface-container-lowest font-label-sm text-label-sm uppercase tracking-wider w-fit">
-    <span class="material-symbols-outlined text-[14px]">groups</span> HR MANAGEMENT &amp; TEAM OVERSIGHT
-  </span>
+  <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">HR MANAGEMENT &amp; TEAM OVERSIGHT</span>
   <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">Rekapitulasi Tim &amp; Persetujuan Lembur</h1>
   <p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">
     Tinjau dan setujui lembur karyawan yang tercatat dari mesin fingerprint/Face ID (jam pulang &gt; 16:30, dibulatkan ke bawah per 30 menit).
@@ -49,7 +47,7 @@
   <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-base">
     <div class="flex items-center justify-between">
       <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Lembur Disetujui</span>
-      <span class="material-symbols-outlined text-[20px] text-tertiary">more_time</span>
+      <span class="material-symbols-outlined text-[20px] text-primary">more_time</span>
     </div>
     <p class="font-headline-md text-headline-md text-primary mt-1">{{ $totalJamLemburDisetujui }} <span class="font-body-md text-body-md text-on-surface-variant">Jam</span></p>
   </div>
@@ -94,7 +92,7 @@
         <td class="py-space-base px-space-base font-title-sm text-title-sm text-primary">{{ $log->employee->nama }}</td>
         <td class="py-space-base px-space-base"><span class="px-2 py-0.5 rounded bg-surface-container text-primary font-label-sm text-xs font-semibold">{{ $log->employee->division->nama }}</span></td>
         <td class="py-space-base px-space-base tabular-nums">{{ \Carbon\Carbon::parse($log->jam_pulang)->format('H:i') }}</td>
-        <td class="py-space-base px-space-base tabular-nums font-title-sm text-title-sm text-tertiary">{{ $log->lemburFormat() }}</td>
+        <td class="py-space-base px-space-base tabular-nums font-title-sm text-title-sm text-primary">{{ $log->lemburFormat() }}</td>
         <td class="py-space-base px-space-base">
           @if ($log->status_lembur === 'disetujui')
             <span class="px-2 py-0.5 rounded-full bg-secondary-container/50 text-secondary font-label-sm text-label-sm font-semibold">Disetujui</span>
@@ -105,7 +103,9 @@
           @endif
         </td>
         <td class="py-space-base px-space-base text-right space-x-3 whitespace-nowrap">
-          @if ($log->status_lembur === 'pending')
+          @if ($log->status_lembur === 'pending' && $log->butuhOtorisasiKhusus())
+            <span class="px-2 py-0.5 rounded-full bg-tertiary-container text-on-tertiary font-label-sm text-label-sm font-semibold">Perlu Otorisasi Direktur</span>
+          @elseif ($log->status_lembur === 'pending')
             <form action="{{ route('team-recap.approve', $log) }}" method="POST" class="inline">
               @csrf
               <button type="submit" class="text-secondary font-title-sm text-title-sm">Setuju</button>

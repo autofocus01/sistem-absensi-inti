@@ -5,6 +5,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\DivisionController;
 use App\Http\Controllers\AttendanceRecapController;
 use App\Http\Controllers\DirekturDashboardController;
+use App\Http\Controllers\DirekturOtorisasiController;
 use App\Http\Controllers\AttendanceImportErrorController;
 use App\Http\Controllers\TimesheetController;
 use App\Http\Controllers\TeamRecapController;
@@ -37,6 +38,10 @@ Route::middleware(['auth', 'role:direktur_utama'])->group(function () {
         ->name('direktur.export-excel');
     Route::get('/direktur/dashboard/export/pdf', [DirekturDashboardController::class, 'exportPdf'])
         ->name('direktur.export-pdf');
+    Route::post('/direktur/otorisasi-khusus/{attendanceLog}/approve', [DirekturOtorisasiController::class, 'approve'])
+        ->name('direktur.otorisasi-khusus.approve');
+    Route::post('/direktur/otorisasi-khusus/{attendanceLog}/reject', [DirekturOtorisasiController::class, 'reject'])
+        ->name('direktur.otorisasi-khusus.reject');
 });
  
 Route::middleware(['auth', 'role:hr_admin'])->group(function () {

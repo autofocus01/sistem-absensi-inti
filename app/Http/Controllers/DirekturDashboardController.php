@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AttendanceLog;
 use App\Models\AttendanceRecap;
 use App\Models\Division;
 use App\Models\Employee;
@@ -15,6 +16,16 @@ class DirekturDashboardController extends Controller
     public function index(Request $request)
     {
         $data = $this->buildReportData($request);
+
+        // Digabung di sini (bukan controller/halaman terpisah) supaya Direktur bisa lihat semuanya
+        // di satu halaman lewat tab, tanpa pindah URL.
+        $data['otorisasiLogs'] = AttendanceLog::with(['employee.division'])
+            ->where('status_lembur', 'pending')
+            ->whereNotNull('jam_pulang')
+            ->get()
+            ->filter(fn (AttendanceLog $log) => $log->butuhOtorisasiKhusus())
+            ->sortByDesc('tanggal')
+            ->values();
 
         return view('direktur.dashboard', $data);
     }
@@ -33,6 +44,36 @@ class DirekturDashboardController extends Controller
         $totalMenitTelat = (clone $recapBulanIni)->sum('menit_telat');
         $totalHadir = (clone $recapBulanIni)->sum('hadir');
         $totalPerdin = (clone $recapBulanIni)->sum('perdin');
+        $totalTelatHari = (clone $recapBulanIni)->sum('telat_hari');
+
+        // Disiplin & On-Time Rate: proporsi hari hadir yang TANPA catatan telat.
+        $tingkatOnTime = $totalHadir > 0
+            ? round((($totalHadir - $totalTelatHari) / $totalHadir) * 100, 1)
+            : 0;
+
+        // Lembur bulan ini: dihitung ulang dari log harian (bukan kolom tersimpan), biar konsisten
+        // dengan Rekapitulasi Tim & Otorisasi Khusus. Ditampilkan dalam JAM, bukan Rupiah - sistem
+        // ini tidak menyimpan data gaji/tarif lembur, jadi estimasi biaya sengaja tidak dibuat-buat.
+        $totalMenitLembur = AttendanceLog::whereYear('tanggal', $tahun)
+            ->whereMonth('tanggal', $bulan)
+            ->whereNotNull('jam_pulang')
+            ->get()
+            ->sum(fn (AttendanceLog $log) => $log->menitLembur());
+        $totalJamLembur = round($totalMenitLembur / 60, 1);
+
+        // Kelengkapan Data Rekap: berapa persen karyawan yang SUDAH punya rekap bulanan untuk periode ini.
+        // Ini pengganti "Kepatuhan Operasi" di mockup (yang mengacu ke anak usaha yang tidak kita punya
+        // datanya) - versi kita menandakan kelengkapan input HR, bukan kepatuhan entitas anak.
+        $karyawanDenganRekap = (clone $recapBulanIni)->distinct('employee_id')->count('employee_id');
+        $kelengkapanRekap = $totalKaryawan > 0 ? round(($karyawanDenganRekap / $totalKaryawan) * 100, 1) : 0;
+
+        // Sebaran fasilitas: cuma 2 lokasi yang beneran ada datanya (kolom lokasi_bandung/lokasi_jakarta
+        // di rekap bulanan) - bukan 4 lokasi fiktif kayak di mockup awal.
+        $totalHariBandung = (clone $recapBulanIni)->sum('lokasi_bandung');
+        $totalHariJakarta = (clone $recapBulanIni)->sum('lokasi_jakarta');
+        $totalHariLokasi = $totalHariBandung + $totalHariJakarta;
+        $persenBandung = $totalHariLokasi > 0 ? round(($totalHariBandung / $totalHariLokasi) * 100, 1) : 0;
+        $persenJakarta = $totalHariLokasi > 0 ? round(($totalHariJakarta / $totalHariLokasi) * 100, 1) : 0;
 
         $matriksDivisi = Division::withCount('employees')
             ->get()
@@ -53,15 +94,23 @@ class DirekturDashboardController extends Controller
             });
 
         return [
-            'tahun'           => $tahun,
-            'bulan'           => $bulan,
-            'totalKaryawan'   => $totalKaryawan,
-            'rataKehadiran'   => round($rataKehadiran, 1),
-            'totalAlpha'      => $totalAlpha,
-            'totalMenitTelat' => $totalMenitTelat,
-            'totalHadir'      => $totalHadir,
-            'totalPerdin'     => $totalPerdin,
-            'matriksDivisi'   => $matriksDivisi,
+            'tahun'             => $tahun,
+            'bulan'             => $bulan,
+            'totalKaryawan'     => $totalKaryawan,
+            'rataKehadiran'     => round($rataKehadiran, 1),
+            'totalAlpha'        => $totalAlpha,
+            'totalMenitTelat'   => $totalMenitTelat,
+            'totalHadir'        => $totalHadir,
+            'totalPerdin'       => $totalPerdin,
+            'tingkatOnTime'     => $tingkatOnTime,
+            'totalJamLembur'    => $totalJamLembur,
+            'kelengkapanRekap'  => $kelengkapanRekap,
+            'karyawanDenganRekap' => $karyawanDenganRekap,
+            'totalHariBandung'  => $totalHariBandung,
+            'totalHariJakarta'  => $totalHariJakarta,
+            'persenBandung'     => $persenBandung,
+            'persenJakarta'     => $persenJakarta,
+            'matriksDivisi'     => $matriksDivisi,
         ];
     }
 
@@ -86,8 +135,18 @@ class DirekturDashboardController extends Controller
         $sheet->setCellValue('B5', $data['totalAlpha']);
         $sheet->setCellValue('A6', 'Total Menit Telat');
         $sheet->setCellValue('B6', $data['totalMenitTelat']);
+        $sheet->setCellValue('A7', 'Disiplin & On-Time Rate');
+        $sheet->setCellValue('B7', $data['tingkatOnTime'] . '%');
+        $sheet->setCellValue('A8', 'Total Jam Lembur Bulan Ini');
+        $sheet->setCellValue('B8', $data['totalJamLembur'] . ' Jam');
+        $sheet->setCellValue('A9', 'Kelengkapan Data Rekap');
+        $sheet->setCellValue('B9', $data['kelengkapanRekap'] . '% (' . $data['karyawanDenganRekap'] . '/' . $data['totalKaryawan'] . ' karyawan)');
+        $sheet->setCellValue('A10', 'Sebaran Lokasi - Bandung');
+        $sheet->setCellValue('B10', $data['totalHariBandung'] . ' hari (' . $data['persenBandung'] . '%)');
+        $sheet->setCellValue('A11', 'Sebaran Lokasi - Jakarta');
+        $sheet->setCellValue('B11', $data['totalHariJakarta'] . ' hari (' . $data['persenJakarta'] . '%)');
 
-        $headerRow = 8;
+        $headerRow = 13;
         $headers = ['Divisi', 'Total Personel', 'Rata-rata Kehadiran (%)', 'Total Hari Telat', 'Total Alpha', 'Status'];
         $kolom = ['A', 'B', 'C', 'D', 'E', 'F'];
         foreach ($headers as $i => $header) {

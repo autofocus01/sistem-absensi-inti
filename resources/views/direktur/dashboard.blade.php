@@ -10,7 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script>
-  // Config disamain persis dengan mockup asli (code0.html) biar konsisten desainnya.
+  // Token desain SAMA PERSIS dengan layouts/absensi.blade.php (halaman HR), biar selaras.
   tailwind.config = {
     darkMode: "class",
     theme: { extend: {
@@ -67,17 +67,27 @@
                             transform -translate-x-full transition-transform duration-200 ease-in-out md:translate-x-0">
   <div class="flex flex-col">
     <div class="h-20 px-space-lg flex items-center gap-space-md border-b border-surface-container-low/60">
+      <a href="#" onclick="window.location.reload(); return false;" class="flex items-center focus:outline-none transition-opacity hover:opacity-80" title="Refresh Halaman">
       <img src="{{ asset('images/logo-inti.png') }}" alt="PT. INTI" class="h-8 w-auto object-contain">
+      </a>
     </div>
     <div class="px-space-md py-space-xs">
       <div class="px-space-sm pb-space-xs flex items-center justify-between">
         <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Eksekutif &amp; Direksi</span>
-        <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-tertiary-container text-on-tertiary">BOD</span>
+        <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-surface-container-low text-on-surface-variant">BOD</span>
       </div>
       <nav class="flex flex-col gap-space-xs">
-        <a class="flex items-center px-space-md py-space-sm rounded-lg bg-primary-container text-on-primary font-title-sm" href="{{ route('direktur.dashboard') }}">
+        <button type="button" onclick="showTab('ringkasan')" id="nav-ringkasan"
+                class="flex items-center px-space-md py-space-sm rounded-lg font-title-sm text-left bg-primary-container text-on-primary">
           Dashboard Direktur Utama
-        </a>
+        </button>
+        <button type="button" onclick="showTab('otorisasi')" id="nav-otorisasi"
+                class="flex items-center justify-between px-space-md py-space-sm rounded-lg font-title-sm text-left text-on-surface hover:bg-surface-container-low">
+          <span>Otorisasi Khusus</span>
+          @if ($otorisasiLogs->count() > 0)
+            <span class="px-1.5 py-0.5 rounded-full bg-error text-white text-[10px] font-bold">{{ $otorisasiLogs->count() }}</span>
+          @endif
+        </button>
       </nav>
     </div>
   </div>
@@ -85,8 +95,8 @@
   <div class="p-space-base m-space-md rounded-xl bg-surface-container-low flex flex-col gap-space-xs">
     <div class="flex items-center justify-between">
       <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Sumber Data</span>
-      <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-secondary/10 text-secondary font-label-sm text-label-sm font-semibold">
-        <span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>Live
+      <span class="inline-flex items-center gap-1.5 font-label-sm text-label-sm text-on-surface-variant font-semibold">
+        <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>Live
       </span>
     </div>
     <span class="font-title-sm text-title-sm text-on-surface">Rekap Absensi Terverifikasi</span>
@@ -95,32 +105,30 @@
 </aside>
 
 <div class="md:pl-72 flex flex-col min-h-screen">
-  <header class="fixed top-0 left-0 md:left-72 right-0 h-20 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-4 md:px-space-xl">
+  <header class="fixed top-0 left-0 md:left-72 right-0 h-20 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-30 flex items-center justify-between px-4 md:px-space-xl">
     <div class="flex items-center gap-3">
       <button onclick="toggleSidebar()" class="md:hidden p-2 -ml-2 text-primary" aria-label="Buka menu">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
-      <span class="material-symbols-outlined text-[18px] text-secondary hidden sm:inline">shield</span>
-      <span class="font-title-sm text-title-sm text-primary hidden sm:inline">Portal Eksekutif</span>
-      <div class="h-5 w-[1px] bg-outline-variant/40 hidden lg:block"></div>
-      <span class="hidden lg:inline-flex items-center px-2.5 py-0.5 rounded-full bg-primary/10 text-primary font-label-sm text-label-sm font-semibold">BUMN Holding IT &amp; Telco</span>
+      <span class="font-title-sm text-title-sm text-primary">Portal Eksekutif</span>
     </div>
     <div class="flex items-center gap-space-md">
       <div class="hidden xl:flex items-center gap-space-xs px-space-md py-1.5 rounded-full bg-surface-container-low">
-        <span class="material-symbols-outlined text-[16px] text-secondary">schedule</span>
+        <span class="material-symbols-outlined text-[16px] text-on-surface-variant">schedule</span>
         <span id="jam-realtime" class="font-label-sm text-label-sm text-on-surface font-semibold tabular-nums">--:--:--</span>
         <span class="text-outline text-xs">&bull;</span>
         <span class="font-body-sm text-body-sm text-on-surface-variant">WIB</span>
       </div>
       @php($divisiPerluDitinjau = $matriksDivisi->where('perlu_ditinjau', true)->count())
-      <a href="#matriks-divisi" class="relative p-2 rounded-lg hover:bg-surface-container-low text-on-surface-variant hover:text-primary transition-colors" title="Divisi yang perlu ditinjau">
+      <button type="button" onclick="showTab('ringkasan'); document.getElementById('matriks-divisi').scrollIntoView({behavior:'smooth'})"
+              class="relative p-2 rounded-lg hover:bg-surface-container-low text-on-surface-variant hover:text-primary transition-colors" title="Divisi yang perlu ditinjau">
         <span class="material-symbols-outlined text-[20px]">notifications</span>
         @if ($divisiPerluDitinjau > 0)
           <span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-error ring-2 ring-surface-container-lowest"></span>
         @endif
-      </a>
+      </button>
       <div class="h-8 w-[1px] bg-surface-container-low hidden sm:block"></div>
       <div class="relative">
         <button onclick="toggleUserMenu()" class="flex items-center gap-space-sm">
@@ -149,156 +157,307 @@
 
   <main class="w-full pt-28 px-4 md:px-space-xl pb-space-2xl bg-background flex-1">
 
-    <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-space-base pb-space-lg">
-      <div class="flex flex-col gap-1">
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary-container text-surface-container-lowest font-label-sm text-label-sm uppercase tracking-wider w-fit">
-          <span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
-          MONITORING &amp; REKAP ABSENSI &bull; PORTAL DIREKSI PT. INTI
-        </span>
-        <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">Dashboard Eksekutif Direktur Utama</h1>
+    <div class="flex flex-col gap-1 pb-space-base">
+      <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Monitoring &amp; Rekap Absensi &bull; Portal Direksi PT. INTI</span>
+      <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">Dashboard Eksekutif Direktur Utama</h1>
+    </div>
+
+    @if (session('status'))
+      <div class="mb-space-base px-space-base py-3 rounded-lg bg-secondary/10 text-secondary font-title-sm text-title-sm">
+        {{ session('status') }}
+      </div>
+    @endif
+
+    {{-- Tab bar - satu halaman, ganti konten tanpa pindah URL --}}
+    <div class="flex items-center gap-2 mb-space-lg border-b border-surface-container-low">
+      <button type="button" onclick="showTab('ringkasan')" id="tabbtn-ringkasan"
+              class="px-4 py-2.5 font-title-sm text-title-sm border-b-2 border-primary text-primary -mb-px">
+        Ringkasan Eksekutif
+      </button>
+      <button type="button" onclick="showTab('otorisasi')" id="tabbtn-otorisasi"
+              class="flex items-center gap-2 px-4 py-2.5 font-title-sm text-title-sm border-b-2 border-transparent text-on-surface-variant hover:text-primary -mb-px">
+        Otorisasi Khusus
+        @if ($otorisasiLogs->count() > 0)
+          <span class="px-1.5 py-0.5 rounded-full bg-error text-white text-[10px] font-bold">{{ $otorisasiLogs->count() }}</span>
+        @endif
+      </button>
+    </div>
+
+    {{-- ============ TAB 1: RINGKASAN EKSEKUTIF ============ --}}
+    <div id="tab-ringkasan">
+
+      <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-space-base pb-space-lg">
         <p class="font-body-md text-body-md text-on-surface-variant max-w-3xl">
           Rekap kehadiran berdasarkan 5 divisi resmi PT. INTI, dihitung langsung dari data absensi yang tersimpan di sistem.
         </p>
-      </div>
 
-      <div class="flex flex-wrap items-center gap-2">
-        <form method="GET" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container-lowest shadow-sm">
-          <span class="material-symbols-outlined text-[18px] text-secondary">calendar_today</span>
-          <select name="bulan" onchange="this.form.submit()" class="border-0 bg-transparent font-title-sm text-title-sm text-primary focus:ring-0">
-            @foreach (range(1, 12) as $m)
-              <option value="{{ $m }}" @selected($bulan == $m)>{{ \Carbon\Carbon::create()->month($m)->translatedFormat('F') }}</option>
-            @endforeach
-          </select>
-          <select name="tahun" onchange="this.form.submit()" class="border-0 bg-transparent font-title-sm text-title-sm text-primary focus:ring-0">
-            @foreach (range(now()->year - 1, now()->year) as $y)
-              <option value="{{ $y }}" @selected($tahun == $y)>{{ $y }}</option>
-            @endforeach
-          </select>
-        </form>
+        <div class="flex flex-wrap items-center gap-2">
+          <form method="GET" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container-lowest shadow-sm">
+            <span class="material-symbols-outlined text-[18px] text-on-surface-variant">calendar_today</span>
+            <select name="bulan" onchange="this.form.submit()" class="border-0 bg-transparent font-title-sm text-title-sm text-primary focus:ring-0">
+              @foreach (range(1, 12) as $m)
+                <option value="{{ $m }}" @selected($bulan == $m)>{{ \Carbon\Carbon::create()->month($m)->translatedFormat('F') }}</option>
+              @endforeach
+            </select>
+            <select name="tahun" onchange="this.form.submit()" class="border-0 bg-transparent font-title-sm text-title-sm text-primary focus:ring-0">
+              @foreach (range(now()->year - 1, now()->year) as $y)
+                <option value="{{ $y }}" @selected($tahun == $y)>{{ $y }}</option>
+              @endforeach
+            </select>
+          </form>
 
-        <a href="{{ route('direktur.export-pdf', ['tahun' => $tahun, 'bulan' => $bulan]) }}"
-           class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-container-lowest shadow-sm hover:bg-surface-container-low transition-colors text-primary font-title-sm text-title-sm">
-          <span class="material-symbols-outlined text-[18px] text-primary">picture_as_pdf</span>
-          <span class="hidden sm:inline">Unduh PDF</span>
-        </a>
-        <a href="{{ route('direktur.export-excel', ['tahun' => $tahun, 'bulan' => $bulan]) }}"
-           class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-primary-container text-on-primary font-title-sm text-title-sm shadow-sm hover:bg-primary transition-colors">
-          <span class="material-symbols-outlined text-[18px] text-secondary-container">download</span>
-          <span class="hidden sm:inline">Unduh Excel</span>
-        </a>
-      </div>
-    </div>
-
-    {{-- KPI Cards --}}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-md mb-space-xl">
-      <div class="p-space-base rounded-xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-shadow">
-        <div class="flex items-center justify-between pb-space-xs">
-          <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Tenaga Kerja Aktif</span>
-          <span class="p-1.5 rounded-lg bg-surface-container-low text-primary"><span class="material-symbols-outlined text-[20px]">badge</span></span>
+          <a href="{{ route('direktur.export-pdf', ['tahun' => $tahun, 'bulan' => $bulan]) }}"
+             class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-container-lowest shadow-sm hover:bg-surface-container-low transition-colors text-primary font-title-sm text-title-sm">
+            <span class="material-symbols-outlined text-[18px] text-primary">picture_as_pdf</span>
+            <span class="hidden sm:inline">Unduh PDF</span>
+          </a>
+          <a href="{{ route('direktur.export-excel', ['tahun' => $tahun, 'bulan' => $bulan]) }}"
+             class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-container-lowest shadow-sm hover:bg-surface-container-low transition-colors text-primary font-title-sm text-title-sm">
+            <span class="material-symbols-outlined text-[18px] text-primary">download</span>
+            <span class="hidden sm:inline">Unduh Excel</span>
+          </a>
         </div>
-        <div class="font-headline-lg text-headline-lg text-primary tabular-nums">{{ number_format($totalKaryawan) }}</div>
       </div>
 
-      <div class="p-space-base rounded-xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-shadow">
-        <div class="flex items-center justify-between pb-space-xs">
-          <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Rata-rata Kehadiran</span>
-          <span class="p-1.5 rounded-lg bg-secondary/10 text-secondary"><span class="material-symbols-outlined text-[20px]">how_to_reg</span></span>
-        </div>
-        <div class="font-headline-lg text-headline-lg text-secondary tabular-nums">{{ $rataKehadiran }}%</div>
-        <div class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Hadir {{ $totalHadir }} &bull; Dinas {{ $totalPerdin }}</div>
-      </div>
-
-      <div class="p-space-base rounded-xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-shadow">
-        <div class="flex items-center justify-between pb-space-xs">
-          <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Total Alpha/Mangkir</span>
-          <span class="p-1.5 rounded-lg bg-error-container text-error"><span class="material-symbols-outlined text-[20px]">person_off</span></span>
-        </div>
-        <div class="font-headline-lg text-headline-lg text-primary tabular-nums">{{ $totalAlpha }}</div>
-      </div>
-
-      <div class="p-space-base rounded-xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-shadow">
-        <div class="flex items-center justify-between pb-space-xs">
-          <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Total Menit Telat</span>
-          <span class="p-1.5 rounded-lg bg-surface-container-low text-primary"><span class="material-symbols-outlined text-[20px]">timer</span></span>
-        </div>
-        <div class="font-headline-lg text-headline-lg text-primary tabular-nums">{{ number_format($totalMenitTelat) }}</div>
-        <div class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">&asymp; {{ round($totalMenitTelat / 60, 1) }} jam se-perusahaan</div>
-      </div>
-    </div>
-
-    {{-- Bagan struktur: Direktur Utama -> 5 Divisi real (bukan entitas fiktif dari mockup) --}}
-    <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg mb-space-xl border border-surface-container-low">
-      <div class="flex items-center gap-2 pb-space-base border-b border-surface-container-low">
-        <span class="material-symbols-outlined text-secondary text-[24px]">account_tree</span>
-        <h2 class="font-headline-md text-headline-md text-primary">Hierarki &amp; Kesehatan Presensi per Divisi</h2>
-      </div>
-
-      <div class="py-space-base overflow-x-auto">
-        <div class="min-w-[900px] flex flex-col items-center">
-          <div class="relative flex flex-col items-center">
-            <div class="w-72 bg-[#70bce6] text-primary p-3 rounded-xl shadow-md border-2 border-[#54a4d4] flex flex-col items-center text-center">
-              <span class="font-label-sm text-[10px] tracking-wider uppercase font-bold text-primary/80">Puncak Pimpinan Perseroan</span>
-              <span class="font-title-md text-[17px] font-bold text-primary">Direktur Utama</span>
-              <span class="font-semibold text-primary text-xs mt-1">Rata-rata Perusahaan: {{ $rataKehadiran }}%</span>
-            </div>
-            <div class="w-0.5 h-7 bg-outline-variant"></div>
+      {{-- KPI Cards - warna diseragamkan, cuma dipakai buat status yang beneran perlu perhatian --}}
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-md mb-space-xl">
+        <div class="p-space-base rounded-xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-shadow">
+          <div class="flex items-center justify-between pb-space-xs">
+            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Tenaga Kerja Aktif</span>
+            <span class="p-1.5 rounded-lg bg-surface-container-low text-primary"><span class="material-symbols-outlined text-[20px]">badge</span></span>
           </div>
+          <div class="font-headline-lg text-headline-lg text-primary tabular-nums">{{ number_format($totalKaryawan) }}</div>
+        </div>
 
-          <div class="w-full relative flex justify-between items-start gap-space-sm">
-            <div class="absolute top-0 left-[6%] right-[6%] h-0.5 bg-outline-variant"></div>
-            @foreach ($matriksDivisi as $row)
-            <div class="flex flex-col items-center relative pt-4" style="width: {{ 100 / max(count($matriksDivisi),1) }}%">
-              <div class="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-4 bg-outline-variant"></div>
-              <div class="w-full bg-[#0f2942] text-white p-2.5 rounded-lg shadow-sm border border-slate-700 flex flex-col gap-1 hover:bg-[#163859] transition-colors">
-                <span class="font-title-sm text-xs font-semibold text-white leading-tight">{{ $row['divisi'] }}</span>
-                <div class="flex items-center justify-between">
-                  <span class="text-[10px] text-slate-300">{{ $row['total_personel'] }} Karyawan</span>
-                  <span class="text-xs font-bold {{ $row['perlu_ditinjau'] ? 'text-error-container' : 'text-secondary-container' }}">{{ $row['rata_kehadiran'] }}%</span>
+        <div class="p-space-base rounded-xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-shadow">
+          <div class="flex items-center justify-between pb-space-xs">
+            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Rata-rata Kehadiran</span>
+            <span class="p-1.5 rounded-lg bg-surface-container-low text-primary"><span class="material-symbols-outlined text-[20px]">how_to_reg</span></span>
+          </div>
+          <div class="font-headline-lg text-headline-lg text-primary tabular-nums">{{ $rataKehadiran }}%</div>
+          <div class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Hadir {{ $totalHadir }} &bull; Dinas {{ $totalPerdin }}</div>
+        </div>
+
+        <div class="p-space-base rounded-xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-shadow">
+          <div class="flex items-center justify-between pb-space-xs">
+            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Total Alpha/Mangkir</span>
+            <span class="p-1.5 rounded-lg bg-surface-container-low text-primary"><span class="material-symbols-outlined text-[20px]">person_off</span></span>
+          </div>
+          <div class="font-headline-lg text-headline-lg {{ $totalAlpha > 0 ? 'text-error' : 'text-primary' }} tabular-nums">{{ $totalAlpha }}</div>
+        </div>
+
+        <div class="p-space-base rounded-xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-shadow">
+          <div class="flex items-center justify-between pb-space-xs">
+            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Total Menit Telat</span>
+            <span class="p-1.5 rounded-lg bg-surface-container-low text-primary"><span class="material-symbols-outlined text-[20px]">timer</span></span>
+          </div>
+          <div class="font-headline-lg text-headline-lg text-primary tabular-nums">{{ number_format($totalMenitTelat) }}</div>
+          <div class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">&asymp; {{ round($totalMenitTelat / 60, 1) }} jam se-perusahaan</div>
+        </div>
+
+        <div class="p-space-base rounded-xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-shadow">
+          <div class="flex items-center justify-between pb-space-xs">
+            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Disiplin &amp; On-Time</span>
+            <span class="p-1.5 rounded-lg bg-surface-container-low text-primary"><span class="material-symbols-outlined text-[20px]">verified</span></span>
+          </div>
+          <div class="font-headline-lg text-headline-lg text-primary tabular-nums">{{ $tingkatOnTime }}%</div>
+          <div class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Hari hadir tanpa catatan telat</div>
+        </div>
+
+        <div class="p-space-base rounded-xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-shadow">
+          <div class="flex items-center justify-between pb-space-xs">
+            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Lembur Bulan Ini</span>
+            <span class="p-1.5 rounded-lg bg-surface-container-low text-primary"><span class="material-symbols-outlined text-[20px]">more_time</span></span>
+          </div>
+          <div class="font-headline-lg text-headline-lg text-primary tabular-nums">{{ $totalJamLembur }} <span class="font-body-md text-body-md text-on-surface-variant">Jam</span></div>
+          <div class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Dari log fingerprint/Face ID, se-perusahaan</div>
+        </div>
+
+        <div class="p-space-base rounded-xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-shadow">
+          <div class="flex items-center justify-between pb-space-xs">
+            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Kelengkapan Data Rekap</span>
+            <span class="p-1.5 rounded-lg bg-surface-container-low text-primary"><span class="material-symbols-outlined text-[20px]">fact_check</span></span>
+          </div>
+          <div class="font-headline-lg text-headline-lg text-primary tabular-nums">{{ $kelengkapanRekap }}%</div>
+          <div class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">{{ $karyawanDenganRekap }}/{{ $totalKaryawan }} karyawan sudah direkap HR</div>
+        </div>
+      </div>
+
+      {{-- Bagan struktur --}}
+      <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg mb-space-xl border border-surface-container-low">
+        <div class="flex items-center gap-2 pb-space-base border-b border-surface-container-low">
+          <span class="material-symbols-outlined text-primary text-[24px]">account_tree</span>
+          <h2 class="font-headline-md text-headline-md text-primary">Hierarki &amp; Kesehatan Presensi per Divisi</h2>
+        </div>
+
+        <div class="py-space-base overflow-x-auto">
+          <div class="min-w-[900px] flex flex-col items-center">
+            <div class="relative flex flex-col items-center">
+              <div class="w-72 bg-surface-container-high text-primary p-3 rounded-xl shadow-md border-2 border-outline-variant flex flex-col items-center text-center">
+                <span class="font-label-sm text-[10px] tracking-wider uppercase font-bold text-on-surface-variant">Puncak Pimpinan Perseroan</span>
+                <span class="font-title-md text-[17px] font-bold text-primary">Direktur Utama</span>
+                <span class="font-semibold text-primary text-xs mt-1">Rata-rata Perusahaan: {{ $rataKehadiran }}%</span>
+              </div>
+              <div class="w-0.5 h-7 bg-outline-variant"></div>
+            </div>
+
+            <div class="w-full relative flex justify-between items-start gap-space-sm">
+              <div class="absolute top-0 left-[6%] right-[6%] h-0.5 bg-outline-variant"></div>
+              @foreach ($matriksDivisi as $row)
+              <div class="flex flex-col items-center relative pt-4" style="width: {{ 100 / max(count($matriksDivisi),1) }}%">
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-4 bg-outline-variant"></div>
+                <div class="w-full bg-primary-container text-white p-2.5 rounded-lg shadow-sm border border-primary-container flex flex-col gap-1 hover:opacity-90 transition-opacity">
+                  <span class="font-title-sm text-xs font-semibold text-white leading-tight">{{ $row['divisi'] }}</span>
+                  <div class="flex items-center justify-between">
+                    <span class="text-[10px] text-white/70">{{ $row['total_personel'] }} Karyawan</span>
+                    <span class="text-xs font-bold {{ $row['perlu_ditinjau'] ? 'text-error-container' : 'text-white' }}">{{ $row['rata_kehadiran'] }}%</span>
+                  </div>
                 </div>
               </div>
+              @endforeach
             </div>
-            @endforeach
           </div>
+        </div>
+      </div>
+
+      {{-- Sebaran Lokasi --}}
+      <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg mb-space-xl border border-surface-container-low">
+        <div class="flex items-center justify-between pb-space-base border-b border-surface-container-low">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary text-[22px]">location_city</span>
+            <h2 class="font-headline-md text-headline-md text-primary">Sebaran Lokasi Presensi</h2>
+          </div>
+          <span class="font-label-sm text-label-sm text-on-surface-variant">{{ number_format($totalHariBandung + $totalHariJakarta) }} hari presensi tercatat</span>
+        </div>
+
+        <div class="py-space-base space-y-space-sm">
+          <div class="p-space-base rounded-xl bg-surface-container-low flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">
+            <div class="flex items-start gap-space-sm">
+              <div class="p-2 rounded-lg bg-surface-container-lowest text-primary shadow-sm mt-0.5">
+                <span class="material-symbols-outlined text-[20px]">corporate_fare</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="font-title-sm text-title-sm text-primary">Bandung</span>
+                <span class="font-body-sm text-body-sm text-on-surface-variant">Kantor pusat &amp; unit operasional utama</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-space-lg pl-10 sm:pl-0">
+              <div class="w-32 h-2 rounded-full bg-surface-container-lowest overflow-hidden hidden sm:block">
+                <div class="bg-primary h-full rounded-full" style="width: {{ $persenBandung }}%;"></div>
+              </div>
+              <div class="text-right">
+                <div class="font-title-sm text-title-sm text-primary tabular-nums">{{ number_format($totalHariBandung) }} hari</div>
+                <div class="font-label-sm text-label-sm text-on-surface-variant">{{ $persenBandung }}% dari total presensi</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-space-base rounded-xl bg-surface-container-low flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">
+            <div class="flex items-start gap-space-sm">
+              <div class="p-2 rounded-lg bg-surface-container-lowest text-primary shadow-sm mt-0.5">
+                <span class="material-symbols-outlined text-[20px]">apartment</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="font-title-sm text-title-sm text-primary">Jakarta</span>
+                <span class="font-body-sm text-body-sm text-on-surface-variant">Unit operasional &amp; perwakilan</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-space-lg pl-10 sm:pl-0">
+              <div class="w-32 h-2 rounded-full bg-surface-container-lowest overflow-hidden hidden sm:block">
+                <div class="bg-primary h-full rounded-full" style="width: {{ $persenJakarta }}%;"></div>
+              </div>
+              <div class="text-right">
+                <div class="font-title-sm text-title-sm text-primary tabular-nums">{{ number_format($totalHariJakarta) }} hari</div>
+                <div class="font-label-sm text-label-sm text-on-surface-variant">{{ $persenJakarta }}% dari total presensi</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {{-- Matriks tabel per divisi --}}
+      <div id="matriks-divisi" class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg scroll-mt-24">
+        <h2 class="font-headline-md text-headline-md text-primary mb-space-base">Matriks Kehadiran per Divisi</h2>
+        <div class="overflow-x-auto">
+        <table class="w-full text-left min-w-[720px]">
+          <thead>
+            <tr class="bg-surface-container-low text-on-surface-variant text-xs uppercase tracking-wider">
+              <th class="py-3 px-4 rounded-l-lg">Divisi</th>
+              <th class="py-3 px-4">Total Personel</th>
+              <th class="py-3 px-4">Rata-rata Kehadiran</th>
+              <th class="py-3 px-4">Total Hari Telat</th>
+              <th class="py-3 px-4">Total Alpha</th>
+              <th class="py-3 px-4 text-right rounded-r-lg">Status</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-surface-container-low">
+            @foreach ($matriksDivisi as $row)
+            <tr class="hover:bg-surface-container-low/40">
+              <td class="py-3 px-4 font-semibold text-primary">{{ $row['divisi'] }}</td>
+              <td class="py-3 px-4">{{ $row['total_personel'] }}</td>
+              <td class="py-3 px-4 tabular-nums">{{ $row['rata_kehadiran'] }}%</td>
+              <td class="py-3 px-4 tabular-nums">{{ $row['total_telat_hari'] }}</td>
+              <td class="py-3 px-4 tabular-nums">{{ $row['total_alpha'] }}</td>
+              <td class="py-3 px-4 text-right">
+                @if ($row['perlu_ditinjau'])
+                  <span class="px-2 py-1 rounded-full bg-error/10 text-error text-xs font-semibold">Perlu Ditinjau</span>
+                @else
+                  <span class="px-2 py-1 rounded-full bg-surface-container text-on-surface-variant text-xs font-semibold">Normal</span>
+                @endif
+              </td>
+            </tr>
+            @endforeach
+          </tbody>
+        </table>
         </div>
       </div>
     </div>
 
-    {{-- Matriks tabel per divisi --}}
-    <div id="matriks-divisi" class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg scroll-mt-24">
-      <h2 class="font-headline-md text-headline-md text-primary mb-space-base">Matriks Kehadiran per Divisi</h2>
-      <div class="overflow-x-auto">
-      <table class="w-full text-left min-w-[720px]">
-        <thead>
-          <tr class="bg-surface-container-low text-on-surface-variant text-xs uppercase tracking-wider">
-            <th class="py-3 px-4 rounded-l-lg">Divisi</th>
-            <th class="py-3 px-4">Total Personel</th>
-            <th class="py-3 px-4">Rata-rata Kehadiran</th>
-            <th class="py-3 px-4">Total Hari Telat</th>
-            <th class="py-3 px-4">Total Alpha</th>
-            <th class="py-3 px-4 text-right rounded-r-lg">Status</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-surface-container-low">
-          @foreach ($matriksDivisi as $row)
-          <tr class="hover:bg-surface-container-low/40">
-            <td class="py-3 px-4 font-semibold text-primary">{{ $row['divisi'] }}</td>
-            <td class="py-3 px-4">{{ $row['total_personel'] }}</td>
-            <td class="py-3 px-4 tabular-nums">{{ $row['rata_kehadiran'] }}%</td>
-            <td class="py-3 px-4 tabular-nums">{{ $row['total_telat_hari'] }}</td>
-            <td class="py-3 px-4 tabular-nums">{{ $row['total_alpha'] }}</td>
-            <td class="py-3 px-4 text-right">
-              @if ($row['perlu_ditinjau'])
-                <span class="px-2 py-1 rounded-full bg-error/10 text-error text-xs font-semibold">Perlu Ditinjau</span>
-              @else
-                <span class="px-2 py-1 rounded-full bg-secondary/10 text-secondary text-xs font-semibold">Normal</span>
-              @endif
-            </td>
-          </tr>
-          @endforeach
-        </tbody>
-      </table>
+    {{-- ============ TAB 2: OTORISASI KHUSUS ============ --}}
+    <div id="tab-otorisasi" class="hidden">
+      <p class="font-body-md text-body-md text-on-surface-variant max-w-2xl mb-space-lg">
+        Lembur harian di atas 3 jam butuh persetujuan langsung Direktur Utama, tidak cukup lewat approval HR biasa.
+      </p>
+
+      <div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-x-auto">
+        <table class="w-full text-left min-w-[800px]">
+          <thead>
+            <tr class="bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
+              <th class="py-3 px-space-base rounded-l-lg">Tanggal</th>
+              <th class="py-3 px-space-base">Karyawan</th>
+              <th class="py-3 px-space-base">Divisi</th>
+              <th class="py-3 px-space-base">Jam Pulang</th>
+              <th class="py-3 px-space-base">Total Lembur</th>
+              <th class="py-3 px-space-base text-right rounded-r-lg">Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-surface-container-low font-body-md text-body-md">
+            @forelse ($otorisasiLogs as $log)
+            <tr class="hover:bg-surface-container-low/40 transition-colors">
+              <td class="py-space-base px-space-base">{{ $log->tanggal->translatedFormat('d M Y') }}</td>
+              <td class="py-space-base px-space-base font-title-sm text-title-sm text-primary">{{ $log->employee->nama }}</td>
+              <td class="py-space-base px-space-base"><span class="px-2 py-0.5 rounded bg-surface-container text-primary font-label-sm text-xs font-semibold">{{ $log->employee->division->nama }}</span></td>
+              <td class="py-space-base px-space-base tabular-nums">{{ \Carbon\Carbon::parse($log->jam_pulang)->format('H:i') }}</td>
+              <td class="py-space-base px-space-base tabular-nums font-title-sm text-title-sm text-error">{{ $log->lemburFormat() }}</td>
+              <td class="py-space-base px-space-base text-right space-x-3 whitespace-nowrap">
+                <form action="{{ route('direktur.otorisasi-khusus.approve', $log) }}" method="POST" class="inline">
+                  @csrf
+                  <button type="submit" class="text-secondary font-title-sm text-title-sm">Setuju</button>
+                </form>
+                <form action="{{ route('direktur.otorisasi-khusus.reject', $log) }}" method="POST" class="inline" onsubmit="return confirm('Tolak lembur ini?')">
+                  @csrf
+                  <button type="submit" class="text-error font-title-sm text-title-sm">Tolak</button>
+                </form>
+              </td>
+            </tr>
+            @empty
+            <tr><td colspan="6" class="py-8 px-4 text-center text-on-surface-variant">Tidak ada lembur yang butuh otorisasi khusus saat ini.</td></tr>
+            @endforelse
+          </tbody>
+        </table>
       </div>
     </div>
+
   </main>
 </div>
 
@@ -326,6 +485,35 @@
     if (!e.target.closest('#user-menu') && !e.target.closest('button[onclick="toggleUserMenu()"]')) {
       menu.classList.add('hidden');
     }
+  });
+
+  // Ganti tab TANPA pindah halaman/URL.
+  function showTab(tab) {
+    const tabs = ['ringkasan', 'otorisasi'];
+    tabs.forEach(function (t) {
+      document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
+      document.getElementById('tabbtn-' + t).classList.toggle('border-primary', t === tab);
+      document.getElementById('tabbtn-' + t).classList.toggle('text-primary', t === tab);
+      document.getElementById('tabbtn-' + t).classList.toggle('border-transparent', t !== tab);
+      document.getElementById('tabbtn-' + t).classList.toggle('text-on-surface-variant', t !== tab);
+      document.getElementById('nav-' + t).classList.toggle('bg-primary-container', t === tab);
+      document.getElementById('nav-' + t).classList.toggle('text-on-primary', t === tab);
+      document.getElementById('nav-' + t).classList.toggle('text-on-surface', t !== tab);
+    });
+    if (window.location.hash !== '#' + tab) {
+      history.replaceState(null, '', '#' + tab);
+    }
+    // Tutup sidebar mobile setelah pilih menu.
+    if (window.innerWidth < 768) {
+      document.getElementById('sidebar').classList.add('-translate-x-full');
+      document.getElementById('sidebar-backdrop').classList.add('hidden');
+    }
+  }
+
+  // Buka tab sesuai hash URL (dipakai waktu redirect balik dari approve/reject lembur).
+  document.addEventListener('DOMContentLoaded', function () {
+    const initial = window.location.hash === '#otorisasi' ? 'otorisasi' : 'ringkasan';
+    showTab(initial);
   });
 </script>
 </body>

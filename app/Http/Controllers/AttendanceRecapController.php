@@ -21,6 +21,8 @@ class AttendanceRecapController extends Controller
             })
             ->when($request->filled('tahun'), fn ($query) => $query->where('tahun', $request->input('tahun')))
             ->when($request->filled('bulan'), fn ($query) => $query->where('bulan', $request->input('bulan')))
+            ->when($request->input('lokasi') === 'bandung', fn ($query) => $query->where('lokasi_bandung', '>', 0))
+            ->when($request->input('lokasi') === 'jakarta', fn ($query) => $query->where('lokasi_jakarta', '>', 0))
             ->orderByDesc('tahun')->orderByDesc('bulan')
             ->paginate(20)
             ->withQueryString();

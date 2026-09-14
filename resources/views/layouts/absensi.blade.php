@@ -67,12 +67,14 @@
                             transform -translate-x-full transition-transform duration-200 ease-in-out md:translate-x-0">
   <div class="flex flex-col overflow-y-auto">
     <div class="h-20 px-space-lg flex items-center gap-space-md border-b border-surface-container-low/60 shrink-0">
+      <a href="#" onclick="window.location.reload(); return false;" class="flex items-center focus:outline-none transition-opacity hover:opacity-80" title="Refresh Halaman">
       <img src="{{ asset('images/logo-inti.png') }}" alt="PT. INTI" class="h-8 w-auto object-contain">
+      </a>
     </div>
     <div class="px-space-md py-space-xs">
       <div class="px-space-sm pb-space-xs flex items-center justify-between">
         <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">HR &amp; Administrasi</span>
-        <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-tertiary-container text-on-tertiary">HR</span>
+        <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-surface-container-low text-on-surface-variant">HR</span>
       </div>
       <nav class="flex flex-col gap-space-xs">
         <a href="{{ route('employees.index') }}" class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm {{ request()->routeIs('employees.*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
