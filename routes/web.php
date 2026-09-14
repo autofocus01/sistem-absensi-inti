@@ -25,10 +25,6 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/timesheet', [TimesheetController::class, 'index'])->name('timesheet.index');
-    // Route::get('/direktur/dashboard', [DirekturDashboardController::class, 'index'])
-    //     ->name('direktur.dashboard');
-    // Route::resource('employees', EmployeeController::class)->except(['show']);
-    // Route::resource('attendance', AttendanceRecapController::class)->except(['show']);
 });
 
 Route::middleware(['auth', 'role:direktur_utama'])->group(function () {
