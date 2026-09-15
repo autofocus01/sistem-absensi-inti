@@ -34,11 +34,11 @@ class ImportAbsensiHarian extends Command
             return self::FAILURE;
         }
 
-        $header = array_map(fn ($h) => strtolower(trim((string) $h)), $rows[0]);
+        $header = array_map(fn ($h) => str_replace('_', ' ', strtolower(trim((string) $h))), $rows[0]);
         $dataRows = array_slice($rows, 1);
 
         $idxNip = $this->cariKolom($header, ['nip', 'nipeg', 'pin', 'nik']);
-        $idxTanggal = $this->cariKolom($header, ['tanggal', 'date']);
+        $idxTanggal = $this->cariKolom($header, ['tanggal', 'date', 'tgl masuk', 'tgl', 'tanggal masuk']);
         $idxJamMasuk = $this->cariKolom($header, ['jam masuk', 'clock in', 'time in', 'check in']);
         $idxJamPulang = $this->cariKolom($header, ['jam pulang', 'clock out', 'time out', 'check out']);
         $idxJamTunggal = $this->cariKolom($header, ['jam', 'waktu', 'time']);

@@ -16,11 +16,15 @@ class TeamRecapController extends Controller
         $divisionId = $request->input('division_id');
         $bulan = (int) $request->input('bulan', now()->month);
         $tahun = (int) $request->input('tahun', now()->year);
+        $q = $request->input('q');
 
         $logsQuery = AttendanceLog::with(['employee.division', 'approver'])
             ->whereYear('tanggal', $tahun)
             ->whereMonth('tanggal', $bulan)
-            ->when($divisionId, fn ($q) => $q->whereHas('employee', fn ($e) => $e->where('division_id', $divisionId)))
+            ->when($divisionId, fn ($qr) => $qr->whereHas('employee', fn ($e) => $e->where('division_id', $divisionId)))
+            ->when($q, fn ($qr) => $qr->whereHas('employee', function ($e) use ($q) {
+                $e->where('nama', 'like', "%{$q}%")->orWhere('nipeg', 'like', "%{$q}%");
+            }))
             ->where('jam_masuk', '!=', null);
 
         $semuaLog = (clone $logsQuery)->get();
@@ -51,6 +55,7 @@ class TeamRecapController extends Controller
             'divisionId'                => $divisionId,
             'bulan'                     => $bulan,
             'tahun'                     => $tahun,
+            'q'                         => $q,
             'logs'                      => $logLemburPaginated,
             'totalLogLembur'            => $logLembur->count(),
             'totalPersonel'             => $totalPersonel,

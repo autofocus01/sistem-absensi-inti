@@ -29,12 +29,14 @@
 </form>
 
 <div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-x-auto">
-  <table class="w-full text-left min-w-[640px]">
+  <table class="w-full text-left min-w-[820px]">
     <thead>
       <tr class="bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
         <th class="py-3 px-space-base rounded-l-lg">NIPEG</th>
         <th class="py-3 px-space-base">Nama</th>
+        <th class="py-3 px-space-base">L/P</th>
         <th class="py-3 px-space-base">Jabatan</th>
+        <th class="py-3 px-space-base">No. HP</th>
         <th class="py-3 px-space-base">Divisi</th>
         <th class="py-3 px-space-base text-right rounded-r-lg">Aksi</th>
       </tr>
@@ -44,7 +46,9 @@
       <tr class="hover:bg-surface-container-low/40 transition-colors">
         <td class="py-space-base px-space-base tabular-nums text-on-surface-variant">{{ $employee->nipeg }}</td>
         <td class="py-space-base px-space-base font-title-sm text-title-sm text-primary">{{ $employee->nama }}</td>
+        <td class="py-space-base px-space-base">{{ $employee->jenis_kelamin ?: '-' }}</td>
         <td class="py-space-base px-space-base">{{ $employee->jabatan }}</td>
+        <td class="py-space-base px-space-base whitespace-nowrap">{{ $employee->no_hp ?: '-' }}</td>
         <td class="py-space-base px-space-base"><span class="px-2 py-0.5 rounded bg-surface-container text-primary font-label-sm text-xs font-semibold">{{ $employee->division->nama }}</span></td>
         <td class="py-space-base px-space-base text-right space-x-3 whitespace-nowrap">
           <a href="{{ route('employees.edit', $employee) }}" class="text-secondary font-title-sm text-title-sm">Edit</a>
@@ -55,7 +59,7 @@
         </td>
       </tr>
       @empty
-      <tr><td colspan="5" class="py-8 px-4 text-center text-on-surface-variant">Belum ada data karyawan.</td></tr>
+      <tr><td colspan="7" class="py-8 px-4 text-center text-on-surface-variant">Belum ada data karyawan.</td></tr>
       @endforelse
     </tbody>
   </table>

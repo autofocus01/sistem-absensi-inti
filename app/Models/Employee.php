@@ -11,7 +11,7 @@ class Employee extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['nipeg', 'nama', 'jabatan', 'division_id', 'user_id'];
+    protected $fillable = ['nipeg', 'nama', 'jenis_kelamin', 'jabatan', 'no_hp', 'alamat', 'division_id', 'user_id'];
 
     public function division(): BelongsTo
     {
@@ -26,5 +26,10 @@ class Employee extends Model
     public function attendanceLogs(): HasMany
     {
         return $this->hasMany(AttendanceLog::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }

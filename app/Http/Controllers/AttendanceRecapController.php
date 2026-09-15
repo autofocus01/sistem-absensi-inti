@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreAttendanceRecapRequest;
 use App\Models\AttendanceImportError;
 use App\Models\AttendanceRecap;
+use App\Models\Division;
 use App\Models\Employee;
 use Illuminate\Http\Request;
 
@@ -19,6 +20,9 @@ class AttendanceRecapController extends Controller
                       ->orWhere('nipeg', 'like', '%' . $request->input('q') . '%');
                 });
             })
+            ->when($request->filled('division_id'), function ($query) use ($request) {
+                $query->whereHas('employee', fn ($q) => $q->where('division_id', $request->input('division_id')));
+            })
             ->when($request->filled('tahun'), fn ($query) => $query->where('tahun', $request->input('tahun')))
             ->when($request->filled('bulan'), fn ($query) => $query->where('bulan', $request->input('bulan')))
             ->when($request->input('lokasi') === 'bandung', fn ($query) => $query->where('lokasi_bandung', '>', 0))
@@ -28,8 +32,9 @@ class AttendanceRecapController extends Controller
             ->withQueryString();
 
         $tahunTersedia = AttendanceRecap::select('tahun')->distinct()->orderByDesc('tahun')->pluck('tahun');
+        $divisions = Division::orderBy('nama')->get();
 
-        return view('attendance.index', compact('recaps', 'tahunTersedia'));
+        return view('attendance.index', compact('recaps', 'tahunTersedia', 'divisions'));
     }
 
     public function create(Request $request)

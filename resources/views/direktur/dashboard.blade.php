@@ -10,7 +10,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script>
-  // Token desain SAMA PERSIS dengan layouts/absensi.blade.php (halaman HR), biar selaras.
   tailwind.config = {
     darkMode: "class",
     theme: { extend: {
@@ -67,9 +66,7 @@
                             transform -translate-x-full transition-transform duration-200 ease-in-out md:translate-x-0">
   <div class="flex flex-col">
     <div class="h-20 px-space-lg flex items-center gap-space-md border-b border-surface-container-low/60">
-      <a href="#" onclick="window.location.reload(); return false;" class="flex items-center focus:outline-none transition-opacity hover:opacity-80" title="Refresh Halaman">
       <img src="{{ asset('images/logo-inti.png') }}" alt="PT. INTI" class="h-8 w-auto object-contain">
-      </a>
     </div>
     <div class="px-space-md py-space-xs">
       <div class="px-space-sm pb-space-xs flex items-center justify-between">
@@ -193,7 +190,14 @@
 
         <div class="flex flex-wrap items-center gap-2">
           <form method="GET" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container-lowest shadow-sm">
-            <span class="material-symbols-outlined text-[18px] text-on-surface-variant">calendar_today</span>
+            <span class="material-symbols-outlined text-[18px] text-on-surface-variant">account_tree</span>
+            <select name="division_id" onchange="this.form.submit()" class="border-0 bg-transparent font-title-sm text-title-sm text-primary focus:ring-0">
+              <option value="">Semua Divisi</option>
+              @foreach ($divisions as $division)
+                <option value="{{ $division->id }}" @selected($divisionId == $division->id)>{{ $division->nama }}</option>
+              @endforeach
+            </select>
+            <span class="material-symbols-outlined text-[18px] text-on-surface-variant ml-2">calendar_today</span>
             <select name="bulan" onchange="this.form.submit()" class="border-0 bg-transparent font-title-sm text-title-sm text-primary focus:ring-0">
               @foreach (range(1, 12) as $m)
                 <option value="{{ $m }}" @selected($bulan == $m)>{{ \Carbon\Carbon::create()->month($m)->translatedFormat('F') }}</option>
@@ -206,12 +210,12 @@
             </select>
           </form>
 
-          <a href="{{ route('direktur.export-pdf', ['tahun' => $tahun, 'bulan' => $bulan]) }}"
+          <a href="{{ route('direktur.export-pdf', ['tahun' => $tahun, 'bulan' => $bulan, 'division_id' => $divisionId]) }}"
              class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-container-lowest shadow-sm hover:bg-surface-container-low transition-colors text-primary font-title-sm text-title-sm">
             <span class="material-symbols-outlined text-[18px] text-primary">picture_as_pdf</span>
             <span class="hidden sm:inline">Unduh PDF</span>
           </a>
-          <a href="{{ route('direktur.export-excel', ['tahun' => $tahun, 'bulan' => $bulan]) }}"
+          <a href="{{ route('direktur.export-excel', ['tahun' => $tahun, 'bulan' => $bulan, 'division_id' => $divisionId]) }}"
              class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-container-lowest shadow-sm hover:bg-surface-container-low transition-colors text-primary font-title-sm text-title-sm">
             <span class="material-symbols-outlined text-[18px] text-primary">download</span>
             <span class="hidden sm:inline">Unduh Excel</span>
@@ -371,6 +375,34 @@
                 <div class="font-label-sm text-label-sm text-on-surface-variant">{{ $persenJakarta }}% dari total presensi</div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {{-- Donut Chart Komposisi Kehadiran - CSS conic-gradient murni, data real dari rekap bulanan --}}
+      <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg mb-space-xl border border-surface-container-low">
+        <div class="flex items-center gap-2 pb-space-base border-b border-surface-container-low">
+          <span class="material-symbols-outlined text-primary text-[22px]">donut_large</span>
+          <h2 class="font-headline-md text-headline-md text-primary">Komposisi Kehadiran</h2>
+        </div>
+
+        <div class="flex flex-col md:flex-row items-center gap-space-xl py-space-base">
+          <div class="w-48 h-48 rounded-full shrink-0 relative" style="background: conic-gradient({{ $gradientCss }});">
+            <div class="absolute inset-4 rounded-full bg-surface-container-lowest flex flex-col items-center justify-center">
+              <span class="font-headline-md text-headline-md text-primary tabular-nums">{{ number_format($totalKomposisi) }}</span>
+              <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Total Hari</span>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-space-sm w-full">
+            @foreach ($komposisiDenganPersen as $label => $info)
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full shrink-0" style="background-color: {{ $info['warna'] }};"></span>
+                <div class="flex flex-col">
+                  <span class="font-title-sm text-title-sm text-on-surface">{{ $label }}</span>
+                  <span class="font-body-sm text-body-sm text-on-surface-variant tabular-nums">{{ number_format($info['jumlah']) }} hari ({{ $info['persen'] }}%)</span>
+                </div>
+              </div>
+            @endforeach
           </div>
         </div>
       </div>

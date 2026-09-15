@@ -11,7 +11,9 @@
 </div>
 
 <form method="GET" class="flex flex-col sm:flex-row gap-2 mb-space-lg bg-surface-container-lowest rounded-xl shadow-sm p-space-sm">
-  <select name="division_id" onchange="this.form.submit()" class="flex-1 rounded-lg border-0 bg-surface-container-low font-body-md text-body-md">
+  <input type="text" name="q" value="{{ $q }}" placeholder="Cari nama atau NIPEG..."
+         class="flex-1 rounded-lg border-0 bg-surface-container-low font-body-md text-body-md focus:ring-2 focus:ring-primary-container">
+  <select name="division_id" onchange="this.form.submit()" class="rounded-lg border-0 bg-surface-container-low font-body-md text-body-md">
     <option value="">Seluruh Divisi PT. INTI</option>
     @foreach ($divisions as $division)
       <option value="{{ $division->id }}" @selected($divisionId == $division->id)>{{ $division->nama }}</option>
@@ -27,6 +29,7 @@
       <option value="{{ $y }}" @selected($tahun == $y)>{{ $y }}</option>
     @endforeach
   </select>
+  <button type="submit" class="px-4 py-2 rounded-lg bg-primary-container text-on-primary font-title-sm text-title-sm">Cari</button>
 </form>
 
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-base mb-space-lg">

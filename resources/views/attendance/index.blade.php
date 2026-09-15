@@ -16,6 +16,12 @@
 <form method="GET" class="flex flex-col sm:flex-row gap-2 mb-space-lg bg-surface-container-lowest rounded-xl shadow-sm p-space-sm">
   <input type="text" name="q" value="{{ request('q') }}" placeholder="Cari nama atau NIPEG..."
          class="flex-1 rounded-lg border-0 bg-surface-container-low font-body-md text-body-md focus:ring-2 focus:ring-primary-container">
+  <select name="division_id" onchange="this.form.submit()" class="rounded-lg border-0 bg-surface-container-low font-body-md text-body-md">
+    <option value="">Semua Divisi</option>
+    @foreach ($divisions as $division)
+      <option value="{{ $division->id }}" @selected(request('division_id') == $division->id)>{{ $division->nama }}</option>
+    @endforeach
+  </select>
   <select name="bulan" onchange="this.form.submit()" class="rounded-lg border-0 bg-surface-container-low font-body-md text-body-md">
     <option value="">Semua Bulan</option>
     @foreach (range(1, 12) as $m)
@@ -34,7 +40,7 @@
     <option value="jakarta" @selected(request('lokasi') === 'jakarta')>Jakarta</option>
   </select>
   <button type="submit" class="px-4 py-2 rounded-lg bg-primary-container text-on-primary font-title-sm text-title-sm">Cari</button>
-  @if (request('q') || request('bulan') || request('tahun') || request('lokasi'))
+  @if (request('q') || request('bulan') || request('tahun') || request('lokasi') || request('division_id'))
     <a href="{{ route('attendance.index') }}" class="px-4 py-2 rounded-lg text-on-surface-variant font-title-sm text-title-sm text-center">Reset</a>
   @endif
 </form>

@@ -34,17 +34,47 @@ class DirekturDashboardController extends Controller
     {
         $tahun = (int) $request->input('tahun', now()->year);
         $bulan = (int) $request->input('bulan', now()->month);
+        $divisionId = $request->input('division_id');
 
-        $totalKaryawan = Employee::count();
+        $totalKaryawan = Employee::when($divisionId, fn ($q) => $q->where('division_id', $divisionId))->count();
 
-        $recapBulanIni = AttendanceRecap::where('tahun', $tahun)->where('bulan', $bulan);
+        $recapBulanIni = AttendanceRecap::where('tahun', $tahun)->where('bulan', $bulan)
+            ->when($divisionId, fn ($q) => $q->whereHas('employee', fn ($e) => $e->where('division_id', $divisionId)));
 
         $rataKehadiran = (clone $recapBulanIni)->avg('persen_kehadiran') ?? 0;
         $totalAlpha = (clone $recapBulanIni)->sum('alpha');
         $totalMenitTelat = (clone $recapBulanIni)->sum('menit_telat');
         $totalHadir = (clone $recapBulanIni)->sum('hadir');
         $totalPerdin = (clone $recapBulanIni)->sum('perdin');
+        $totalCuti = (clone $recapBulanIni)->sum('cuti');
+        $totalSakit = (clone $recapBulanIni)->sum('sakit');
+        $totalIjin = (clone $recapBulanIni)->sum('ijin');
         $totalTelatHari = (clone $recapBulanIni)->sum('telat_hari');
+
+        // Komposisi kehadiran buat donut chart - proporsi hari per kategori se-periode (atau se-divisi kalau difilter).
+        $komposisi = [
+            'Hadir'  => $totalHadir,
+            'Perdin' => $totalPerdin,
+            'Cuti'   => $totalCuti,
+            'Sakit'  => $totalSakit,
+            'Izin'   => $totalIjin,
+            'Alpha'  => $totalAlpha,
+        ];
+        $totalKomposisi = array_sum($komposisi) ?: 1;
+
+        // Warna & gradient CSS donut chart dihitung di sini (PHP biasa), bukan di @php block Blade -
+        // supaya nggak gampang rusak kalau file view-nya ke-copy-paste sebagian.
+        $donutWarna = ['Hadir' => '#0f2942', 'Perdin' => '#006a61', 'Cuti' => '#74777e', 'Sakit' => '#43474d', 'Izin' => '#c3c6ce', 'Alpha' => '#ba1a1a'];
+        $gradParts = [];
+        $cursor = 0;
+        $komposisiDenganPersen = [];
+        foreach ($komposisi as $label => $jumlah) {
+            $persen = round(($jumlah / $totalKomposisi) * 100, 1);
+            $gradParts[] = "{$donutWarna[$label]} {$cursor}% " . ($cursor + $persen) . '%';
+            $komposisiDenganPersen[$label] = ['jumlah' => $jumlah, 'persen' => $persen, 'warna' => $donutWarna[$label]];
+            $cursor += $persen;
+        }
+        $gradientCss = implode(', ', $gradParts);
 
         // Disiplin & On-Time Rate: proporsi hari hadir yang TANPA catatan telat.
         $tingkatOnTime = $totalHadir > 0
@@ -57,6 +87,7 @@ class DirekturDashboardController extends Controller
         $totalMenitLembur = AttendanceLog::whereYear('tanggal', $tahun)
             ->whereMonth('tanggal', $bulan)
             ->whereNotNull('jam_pulang')
+            ->when($divisionId, fn ($q) => $q->whereHas('employee', fn ($e) => $e->where('division_id', $divisionId)))
             ->get()
             ->sum(fn (AttendanceLog $log) => $log->menitLembur());
         $totalJamLembur = round($totalMenitLembur / 60, 1);
@@ -75,8 +106,10 @@ class DirekturDashboardController extends Controller
         $persenBandung = $totalHariLokasi > 0 ? round(($totalHariBandung / $totalHariLokasi) * 100, 1) : 0;
         $persenJakarta = $totalHariLokasi > 0 ? round(($totalHariJakarta / $totalHariLokasi) * 100, 1) : 0;
 
-        $matriksDivisi = Division::withCount('employees')
-            ->get()
+        $divisions = Division::orderBy('nama')->get();
+
+        $matriksDivisi = $divisions
+            ->when($divisionId, fn ($collection) => $collection->where('id', $divisionId))
             ->map(function (Division $division) use ($tahun, $bulan) {
                 $recaps = AttendanceRecap::whereHas('employee', fn ($q) => $q->where('division_id', $division->id))
                     ->where('tahun', $tahun)
@@ -85,17 +118,20 @@ class DirekturDashboardController extends Controller
 
                 return [
                     'divisi'            => $division->nama,
-                    'total_personel'    => $division->employees_count,
+                    'total_personel'    => $division->employees()->count(),
                     'rata_kehadiran'    => round($recaps->avg('persen_kehadiran') ?? 0, 1),
                     'total_telat_hari'  => $recaps->sum('telat_hari'),
                     'total_alpha'       => $recaps->sum('alpha'),
                     'perlu_ditinjau'    => ($recaps->avg('persen_kehadiran') ?? 100) < 80,
                 ];
-            });
+            })
+            ->values();
 
         return [
             'tahun'             => $tahun,
             'bulan'             => $bulan,
+            'divisionId'        => $divisionId,
+            'divisions'         => $divisions,
             'totalKaryawan'     => $totalKaryawan,
             'rataKehadiran'     => round($rataKehadiran, 1),
             'totalAlpha'        => $totalAlpha,
@@ -110,6 +146,10 @@ class DirekturDashboardController extends Controller
             'totalHariJakarta'  => $totalHariJakarta,
             'persenBandung'     => $persenBandung,
             'persenJakarta'     => $persenJakarta,
+            'komposisi'         => $komposisi,
+            'totalKomposisi'    => $totalKomposisi,
+            'komposisiDenganPersen' => $komposisiDenganPersen,
+            'gradientCss'       => $gradientCss,
             'matriksDivisi'     => $matriksDivisi,
         ];
     }
@@ -123,7 +163,11 @@ class DirekturDashboardController extends Controller
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Rekap Absensi');
 
-        $sheet->setCellValue('A1', "Rekap Absensi PT. INTI - {$namaBulan} {$data['tahun']}");
+        $namaDivisiFilter = $data['divisionId']
+            ? $data['divisions']->firstWhere('id', (int) $data['divisionId'])?->nama
+            : 'Semua Divisi';
+
+        $sheet->setCellValue('A1', "Rekap Absensi PT. INTI - {$namaBulan} {$data['tahun']} ({$namaDivisiFilter})");
         $sheet->mergeCells('A1:F1');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
 
@@ -146,7 +190,16 @@ class DirekturDashboardController extends Controller
         $sheet->setCellValue('A11', 'Sebaran Lokasi - Jakarta');
         $sheet->setCellValue('B11', $data['totalHariJakarta'] . ' hari (' . $data['persenJakarta'] . '%)');
 
-        $headerRow = 13;
+        $sheet->setCellValue('A13', 'Komposisi Kehadiran');
+        $sheet->getStyle('A13')->getFont()->setBold(true);
+        $baris = 14;
+        foreach ($data['komposisi'] as $label => $jumlah) {
+            $sheet->setCellValue('A' . $baris, $label);
+            $sheet->setCellValue('B' . $baris, $jumlah . ' hari (' . round(($jumlah / $data['totalKomposisi']) * 100, 1) . '%)');
+            $baris++;
+        }
+
+        $headerRow = $baris + 1;
         $headers = ['Divisi', 'Total Personel', 'Rata-rata Kehadiran (%)', 'Total Hari Telat', 'Total Alpha', 'Status'];
         $kolom = ['A', 'B', 'C', 'D', 'E', 'F'];
         foreach ($headers as $i => $header) {

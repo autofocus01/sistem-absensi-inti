@@ -1,4 +1,7 @@
 <x-guest-layout>
+    <h1 class="text-xl font-bold text-primary mb-1">Buat Akun Baru</h1>
+    <p class="text-sm text-on-surface-variant mb-6">Sistem Absensi &amp; Monitoring PT. INTI</p>
+
     <form method="POST" action="{{ route('register') }}">
         @csrf
 
@@ -40,7 +43,7 @@
         </div>
 
         <div class="flex items-center justify-end mt-4">
-            <a class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800" href="{{ route('login') }}">
+            <a class="underline text-sm text-on-surface-variant hover:text-primary rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-container" href="{{ route('login') }}">
                 {{ __('Already registered?') }}
             </a>
 

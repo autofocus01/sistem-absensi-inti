@@ -12,22 +12,34 @@
   </div>
 </div>
 
-<form method="GET" class="flex flex-col sm:flex-row gap-2 mb-space-lg bg-surface-container-lowest rounded-xl shadow-sm p-space-sm">
-  <select name="employee_id" onchange="this.form.submit()" class="flex-1 rounded-lg border-0 bg-surface-container-low font-body-md text-body-md">
-    @foreach ($employees as $employee)
-      <option value="{{ $employee->id }}" @selected($employeeId == $employee->id)>{{ $employee->nama }} — {{ $employee->nipeg }}</option>
-    @endforeach
-  </select>
-  <select name="bulan" onchange="this.form.submit()" class="rounded-lg border-0 bg-surface-container-low font-body-md text-body-md">
-    @foreach (range(1, 12) as $m)
-      <option value="{{ $m }}" @selected($bulan == $m)>{{ \Carbon\Carbon::create()->month($m)->translatedFormat('F') }}</option>
-    @endforeach
-  </select>
-  <select name="tahun" onchange="this.form.submit()" class="rounded-lg border-0 bg-surface-container-low font-body-md text-body-md">
-    @foreach (range(now()->year, now()->year - 3) as $y)
-      <option value="{{ $y }}" @selected($tahun == $y)>{{ $y }}</option>
-    @endforeach
-  </select>
+<form method="GET" class="flex flex-col gap-2 mb-space-lg bg-surface-container-lowest rounded-xl shadow-sm p-space-sm">
+  <div class="flex flex-col sm:flex-row gap-2">
+    <input type="text" name="q" value="{{ $q }}" placeholder="Cari nama atau NIPEG untuk mempersempit daftar..."
+           class="flex-1 rounded-lg border-0 bg-surface-container-low font-body-md text-body-md focus:ring-2 focus:ring-primary-container">
+    <button type="submit" class="px-4 py-2 rounded-lg bg-primary-container text-on-primary font-title-sm text-title-sm">Cari</button>
+    @if ($q)
+      <a href="{{ route('timesheet.index') }}" class="px-4 py-2 rounded-lg text-on-surface-variant font-title-sm text-title-sm text-center">Reset</a>
+    @endif
+  </div>
+  <div class="flex flex-col sm:flex-row gap-2">
+    <select name="employee_id" onchange="this.form.submit()" class="flex-1 rounded-lg border-0 bg-surface-container-low font-body-md text-body-md">
+      @forelse ($employees as $employee)
+        <option value="{{ $employee->id }}" @selected($employeeId == $employee->id)>{{ $employee->nama }} — {{ $employee->nipeg }}</option>
+      @empty
+        <option value="">Tidak ada karyawan yang cocok</option>
+      @endforelse
+    </select>
+    <select name="bulan" onchange="this.form.submit()" class="rounded-lg border-0 bg-surface-container-low font-body-md text-body-md">
+      @foreach (range(1, 12) as $m)
+        <option value="{{ $m }}" @selected($bulan == $m)>{{ \Carbon\Carbon::create()->month($m)->translatedFormat('F') }}</option>
+      @endforeach
+    </select>
+    <select name="tahun" onchange="this.form.submit()" class="rounded-lg border-0 bg-surface-container-low font-body-md text-body-md">
+      @foreach (range(now()->year, now()->year - 3) as $y)
+        <option value="{{ $y }}" @selected($tahun == $y)>{{ $y }}</option>
+      @endforeach
+    </select>
+  </div>
 </form>
 
 <div class="grid grid-cols-1 sm:grid-cols-3 gap-space-base mb-space-lg">
@@ -52,6 +64,49 @@
     </div>
     <p class="font-headline-md text-headline-md text-primary mt-1">{{ $totalHariTelat }} <span class="font-body-md text-body-md text-on-surface-variant">Hari</span></p>
   </div>
+</div>
+
+{{-- Ringkasan bulanan dari Rekap HR (bukan dari log harian) - Perdin/Cuti/Izin/Sakit/Alpha & lokasi --}}
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg mb-space-lg">
+  <div class="flex items-center justify-between pb-space-base border-b border-surface-container-low">
+    <span class="font-headline-sm text-headline-sm text-on-surface">Ringkasan Bulanan (Rekap HR)</span>
+    <span class="font-body-sm text-body-sm text-on-surface-variant">{{ \Carbon\Carbon::create()->month($bulan)->translatedFormat('F') }} {{ $tahun }}</span>
+  </div>
+
+  @if ($rekapBulanIni)
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-space-sm pt-space-base">
+      <div class="p-space-sm rounded-lg bg-surface-container-low text-center">
+        <div class="font-headline-sm text-headline-sm text-primary tabular-nums">{{ $rekapBulanIni->perdin }}</div>
+        <div class="font-label-sm text-label-sm text-on-surface-variant uppercase">Perdin</div>
+      </div>
+      <div class="p-space-sm rounded-lg bg-surface-container-low text-center">
+        <div class="font-headline-sm text-headline-sm text-primary tabular-nums">{{ $rekapBulanIni->cuti }}</div>
+        <div class="font-label-sm text-label-sm text-on-surface-variant uppercase">Cuti</div>
+      </div>
+      <div class="p-space-sm rounded-lg bg-surface-container-low text-center">
+        <div class="font-headline-sm text-headline-sm text-primary tabular-nums">{{ $rekapBulanIni->ijin }}</div>
+        <div class="font-label-sm text-label-sm text-on-surface-variant uppercase">Izin</div>
+      </div>
+      <div class="p-space-sm rounded-lg bg-surface-container-low text-center">
+        <div class="font-headline-sm text-headline-sm text-primary tabular-nums">{{ $rekapBulanIni->sakit }}</div>
+        <div class="font-label-sm text-label-sm text-on-surface-variant uppercase">Sakit</div>
+      </div>
+      <div class="p-space-sm rounded-lg {{ $rekapBulanIni->alpha > 0 ? 'bg-error-container' : 'bg-surface-container-low' }} text-center">
+        <div class="font-headline-sm text-headline-sm {{ $rekapBulanIni->alpha > 0 ? 'text-error' : 'text-primary' }} tabular-nums">{{ $rekapBulanIni->alpha }}</div>
+        <div class="font-label-sm text-label-sm {{ $rekapBulanIni->alpha > 0 ? 'text-error' : 'text-on-surface-variant' }} uppercase">Alpha</div>
+      </div>
+      <div class="p-space-sm rounded-lg bg-surface-container-low text-center">
+        <div class="font-headline-sm text-headline-sm text-primary tabular-nums">{{ $rekapBulanIni->lokasi_bandung }}/{{ $rekapBulanIni->lokasi_jakarta }}</div>
+        <div class="font-label-sm text-label-sm text-on-surface-variant uppercase">Bandung/Jakarta</div>
+      </div>
+    </div>
+  @else
+    <p class="font-body-md text-body-md text-on-surface-variant pt-space-base">Belum ada rekap bulanan HR untuk karyawan &amp; periode ini.</p>
+  @endif
+
+  <p class="font-body-sm text-body-sm text-on-surface-variant pt-space-base">
+    Catatan: kategori WFH/WFO belum ada di sistem &mdash; data lokasi yang tersedia baru sebatas on-site Bandung/Jakarta dari rekap bulanan HR.
+  </p>
 </div>
 
 <div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-x-auto">

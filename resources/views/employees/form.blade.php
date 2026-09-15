@@ -26,9 +26,30 @@
   </div>
 
   <div>
+    <label class="block font-title-sm text-title-sm text-on-surface mb-1">Jenis Kelamin</label>
+    <select name="jenis_kelamin" class="w-full rounded-lg border-0 bg-surface-container-low font-body-md text-body-md focus:ring-2 focus:ring-primary-container">
+      <option value="">-- Pilih --</option>
+      <option value="L" @selected(old('jenis_kelamin', $employee->jenis_kelamin) === 'L')>Laki-laki</option>
+      <option value="P" @selected(old('jenis_kelamin', $employee->jenis_kelamin) === 'P')>Perempuan</option>
+    </select>
+  </div>
+
+  <div>
     <label class="block font-title-sm text-title-sm text-on-surface mb-1">Jabatan</label>
     <input type="text" name="jabatan" value="{{ old('jabatan', $employee->jabatan) }}"
            class="w-full rounded-lg border-0 bg-surface-container-low font-body-md text-body-md focus:ring-2 focus:ring-primary-container">
+  </div>
+
+  <div>
+    <label class="block font-title-sm text-title-sm text-on-surface mb-1">No. HP</label>
+    <input type="text" name="no_hp" value="{{ old('no_hp', $employee->no_hp) }}" placeholder="08xxxxxxxxxx"
+           class="w-full rounded-lg border-0 bg-surface-container-low font-body-md text-body-md focus:ring-2 focus:ring-primary-container">
+  </div>
+
+  <div>
+    <label class="block font-title-sm text-title-sm text-on-surface mb-1">Alamat</label>
+    <textarea name="alamat" rows="3"
+              class="w-full rounded-lg border-0 bg-surface-container-low font-body-md text-body-md focus:ring-2 focus:ring-primary-container">{{ old('alamat', $employee->alamat) }}</textarea>
   </div>
 
   <div>
@@ -41,6 +62,19 @@
         </option>
       @endforeach
     </select>
+  </div>
+
+  <div>
+    <label class="block font-title-sm text-title-sm text-on-surface mb-1">Akun Login (opsional)</label>
+    <select name="user_id" class="w-full rounded-lg border-0 bg-surface-container-low font-body-md text-body-md focus:ring-2 focus:ring-primary-container">
+      <option value="">-- Tidak dihubungkan --</option>
+      @foreach ($availableUsers as $user)
+        <option value="{{ $user->id }}" @selected(old('user_id', $employee->user_id) == $user->id)>
+          {{ $user->name }} ({{ $user->email }})
+        </option>
+      @endforeach
+    </select>
+    <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Hubungkan ke akun HR/Direktur biar Jabatan &amp; Divisi muncul di halaman Profil mereka.</p>
   </div>
 
   <div class="flex items-center gap-3 pt-2">

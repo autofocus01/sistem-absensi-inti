@@ -17,7 +17,10 @@
 </head>
 <body>
   <h1>Rekap Absensi Eksekutif &mdash; PT. INTI (Persero)</h1>
-  <p class="subtitle">Periode: {{ $namaBulan }} {{ $tahun }}</p>
+  <p class="subtitle">
+    Periode: {{ $namaBulan }} {{ $tahun }} &bull;
+    Divisi: {{ $divisionId ? ($divisions->firstWhere('id', (int) $divisionId)->nama ?? 'Semua Divisi') : 'Semua Divisi' }}
+  </p>
 
   <table class="kpi-table">
     <tr><td><strong>Total Tenaga Kerja</strong></td><td>{{ number_format($totalKaryawan) }} orang</td></tr>
@@ -30,6 +33,21 @@
     <tr><td><strong>Sebaran Lokasi - Bandung</strong></td><td>{{ $totalHariBandung }} hari ({{ $persenBandung }}%)</td></tr>
     <tr><td><strong>Sebaran Lokasi - Jakarta</strong></td><td>{{ $totalHariJakarta }} hari ({{ $persenJakarta }}%)</td></tr>
   </table>
+
+  <table>
+    <thead>
+      <tr><th colspan="2">Komposisi Kehadiran</th></tr>
+    </thead>
+    <tbody>
+      @foreach ($komposisi as $label => $jumlah)
+      <tr>
+        <td>{{ $label }}</td>
+        <td>{{ number_format($jumlah) }} hari ({{ round(($jumlah / $totalKomposisi) * 100, 1) }}%)</td>
+      </tr>
+      @endforeach
+    </tbody>
+  </table>
+  <br>
 
   <table>
     <thead>
