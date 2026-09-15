@@ -63,6 +63,33 @@
   </div>
 </div>
 
+{{-- Tren Kehadiran Mingguan - SVG polyline murni, data real dari attendance_logs --}}
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg mb-space-lg">
+  <div class="flex items-center gap-2 pb-space-base border-b border-surface-container-low">
+    <span class="material-symbols-outlined text-primary text-[22px]">show_chart</span>
+    <h2 class="font-headline-md text-headline-md text-primary">Tren Kehadiran Mingguan</h2>
+  </div>
+
+  <div class="pt-space-base overflow-x-auto">
+    <svg viewBox="0 0 {{ $lebarChart }} {{ $tinggiChart }}" class="w-full min-w-[420px] h-36" preserveAspectRatio="none">
+      <line x1="20" y1="20" x2="{{ $lebarChart - 20 }}" y2="20" stroke="#eff4ff" stroke-width="1" />
+      <line x1="20" y1="70" x2="{{ $lebarChart - 20 }}" y2="70" stroke="#eff4ff" stroke-width="1" />
+      <line x1="20" y1="120" x2="{{ $lebarChart - 20 }}" y2="120" stroke="#c3c6ce" stroke-width="1" />
+
+      <polyline points="{{ $svgPolyline }}" fill="none" stroke="#0f2942" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+
+      @foreach ($svgPoints as $p)
+        <circle cx="{{ $p['x'] }}" cy="{{ $p['y'] }}" r="4" fill="#0f2942" />
+        <text x="{{ $p['x'] }}" y="{{ $p['y'] - 10 }}" text-anchor="middle" font-size="11" fill="#001428" font-weight="600">{{ $p['rate'] }}%</text>
+        <text x="{{ $p['x'] }}" y="134" text-anchor="middle" font-size="10" fill="#43474d">{{ $p['label'] }}</text>
+      @endforeach
+    </svg>
+  </div>
+  <p class="font-body-sm text-body-sm text-on-surface-variant pt-space-sm">
+    Persentase kehadiran per minggu (hari hadir tercatat / total hari kerja Senin-Jumat &times; jumlah karyawan pada cakupan filter).
+  </p>
+</div>
+
 @if ($totalJamLemburPending > 0)
 <form method="POST" action="{{ route('team-recap.approve-all') }}" class="mb-space-lg" onsubmit="return confirm('Setujui SEMUA lembur pending pada filter ini sekaligus?')">
   @csrf

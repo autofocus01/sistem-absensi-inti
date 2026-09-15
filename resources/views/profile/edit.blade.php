@@ -21,7 +21,7 @@
         "surface-container":"#e6eeff","surface-container-high":"#dce9ff","secondary-container":"#86f2e4",
         "tertiary-container":"#401f00","on-tertiary":"#ffffff","tertiary":"#220e00","on-tertiary-container":"#d77503"},
       spacing: {"space-2xl":"3rem","space-md":"0.75rem","gutter-desktop":"1.5rem","space-lg":"1.5rem",
-        "space-base":"1rem","space-sm":"0.5rem","space-xl":"2rem","space-xs":"0.25rem"},
+        "space-base":"1rem","space-sm":"0.5rem","space-xl":"2rem","space-xs":"0.25rem","space-2xs":"0.125rem"},
       fontFamily: {"title-md":["Plus Jakarta Sans"],"label-md":["Plus Jakarta Sans"],
         "headline-sm":["Plus Jakarta Sans"],"body-sm":["Plus Jakarta Sans"],
         "headline-lg":["Plus Jakarta Sans"],"body-md":["Plus Jakarta Sans"],
@@ -66,7 +66,6 @@
 
 <main class="max-w-4xl mx-auto px-4 md:px-space-xl py-space-xl">
 
-  {{-- Header ringkas - versi minimal dari hero mockup, tanpa data karangan --}}
   <div class="rounded-2xl bg-primary-container p-space-xl mb-space-xl flex flex-col sm:flex-row sm:items-center gap-space-lg">
     <div class="w-20 h-20 rounded-2xl bg-surface-container-lowest/10 flex items-center justify-center text-on-primary font-headline-lg text-headline-lg shrink-0">
       {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
@@ -91,7 +90,6 @@
     </div>
   @endif
 
-  {{-- Tab bar - cuma 2 tab yang datanya real, bukan 5 tab mockup --}}
   <div class="w-full bg-surface-container-lowest rounded-xl p-1.5 mb-space-xl shadow-sm overflow-x-auto">
     <div class="flex items-center gap-1 min-w-max">
       <button type="button" onclick="showTab('biodata')" id="tabbtn-biodata"
@@ -105,8 +103,72 @@
     </div>
   </div>
 
-  {{-- TAB 1: BIODATA --}}
   <div id="tab-biodata" class="flex flex-col gap-space-xl">
+
+    @php($employee = auth()->user()->employee)
+
+    <div class="bg-surface-container-lowest rounded-2xl p-space-xl shadow-sm">
+      <div class="flex items-center gap-space-sm pb-space-lg">
+        <div class="w-10 h-10 rounded-xl bg-surface-container-low flex items-center justify-center text-primary">
+          <span class="material-symbols-outlined text-[22px]">badge</span>
+        </div>
+        <div class="flex flex-col">
+          <span class="font-headline-sm text-headline-sm text-on-surface">Data Kepegawaian</span>
+          <span class="font-body-sm text-body-sm text-on-surface-variant">Jabatan &amp; divisi berdasarkan data karyawan yang terhubung</span>
+        </div>
+      </div>
+
+      @if ($employee)
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-space-base">
+          <div class="flex flex-col gap-space-2xs p-space-md rounded-xl bg-surface-container-low">
+            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">NIPEG</span>
+            <span class="font-title-md text-title-md text-on-surface">{{ $employee->nipeg }}</span>
+          </div>
+          <div class="flex flex-col gap-space-2xs p-space-md rounded-xl bg-surface-container-low">
+            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Jabatan</span>
+            <span class="font-title-md text-title-md text-on-surface">{{ $employee->jabatan ?: '-' }}</span>
+          </div>
+          <div class="flex flex-col gap-space-2xs p-space-md rounded-xl bg-surface-container-low">
+            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Divisi</span>
+            <span class="font-title-md text-title-md text-on-surface">{{ $employee->division->nama }}</span>
+          </div>
+        </div>
+      @else
+        <p class="font-body-md text-body-md text-on-surface-variant">
+          Akun ini belum dihubungkan ke data karyawan manapun. Hubungi HR untuk menghubungkan akun ini
+          lewat halaman <span class="font-semibold text-on-surface">Data Karyawan &rarr; Edit &rarr; Akun Login</span>,
+          supaya Jabatan &amp; Divisi bisa tampil di sini.
+        </p>
+      @endif
+    </div>
+
+    <div class="bg-surface-container-lowest rounded-2xl p-space-xl shadow-sm">
+      <div class="flex items-center gap-space-sm pb-space-lg">
+        <div class="w-10 h-10 rounded-xl bg-surface-container-low flex items-center justify-center text-primary">
+          <span class="material-symbols-outlined text-[22px]">domain</span>
+        </div>
+        <div class="flex flex-col">
+          <span class="font-headline-sm text-headline-sm text-on-surface">Kontak &amp; Lokasi Kantor</span>
+          <span class="font-body-sm text-body-sm text-on-surface-variant">Kantor Pusat &mdash; Bandung</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-space-base">
+        <div class="flex flex-col gap-space-2xs p-space-md rounded-xl bg-surface-container-low sm:col-span-2">
+          <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Alamat Kantor</span>
+          <span class="font-title-md text-title-md text-on-surface">Jl. Moch. Toha No.77, Cigereleng, Kec. Regol, Kota Bandung, Jawa Barat 40253</span>
+        </div>
+        <div class="flex flex-col gap-space-2xs p-space-md rounded-xl bg-surface-container-low">
+          <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Telepon Kantor</span>
+          <span class="font-title-md text-title-md text-on-surface">(022) 520-1501</span>
+        </div>
+        <div class="flex flex-col gap-space-2xs p-space-md rounded-xl bg-surface-container-low">
+          <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Email Korporat Anda</span>
+          <span class="font-title-md text-title-md text-on-surface break-all">{{ auth()->user()->email }}</span>
+        </div>
+      </div>
+    </div>
+
     <div class="bg-surface-container-lowest rounded-2xl p-space-xl shadow-sm">
       <div class="flex items-center gap-space-sm pb-space-lg">
         <div class="w-10 h-10 rounded-xl bg-surface-container-low flex items-center justify-center text-primary">
@@ -114,7 +176,20 @@
         </div>
         <div class="flex flex-col">
           <span class="font-headline-sm text-headline-sm text-on-surface">Data Akun</span>
-          <span class="font-body-sm text-body-sm text-on-surface-variant">Nama & email dipakai untuk login ke sistem</span>
+          <span class="font-body-sm text-body-sm text-on-surface-variant">Nama &amp; email dipakai untuk login ke sistem</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-space-base mb-space-lg">
+        <div class="flex flex-col gap-space-2xs p-space-md rounded-xl bg-surface-container-low">
+          <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Role</span>
+          <span class="font-title-md text-title-md text-on-surface">{{ auth()->user()->isDirekturUtama() ? 'Direktur Utama' : 'HR & Administrasi' }}</span>
+          <span class="font-body-sm text-body-sm text-on-surface-variant">Diatur administrator, tidak bisa diubah sendiri</span>
+        </div>
+        <div class="flex flex-col gap-space-2xs p-space-md rounded-xl bg-surface-container-low">
+          <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Terdaftar Sejak</span>
+          <span class="font-title-md text-title-md text-on-surface">{{ auth()->user()->created_at->translatedFormat('d F Y') }}</span>
+          <span class="font-body-sm text-body-sm text-on-surface-variant">Tanggal akun dibuat di sistem</span>
         </div>
       </div>
 
@@ -136,12 +211,6 @@
           @error('email') <p class="text-error text-sm mt-1">{{ $message }}</p> @enderror
         </div>
 
-        <div class="flex flex-col gap-space-2xs p-space-md rounded-xl bg-surface-container-low w-fit">
-          <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Role</span>
-          <span class="font-title-md text-title-md text-on-surface">{{ auth()->user()->isDirekturUtama() ? 'Direktur Utama' : 'HR & Administrasi' }}</span>
-          <span class="font-body-sm text-body-sm text-on-surface-variant">Diatur oleh administrator sistem, tidak bisa diubah sendiri</span>
-        </div>
-
         <div>
           <button type="submit" class="px-4 py-2 rounded-lg bg-primary-container text-on-primary font-title-sm text-title-sm shadow-sm hover:bg-primary transition-colors">Simpan Perubahan</button>
         </div>
@@ -149,7 +218,6 @@
     </div>
   </div>
 
-  {{-- TAB 2: KEAMANAN --}}
   <div id="tab-keamanan" class="hidden flex flex-col gap-space-xl">
     <div class="bg-surface-container-lowest rounded-2xl p-space-xl shadow-sm">
       <div class="flex items-center gap-space-sm pb-space-lg">
@@ -158,7 +226,7 @@
         </div>
         <div class="flex flex-col">
           <span class="font-headline-sm text-headline-sm text-on-surface">Ganti Password</span>
-          <span class="font-body-sm text-body-sm text-on-surface-variant">Pastikan pakai password yang panjang & unik</span>
+          <span class="font-body-sm text-body-sm text-on-surface-variant">Pastikan pakai password yang panjang &amp; unik</span>
         </div>
       </div>
 
