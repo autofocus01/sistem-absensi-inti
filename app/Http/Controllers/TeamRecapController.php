@@ -70,19 +70,34 @@ class TeamRecapController extends Controller
         }
 
         // Koordinat SVG dihitung di sini (bukan @php di Blade) - viewBox 400x140.
-        $lebarChart = 400;
-        $tinggiChart = 140;
-        $paddingChart = 20;
-        $jumlahTitik = count($trenMingguan);
-        $svgPoints = [];
-        foreach ($trenMingguan as $i => $minggu) {
-            $x = $jumlahTitik > 1
-                ? $paddingChart + ($i * (($lebarChart - 2 * $paddingChart) / ($jumlahTitik - 1)))
-                : $lebarChart / 2;
-            $y = $tinggiChart - $paddingChart - (($minggu['rate'] / 100) * ($tinggiChart - 2 * $paddingChart));
-            $svgPoints[] = ['x' => round($x, 1), 'y' => round($y, 1), 'rate' => $minggu['rate'], 'label' => $minggu['label'], 'rentang' => $minggu['rentang']];
-        }
-        $svgPolyline = implode(' ', array_map(fn ($p) => "{$p['x']},{$p['y']}", $svgPoints));
+// Sesuaikan ukuran canvas SVG dan padding
+$lebarChart = 800;
+$tinggiChart = 200; // dinaikkan dari 150 ke 200 agar lebih lega
+$paddingTop = 40;   // beri batas atas khusus agar teks nilai tidak terpotong
+$paddingBottom = 40;// beri batas bawah untuk label minggu
+$paddingX = 40;
+
+$jumlahTitik = count($trenMingguan);
+$svgPoints = [];
+
+foreach ($trenMingguan as $i => $minggu) {
+    $x = $jumlahTitik > 1
+        ? $paddingX + ($i * (($lebarChart - 2 * $paddingX) / ($jumlahTitik - 1)))
+        : $lebarChart / 2;
+
+    // Hitung posisi Y berdasarkan rentang tinggi efektif (tinggiChart - paddingTop - paddingBottom)
+    $tinggiEfektif = $tinggiChart - $paddingTop - $paddingBottom;
+    $y = $tinggiChart - $paddingBottom - (($minggu['rate'] / 100) * $tinggiEfektif);
+
+    $svgPoints[] = [
+        'x' => round($x, 1),
+        'y' => round($y, 1),
+        'rate' => $minggu['rate'],
+        'label' => $minggu['label'],
+        'rentang' => $minggu['rentang']
+    ];
+}
+$svgPolyline = implode(' ', array_map(fn ($p) => "{$p['x']},{$p['y']}", $svgPoints));
 
         $page = (int) $request->input('page', 1);
         $perPage = 20;
