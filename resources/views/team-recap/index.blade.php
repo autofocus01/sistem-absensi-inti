@@ -63,7 +63,7 @@
   </div>
 </div>
 
-{{-- Tren Kehadiran Mingguan --}}
+{{-- Tren Kehadiran Mingguan - SVG polyline murni, data real dari attendance_logs --}}
 <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg mb-space-lg">
   <div class="flex items-center gap-2 pb-space-base border-b border-surface-container-low">
     <span class="material-symbols-outlined text-primary text-[22px]">show_chart</span>
@@ -71,37 +71,31 @@
   </div>
 
   <div class="pt-space-base overflow-x-auto">
-    {{-- Hapus min-w kasar dan ganti height bawaan agar tidak terdistorsi --}}
-    <svg viewBox="0 0 {{ $lebarChart }} {{ $tinggiChart }}" class="w-full h-auto max-h-56">
-      <!-- Garis bantu background -->
-      <line x1="20" y1="40" x2="{{ $lebarChart - 20 }}" y2="40" stroke="#eff4ff" stroke-width="1" />
-      <line x1="20" y1="100" x2="{{ $lebarChart - 20 }}" y2="100" stroke="#eff4ff" stroke-width="1" />
-      <line x1="20" y1="160" x2="{{ $lebarChart - 20 }}" y2="160" stroke="#c3c6ce" stroke-width="1" />
+    <div class="min-w-[420px] max-w-2xl mx-auto">
+      <svg viewBox="0 0 {{ $lebarChart }} {{ $tinggiChart }}" class="w-full h-auto block" style="aspect-ratio: {{ $lebarChart }} / {{ $tinggiChart }};">
+        <line x1="20" y1="20" x2="{{ $lebarChart - 20 }}" y2="20" stroke="#eff4ff" stroke-width="1" />
+        <line x1="20" y1="70" x2="{{ $lebarChart - 20 }}" y2="70" stroke="#eff4ff" stroke-width="1" />
+        <line x1="20" y1="120" x2="{{ $lebarChart - 20 }}" y2="120" stroke="#c3c6ce" stroke-width="1" />
 
-      <!-- Garis Tren -->
-      <polyline points="{{ $svgPolyline }}" fill="none" stroke="#0f2942" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+        <polyline points="{{ $svgPolyline }}" fill="none" stroke="#0f2942" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
 
-      <!-- Titik dan Label -->
-      @foreach ($svgPoints as $p)
-        <circle cx="{{ $p['x'] }}" cy="{{ $p['y'] }}" r="4" fill="#0f2942" />
-        
-        <!-- Nilai Persentase -->
-        <text x="{{ $p['x'] }}" y="{{ $p['y'] - 12 }}" text-anchor="middle" font-size="12" fill="#001428" font-weight="600">
-          {{ $p['rate'] }}%
-        </text>
-        
-        <!-- Label Minggu & Rentang Tanggal -->
-        <text x="{{ $p['x'] }}" y="178" text-anchor="middle" font-size="11" fill="#43474d" font-weight="500">
-          {{ $p['label'] }}
-        </text>
-        <text x="{{ $p['x'] }}" y="192" text-anchor="middle" font-size="9" fill="#8e9199">
-          ({{ $p['rentang'] }})
-        </text>
-      @endforeach
-    </svg>
+        @foreach ($svgPoints as $p)
+          <circle cx="{{ $p['x'] }}" cy="{{ $p['y'] }}" r="4" fill="#0f2942" />
+          <text x="{{ $p['x'] }}" y="{{ $p['y'] - 10 }}" text-anchor="middle" font-size="11" fill="#001428" font-weight="600">{{ $p['rate'] }}%</text>
+        @endforeach
+      </svg>
+
+      {{-- Label minggu dirender sebagai HTML biasa (bukan di dalam SVG) biar nggak pernah kepotong --}}
+      <div class="flex justify-between px-[15px] pt-1">
+        @foreach ($svgPoints as $p)
+          <span class="font-body-sm text-body-sm text-on-surface-variant text-center" style="width: {{ 100 / count($svgPoints) }}%;">{{ $p['label'] }}</span>
+        @endforeach
+      </div>
+    </div>
   </div>
   <p class="font-body-sm text-body-sm text-on-surface-variant pt-space-sm">
     Persentase kehadiran per minggu (hari hadir tercatat / total hari kerja Senin-Jumat &times; jumlah karyawan pada cakupan filter).
+    Skala sumbu vertikal otomatis nyesuain rentang data ({{ $rateMin }}%&ndash;{{ $rateMax }}%), bukan tetap 0-100%.
   </p>
 </div>
 

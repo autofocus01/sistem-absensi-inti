@@ -43,6 +43,9 @@ class TeamRecapController extends Controller
 
         // Tren Kehadiran Mingguan: bagi tanggal 1..akhir bulan jadi kelompok 7 harian (Minggu 1-4/5),
         // rate = jumlah hari hadir / (jumlah karyawan x hari kerja Senin-Jumat di minggu itu).
+        // Hari libur nasional tanggal tetap dikeluarkan dari hitungan hari kerja, biar nggak bikin
+        // rate keliatan drop palsu (misal 17 Agustus = Hari Kemerdekaan, kantor tutup).
+        $liburNasionalTanggalTetap = ['01-01', '05-01', '06-01', '08-17', '12-25']; // Tahun Baru, Buruh, Pancasila, Kemerdekaan, Natal
         $jumlahKaryawanScope = Employee::when($divisionId, fn ($q) => $q->where('division_id', $divisionId))->count();
         $akhirBulan = \Carbon\Carbon::create($tahun, $bulan, 1)->endOfMonth()->day;
         $trenMingguan = [];
@@ -53,7 +56,8 @@ class TeamRecapController extends Controller
 
             $hariKerjaMinggu = 0;
             for ($d = $tanggalMulai->copy(); $d->lte($tanggalAkhir); $d->addDay()) {
-                if ($d->dayOfWeekIso <= 5) {
+                $isLiburTetap = in_array($d->format('m-d'), $liburNasionalTanggalTetap, true);
+                if ($d->dayOfWeekIso <= 5 && ! $isLiburTetap) {
                     $hariKerjaMinggu++;
                 }
             }
@@ -70,34 +74,30 @@ class TeamRecapController extends Controller
         }
 
         // Koordinat SVG dihitung di sini (bukan @php di Blade) - viewBox 400x140.
-// Sesuaikan ukuran canvas SVG dan padding
-$lebarChart = 800;
-$tinggiChart = 200; // dinaikkan dari 150 ke 200 agar lebih lega
-$paddingTop = 40;   // beri batas atas khusus agar teks nilai tidak terpotong
-$paddingBottom = 40;// beri batas bawah untuk label minggu
-$paddingX = 40;
+        // Skala Y otomatis nyesuain rentang data (bukan fix 0-100%) - kalau semua nilai
+        // ngumpul di 90-98%, chart-nya nge-zoom ke rentang itu biar variasinya keliatan.
+        $lebarChart = 400;
+        $tinggiChart = 140;
+        $paddingChart = 20;
+        $jumlahTitik = count($trenMingguan);
+        $semuaRate = array_column($trenMingguan, 'rate');
+        $rateMin = max(0, (min($semuaRate) ?: 0) - 5);
+        $rateMax = min(100, (max($semuaRate) ?: 100) + 5);
+        if ($rateMax - $rateMin < 5) {
+            $rateMin = max(0, $rateMin - 5);
+            $rateMax = min(100, $rateMax + 5);
+        }
+        $rentangRate = ($rateMax - $rateMin) ?: 1;
 
-$jumlahTitik = count($trenMingguan);
-$svgPoints = [];
-
-foreach ($trenMingguan as $i => $minggu) {
-    $x = $jumlahTitik > 1
-        ? $paddingX + ($i * (($lebarChart - 2 * $paddingX) / ($jumlahTitik - 1)))
-        : $lebarChart / 2;
-
-    // Hitung posisi Y berdasarkan rentang tinggi efektif (tinggiChart - paddingTop - paddingBottom)
-    $tinggiEfektif = $tinggiChart - $paddingTop - $paddingBottom;
-    $y = $tinggiChart - $paddingBottom - (($minggu['rate'] / 100) * $tinggiEfektif);
-
-    $svgPoints[] = [
-        'x' => round($x, 1),
-        'y' => round($y, 1),
-        'rate' => $minggu['rate'],
-        'label' => $minggu['label'],
-        'rentang' => $minggu['rentang']
-    ];
-}
-$svgPolyline = implode(' ', array_map(fn ($p) => "{$p['x']},{$p['y']}", $svgPoints));
+        $svgPoints = [];
+        foreach ($trenMingguan as $i => $minggu) {
+            $x = $jumlahTitik > 1
+                ? $paddingChart + ($i * (($lebarChart - 2 * $paddingChart) / ($jumlahTitik - 1)))
+                : $lebarChart / 2;
+            $y = $tinggiChart - $paddingChart - ((($minggu['rate'] - $rateMin) / $rentangRate) * ($tinggiChart - 2 * $paddingChart));
+            $svgPoints[] = ['x' => round($x, 1), 'y' => round($y, 1), 'rate' => $minggu['rate'], 'label' => $minggu['label'], 'rentang' => $minggu['rentang']];
+        }
+        $svgPolyline = implode(' ', array_map(fn ($p) => "{$p['x']},{$p['y']}", $svgPoints));
 
         $page = (int) $request->input('page', 1);
         $perPage = 20;
@@ -122,6 +122,8 @@ $svgPolyline = implode(' ', array_map(fn ($p) => "{$p['x']},{$p['y']}", $svgPoin
             'totalJamLemburDisetujui'   => round($totalMenitLemburDisetujui / 60, 1),
             'totalHariTelat'            => $totalHariTelat,
             'trenMingguan'              => $trenMingguan,
+            'rateMin'                   => round($rateMin, 1),
+            'rateMax'                   => round($rateMax, 1),
             'svgPoints'                 => $svgPoints,
             'svgPolyline'               => $svgPolyline,
             'lebarChart'                => $lebarChart,

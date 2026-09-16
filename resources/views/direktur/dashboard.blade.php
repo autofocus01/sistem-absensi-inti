@@ -9,6 +9,7 @@
 <link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
   tailwind.config = {
     darkMode: "class",
@@ -287,6 +288,43 @@
         </div>
       </div>
 
+      {{-- Tren Kehadiran & Alpha 6 Bulan Terakhir --}}
+      <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg mb-space-xl border border-surface-container-low">
+        <div class="flex items-center justify-between pb-space-base border-b border-surface-container-low">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary text-[22px]">trending_up</span>
+            <h2 class="font-headline-md text-headline-md text-primary">Tren Kehadiran &amp; Alpha (6 Bulan Terakhir)</h2>
+          </div>
+          <span class="font-label-sm text-label-sm text-on-surface-variant">{{ $divisionId ? $divisions->firstWhere('id', (int) $divisionId)?->nama : 'Semua Divisi' }}</span>
+        </div>
+        <div class="py-space-base h-72">
+          <canvas id="chart-tren"></canvas>
+        </div>
+      </div>
+
+      {{-- Grafik perbandingan antar divisi --}}
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-space-md mb-space-xl">
+        <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg border border-surface-container-low">
+          <div class="flex items-center gap-2 pb-space-base border-b border-surface-container-low">
+            <span class="material-symbols-outlined text-primary text-[22px]">bar_chart</span>
+            <h2 class="font-headline-md text-headline-md text-primary">Rata-rata Kehadiran per Divisi</h2>
+          </div>
+          <div class="py-space-base h-80">
+            <canvas id="chart-divisi-kehadiran"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg border border-surface-container-low">
+          <div class="flex items-center gap-2 pb-space-base border-b border-surface-container-low">
+            <span class="material-symbols-outlined text-primary text-[22px]">error</span>
+            <h2 class="font-headline-md text-headline-md text-primary">Alpha &amp; Hari Telat per Divisi</h2>
+          </div>
+          <div class="py-space-base h-80">
+            <canvas id="chart-divisi-alpha"></canvas>
+          </div>
+        </div>
+      </div>
+
       {{-- Bagan struktur --}}
       <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg mb-space-xl border border-surface-container-low">
         <div class="flex items-center gap-2 pb-space-base border-b border-surface-container-low">
@@ -334,7 +372,11 @@
           <span class="font-label-sm text-label-sm text-on-surface-variant">{{ number_format($totalHariBandung + $totalHariJakarta) }} hari presensi tercatat</span>
         </div>
 
-        <div class="py-space-base space-y-space-sm">
+        <div class="py-space-base flex flex-col lg:flex-row gap-space-lg items-stretch">
+        <div class="w-full lg:w-48 shrink-0 h-40 lg:h-auto">
+          <canvas id="chart-lokasi"></canvas>
+        </div>
+        <div class="flex-1 space-y-space-sm">
           <div class="p-space-base rounded-xl bg-surface-container-low flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">
             <div class="flex items-start gap-space-sm">
               <div class="p-2 rounded-lg bg-surface-container-lowest text-primary shadow-sm mt-0.5">
@@ -377,6 +419,7 @@
             </div>
           </div>
         </div>
+        </div>
       </div>
 
       {{-- Donut Chart Komposisi Kehadiran - CSS conic-gradient murni, data real dari rekap bulanan --}}
@@ -387,8 +430,9 @@
         </div>
 
         <div class="flex flex-col md:flex-row items-center gap-space-xl py-space-base">
-          <div class="w-48 h-48 rounded-full shrink-0 relative" style="background: conic-gradient({{ $gradientCss }});">
-            <div class="absolute inset-4 rounded-full bg-surface-container-lowest flex flex-col items-center justify-center">
+          <div class="w-48 h-48 shrink-0 relative">
+            <canvas id="chart-komposisi"></canvas>
+            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               <span class="font-headline-md text-headline-md text-primary tabular-nums">{{ number_format($totalKomposisi) }}</span>
               <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Total Hari</span>
             </div>
@@ -546,6 +590,168 @@
   document.addEventListener('DOMContentLoaded', function () {
     const initial = window.location.hash === '#otorisasi' ? 'otorisasi' : 'ringkasan';
     showTab(initial);
+  });
+</script>
+
+<script>
+  // ===== Data grafik, dikirim langsung dari controller (data asli, bukan dummy) =====
+  const komposisiData   = @json($komposisiDenganPersen);
+  const trenBulanan     = @json($trenBulanan);
+  const matriksDivisi   = @json($matriksDivisi);
+  const lokasiData      = { bandung: {{ $totalHariBandung }}, jakarta: {{ $totalHariJakarta }} };
+
+  const palet = {
+    primary: '#0f2942',
+    secondary: '#006a61',
+    error: '#ba1a1a',
+    outline: '#74777e',
+    grid: 'rgba(67,71,77,0.08)',
+    text: '#43474d',
+  };
+
+  Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+  Chart.defaults.color = palet.text;
+
+  // 1) Doughnut - Komposisi Kehadiran
+  new Chart(document.getElementById('chart-komposisi'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(komposisiData),
+      datasets: [{
+        data: Object.values(komposisiData).map(v => v.jumlah),
+        backgroundColor: Object.values(komposisiData).map(v => v.warna),
+        borderWidth: 2,
+        borderColor: '#ffffff',
+      }],
+    },
+    options: {
+      cutout: '72%',
+      plugins: { legend: { display: false } },
+      responsive: true,
+      maintainAspectRatio: false,
+    },
+  });
+
+  // 2) Line - Tren Kehadiran & Alpha 6 Bulan Terakhir (dua sumbu-Y)
+  new Chart(document.getElementById('chart-tren'), {
+    type: 'line',
+    data: {
+      labels: trenBulanan.map(t => t.label),
+      datasets: [
+        {
+          label: 'Rata-rata Kehadiran (%)',
+          data: trenBulanan.map(t => t.rata_kehadiran),
+          borderColor: palet.primary,
+          backgroundColor: palet.primary,
+          yAxisID: 'y',
+          tension: 0.35,
+          fill: false,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        },
+        {
+          label: 'Total Alpha',
+          data: trenBulanan.map(t => t.total_alpha),
+          borderColor: palet.error,
+          backgroundColor: palet.error,
+          yAxisID: 'y1',
+          tension: 0.35,
+          fill: false,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          borderDash: [4, 3],
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { position: 'bottom' } },
+      scales: {
+        y:  { position: 'left',  min: 0, max: 100, grid: { color: palet.grid }, title: { display: true, text: 'Kehadiran (%)' } },
+        y1: { position: 'right', min: 0, grid: { display: false }, title: { display: true, text: 'Alpha (hari)' } },
+        x:  { grid: { display: false } },
+      },
+    },
+  });
+
+  // 3) Bar horizontal - Rata-rata Kehadiran per Divisi
+  new Chart(document.getElementById('chart-divisi-kehadiran'), {
+    type: 'bar',
+    data: {
+      labels: matriksDivisi.map(d => d.divisi),
+      datasets: [{
+        label: 'Rata-rata Kehadiran (%)',
+        data: matriksDivisi.map(d => d.rata_kehadiran),
+        backgroundColor: matriksDivisi.map(d => d.perlu_ditinjau ? palet.error : palet.secondary),
+        borderRadius: 6,
+        maxBarThickness: 28,
+      }],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { min: 0, max: 100, grid: { color: palet.grid }, title: { display: true, text: 'Persen Kehadiran' } },
+        y: { grid: { display: false } },
+      },
+    },
+  });
+
+  // 4) Bar grup - Alpha & Hari Telat per Divisi
+  new Chart(document.getElementById('chart-divisi-alpha'), {
+    type: 'bar',
+    data: {
+      labels: matriksDivisi.map(d => d.divisi),
+      datasets: [
+        {
+          label: 'Total Alpha',
+          data: matriksDivisi.map(d => d.total_alpha),
+          backgroundColor: palet.error,
+          borderRadius: 6,
+          maxBarThickness: 24,
+        },
+        {
+          label: 'Hari Telat',
+          data: matriksDivisi.map(d => d.total_telat_hari),
+          backgroundColor: palet.outline,
+          borderRadius: 6,
+          maxBarThickness: 24,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom' } },
+      scales: {
+        x: { grid: { display: false } },
+        y: { beginAtZero: true, grid: { color: palet.grid } },
+      },
+    },
+  });
+
+  // 5) Doughnut - Sebaran Lokasi
+  new Chart(document.getElementById('chart-lokasi'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Bandung', 'Jakarta'],
+      datasets: [{
+        data: [lokasiData.bandung, lokasiData.jakarta],
+        backgroundColor: [palet.primary, palet.secondary],
+        borderWidth: 2,
+        borderColor: '#ffffff',
+      }],
+    },
+    options: {
+      cutout: '65%',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12 } } },
+    },
   });
 </script>
 </body>

@@ -106,6 +106,24 @@ class DirekturDashboardController extends Controller
         $persenBandung = $totalHariLokasi > 0 ? round(($totalHariBandung / $totalHariLokasi) * 100, 1) : 0;
         $persenJakarta = $totalHariLokasi > 0 ? round(($totalHariJakarta / $totalHariLokasi) * 100, 1) : 0;
 
+        // Tren 6 bulan terakhir (termasuk periode yang dipilih) buat line chart -
+        // dihitung dari AttendanceRecap juga, jadi konsisten dengan angka KPI di atas.
+        $trenBulanan = collect(range(5, 0))
+            ->map(function (int $i) use ($tahun, $bulan, $divisionId) {
+                $periode = \Carbon\Carbon::create($tahun, $bulan, 1)->subMonths($i);
+
+                $recapPeriode = AttendanceRecap::where('tahun', $periode->year)
+                    ->where('bulan', $periode->month)
+                    ->when($divisionId, fn ($q) => $q->whereHas('employee', fn ($e) => $e->where('division_id', $divisionId)));
+
+                return [
+                    'label'          => $periode->translatedFormat('M Y'),
+                    'rata_kehadiran' => round((clone $recapPeriode)->avg('persen_kehadiran') ?? 0, 1),
+                    'total_alpha'    => (clone $recapPeriode)->sum('alpha'),
+                ];
+            })
+            ->values();
+
         $divisions = Division::orderBy('nama')->get();
 
         $matriksDivisi = $divisions
@@ -151,6 +169,7 @@ class DirekturDashboardController extends Controller
             'komposisiDenganPersen' => $komposisiDenganPersen,
             'gradientCss'       => $gradientCss,
             'matriksDivisi'     => $matriksDivisi,
+            'trenBulanan'       => $trenBulanan,
         ];
     }
 
