@@ -1,0 +1,13 @@
+<?php
+
+it('registers production preflight command', function () {
+    config([
+        'app.env' => 'local',
+        'app.debug' => true,
+        'app.key' => config('app.key') ?: 'base64:' . base64_encode(random_bytes(32)),
+    ]);
+
+    $this->artisan('production:preflight', [
+        '--no-db' => true,
+    ])->assertSuccessful();
+});

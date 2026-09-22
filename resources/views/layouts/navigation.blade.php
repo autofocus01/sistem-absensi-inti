@@ -15,6 +15,14 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+                    @if (Auth::user()->isKaryawan())
+                        <x-nav-link :href="route('attendance.my')" :active="request()->routeIs('attendance.my*')">
+                            {{ __('Absensi') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('overtime.index')" :active="request()->routeIs('overtime.index')">
+                            {{ __('Overtime') }}
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
 
@@ -70,6 +78,14 @@
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
+            @if (Auth::user()->isKaryawan())
+                <x-responsive-nav-link :href="route('attendance.my')" :active="request()->routeIs('attendance.my*')">
+                    {{ __('Absensi') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('overtime.index')" :active="request()->routeIs('overtime.index')">
+                    {{ __('Overtime') }}
+                </x-responsive-nav-link>
+            @endif
         </div>
 
         <!-- Responsive Settings Options -->

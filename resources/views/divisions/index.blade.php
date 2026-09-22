@@ -13,7 +13,7 @@
   </a>
 </div>
 
-<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-x-auto">
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-x-auto mb-space-lg">
   <table class="w-full text-left min-w-[560px]">
     <thead>
       <tr class="bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
@@ -49,4 +49,48 @@
     </tbody>
   </table>
 </div>
+
+{{-- Grafik sebaran karyawan per divisi --}}
+@if ($divisions->count() > 0)
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
+  <div class="flex items-center gap-2 pb-space-base border-b border-surface-container-low">
+    <span class="material-symbols-outlined text-primary text-[22px]">groups</span>
+    <h2 class="font-headline-md text-headline-md text-primary">Sebaran Karyawan per Divisi</h2>
+  </div>
+  <div class="pt-space-base h-72">
+    <canvas id="chart-divisi-headcount"></canvas>
+  </div>
+</div>
+@endif
+@endsection
+
+@section('scripts')
+<script>
+  const divisiHeadcount = @json($divisions->map(fn ($d) => ['nama' => $d->nama, 'jumlah' => $d->employees_count]));
+
+  if (divisiHeadcount.length > 0) {
+    new Chart(document.getElementById('chart-divisi-headcount'), {
+      type: 'bar',
+      data: {
+        labels: divisiHeadcount.map(d => d.nama),
+        datasets: [{
+          label: 'Jumlah Karyawan',
+          data: divisiHeadcount.map(d => d.jumlah),
+          backgroundColor: chartPalet.primary,
+          borderRadius: 6,
+          maxBarThickness: 40,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false } },
+          y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: chartPalet.grid } },
+        },
+      },
+    });
+  }
+</script>
 @endsection

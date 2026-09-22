@@ -1,0 +1,104 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('legal_overtime_rules', function (Blueprint $table) {
+            $table->id();
+            $table->string('rule_code')->unique();
+            $table->string('regulation_name');
+            $table->string('regulation_number')->nullable();
+            $table->string('article_reference')->nullable();
+            $table->string('day_type', 32);
+            $table->unsignedInteger('minimum_minutes')->nullable();
+            $table->unsignedInteger('maximum_minutes_daily')->nullable();
+            $table->unsignedInteger('maximum_minutes_weekly')->nullable();
+            $table->unsignedInteger('maximum_minutes_monthly')->nullable();
+            $table->date('effective_from');
+            $table->date('effective_until')->nullable();
+            $table->string('status')->default('active');
+            $table->string('source_document')->nullable();
+            $table->text('notes')->nullable();
+            $table->timestamps();
+            $table->index(
+                ['day_type', 'effective_from', 'effective_until'],
+                'lor_day_effective_idx'
+            );
+        });
+
+        Schema::create('company_overtime_rules', function (Blueprint $table) {
+            $table->id();
+            $table->string('rule_code')->unique();
+            $table->string('rule_name');
+            $table->string('day_type', 32);
+            $table->time('normal_end')->nullable();
+            $table->unsignedInteger('minimum_minutes')->default(30);
+            $table->unsignedInteger('maximum_minutes_event')->nullable();
+            $table->unsignedInteger('maximum_minutes_monthly')->nullable();
+            $table->string('rounding_method')->default('floor');
+            $table->unsignedInteger('rounding_interval')->default(30);
+            $table->boolean('requires_request')->default(true);
+            $table->boolean('allows_post_submission')->default(false);
+            $table->boolean('requires_vp_approval')->default(true);
+            $table->boolean('requires_hr_approval')->default(true);
+            $table->date('effective_from');
+            $table->date('effective_until')->nullable();
+            $table->string('status')->default('active');
+            $table->string('source_document')->nullable();
+            $table->text('notes')->nullable();
+            $table->timestamps();
+            $table->index(
+                ['day_type', 'effective_from', 'effective_until'],
+                'cor_day_effective_idx'
+            );
+        });
+
+        Schema::create('system_configurations', function (Blueprint $table) {
+            $table->id();
+            $table->string('key')->unique();
+            $table->text('value')->nullable();
+            $table->string('value_type')->default('string');
+            $table->string('status')->default('active');
+            $table->text('description')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('overtime_policy_snapshots', function (Blueprint $table) {
+            $table->id();
+            $table->uuid('overtime_submission_id');
+            $table->foreignId('legal_rule_id')->nullable()->constrained('legal_overtime_rules')->nullOnDelete();
+            $table->foreignId('company_rule_id')->constrained('company_overtime_rules');
+            $table->json('policy');
+            $table->timestamps();
+            $table->unique('overtime_submission_id');
+        });
+
+        Schema::create('overtime_monthly_summaries', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('employee_id')->constrained()->cascadeOnDelete();
+            $table->unsignedSmallInteger('year');
+            $table->unsignedTinyInteger('month');
+            $table->unsignedInteger('weekday_minutes')->default(0);
+            $table->unsignedInteger('weekend_minutes')->default(0);
+            $table->unsignedInteger('national_holiday_minutes')->default(0);
+            $table->unsignedInteger('total_minutes')->default(0);
+            $table->unsignedInteger('event_count')->default(0);
+            $table->timestamps();
+            $table->unique(['employee_id', 'year', 'month']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('overtime_monthly_summaries');
+        Schema::dropIfExists('overtime_policy_snapshots');
+        Schema::dropIfExists('system_configurations');
+        Schema::dropIfExists('company_overtime_rules');
+        Schema::dropIfExists('legal_overtime_rules');
+    }
+};
