@@ -66,4 +66,76 @@
 </div>
 
 <div class="mt-space-base">{{ $employees->links() }}</div>
+
+{{-- Grafik gambaran seluruh karyawan --}}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-space-md mt-space-lg">
+  <div class="lg:col-span-2 bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
+    <div class="flex items-center gap-2 pb-space-base border-b border-surface-container-low">
+      <span class="material-symbols-outlined text-primary text-[22px]">account_tree</span>
+      <h2 class="font-headline-md text-headline-md text-primary">Sebaran Karyawan per Divisi</h2>
+    </div>
+    <div class="pt-space-base h-72">
+      <canvas id="chart-karyawan-divisi"></canvas>
+    </div>
+  </div>
+
+  <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
+    <div class="flex items-center gap-2 pb-space-base border-b border-surface-container-low">
+      <span class="material-symbols-outlined text-primary text-[22px]">wc</span>
+      <h2 class="font-headline-md text-headline-md text-primary">Komposisi Jenis Kelamin</h2>
+    </div>
+    <div class="pt-space-base h-72">
+      <canvas id="chart-karyawan-gender"></canvas>
+    </div>
+  </div>
+</div>
+@endsection
+
+@section('scripts')
+<script>
+  const sebaranDivisi = @json($sebaranDivisi);
+  const sebaranGender = @json($sebaranGender);
+
+  new Chart(document.getElementById('chart-karyawan-divisi'), {
+    type: 'bar',
+    data: {
+      labels: sebaranDivisi.map(d => d.nama),
+      datasets: [{
+        label: 'Jumlah Karyawan',
+        data: sebaranDivisi.map(d => d.jumlah),
+        backgroundColor: chartPalet.primary,
+        borderRadius: 6,
+        maxBarThickness: 40,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false } },
+        y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: chartPalet.grid } },
+      },
+    },
+  });
+
+  new Chart(document.getElementById('chart-karyawan-gender'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(sebaranGender),
+      datasets: [{
+        data: Object.values(sebaranGender),
+        backgroundColor: [chartPalet.primary, chartPalet.secondary, chartPalet.outline],
+        borderWidth: 2,
+        borderColor: '#ffffff',
+      }],
+    },
+    options: {
+      cutout: '65%',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12 } } },
+    },
+  });
+</script>
 @endsection

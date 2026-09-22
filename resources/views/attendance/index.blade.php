@@ -45,6 +45,72 @@
   @endif
 </form>
 
+{{-- KPI ringkas untuk scope tahun/bulan/divisi yang lagi difilter --}}
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-base mb-space-lg">
+  <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-base">
+    <div class="flex items-center justify-between">
+      <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Rekap pada Scope Ini</span>
+      <span class="material-symbols-outlined text-[20px] text-primary">fact_check</span>
+    </div>
+    <p class="font-headline-md text-headline-md text-primary mt-1">{{ number_format($totalRekapChart) }}</p>
+  </div>
+  <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-base">
+    <div class="flex items-center justify-between">
+      <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Rata-rata Kehadiran</span>
+      <span class="material-symbols-outlined text-[20px] text-primary">how_to_reg</span>
+    </div>
+    <p class="font-headline-md text-headline-md text-primary mt-1">{{ $rataKehadiranChart }}%</p>
+  </div>
+  <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-base">
+    <div class="flex items-center justify-between">
+      <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Total Alpha</span>
+      <span class="material-symbols-outlined text-[20px] {{ $totalAlphaChart > 0 ? 'text-error' : 'text-primary' }}">person_off</span>
+    </div>
+    <p class="font-headline-md text-headline-md {{ $totalAlphaChart > 0 ? 'text-error' : 'text-primary' }} mt-1">{{ $totalAlphaChart }}</p>
+  </div>
+  <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-base">
+    <div class="flex items-center justify-between">
+      <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Total Menit Telat</span>
+      <span class="material-symbols-outlined text-[20px] text-primary">timer</span>
+    </div>
+    <p class="font-headline-md text-headline-md text-primary mt-1">{{ number_format($totalMenitTelatChart) }}</p>
+  </div>
+</div>
+
+{{-- Grafik: tren tahunan + per divisi + sebaran lokasi --}}
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg mb-space-lg">
+  <div class="flex items-center justify-between pb-space-base border-b border-surface-container-low">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-primary text-[22px]">trending_up</span>
+      <h2 class="font-headline-md text-headline-md text-primary">Tren Rata-rata Kehadiran Tahun {{ $tahunChart }}</h2>
+    </div>
+  </div>
+  <div class="pt-space-base h-64">
+    <canvas id="chart-tren-tahunan"></canvas>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-space-md mb-space-lg">
+  <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
+    <div class="flex items-center gap-2 pb-space-base border-b border-surface-container-low">
+      <span class="material-symbols-outlined text-primary text-[22px]">bar_chart</span>
+      <h2 class="font-headline-md text-headline-md text-primary">Rata-rata Kehadiran per Divisi</h2>
+    </div>
+    <div class="pt-space-base h-72">
+      <canvas id="chart-kehadiran-divisi"></canvas>
+    </div>
+  </div>
+  <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
+    <div class="flex items-center gap-2 pb-space-base border-b border-surface-container-low">
+      <span class="material-symbols-outlined text-primary text-[22px]">location_city</span>
+      <h2 class="font-headline-md text-headline-md text-primary">Sebaran Lokasi Presensi</h2>
+    </div>
+    <div class="pt-space-base h-72">
+      <canvas id="chart-lokasi-rekap"></canvas>
+    </div>
+  </div>
+</div>
+
 <div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-x-auto">
   <table class="w-full text-left min-w-[980px]">
     <thead>
@@ -111,4 +177,83 @@
 </div>
 
 <div class="mt-space-base">{{ $recaps->links() }}</div>
+@endsection
+
+@section('scripts')
+<script>
+  const trenTahunan   = @json($trenBulananTahunIni);
+  const kehadiranDivisi = @json($kehadiranPerDivisi);
+  const lokasiRekap   = { bandung: {{ $totalBandungChart }}, jakarta: {{ $totalJakartaChart }} };
+
+  new Chart(document.getElementById('chart-tren-tahunan'), {
+    type: 'line',
+    data: {
+      labels: trenTahunan.map(t => t.label),
+      datasets: [{
+        label: 'Rata-rata Kehadiran (%)',
+        data: trenTahunan.map(t => t.ada_data ? t.rata_kehadiran : null),
+        borderColor: chartPalet.primary,
+        backgroundColor: chartPalet.primary,
+        tension: 0.35,
+        spanGaps: true,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { min: 0, max: 100, grid: { color: chartPalet.grid }, title: { display: true, text: 'Kehadiran (%)' } },
+        x: { grid: { display: false } },
+      },
+    },
+  });
+
+  new Chart(document.getElementById('chart-kehadiran-divisi'), {
+    type: 'bar',
+    data: {
+      labels: kehadiranDivisi.map(d => d.nama),
+      datasets: [{
+        label: 'Rata-rata Kehadiran (%)',
+        data: kehadiranDivisi.map(d => d.rata_kehadiran),
+        backgroundColor: chartPalet.secondary,
+        borderRadius: 6,
+        maxBarThickness: 32,
+      }],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { min: 0, max: 100, grid: { color: chartPalet.grid } },
+        y: { grid: { display: false } },
+      },
+    },
+  });
+
+  if (lokasiRekap.bandung + lokasiRekap.jakarta > 0) {
+    new Chart(document.getElementById('chart-lokasi-rekap'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Bandung', 'Jakarta'],
+        datasets: [{
+          data: [lokasiRekap.bandung, lokasiRekap.jakarta],
+          backgroundColor: [chartPalet.primary, chartPalet.secondary],
+          borderWidth: 2,
+          borderColor: '#ffffff',
+        }],
+      },
+      options: {
+        cutout: '65%',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12 } } },
+      },
+    });
+  }
+</script>
 @endsection

@@ -9,6 +9,7 @@
 <link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
   // Token desain SAMA PERSIS dengan dashboard Direktur, biar satu bahasa visual di semua halaman.
   tailwind.config = {
@@ -71,40 +72,258 @@
       <img src="{{ asset('images/logo-inti.png') }}" alt="PT. INTI" class="h-8 w-auto object-contain">
       </a>
     </div>
-    <div class="px-space-md py-space-xs">
-      <div class="px-space-sm pb-space-xs flex items-center justify-between">
-        <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">HR &amp; Administrasi</span>
-        <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-surface-container-low text-on-surface-variant">HR</span>
-      </div>
-      <nav class="flex flex-col gap-space-xs">
-        <a href="{{ route('employees.index') }}" class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm {{ request()->routeIs('employees.*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
-          <span class="material-symbols-outlined text-[20px]">badge</span> Data Karyawan
-        </a>
-        <a href="{{ route('divisions.index') }}" class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm {{ request()->routeIs('divisions.*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
-          <span class="material-symbols-outlined text-[20px]">account_tree</span> Data Divisi
-        </a>
-        <a href="{{ route('attendance.index') }}" class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm {{ request()->routeIs('attendance.index') || request()->routeIs('attendance.create') || request()->routeIs('attendance.edit') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
-          <span class="material-symbols-outlined text-[20px]">event_available</span> Rekap Absensi
-        </a>
-        <a href="{{ route('timesheet.index') }}" class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm {{ request()->routeIs('timesheet.*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
-          <span class="material-symbols-outlined text-[20px]">calendar_clock</span> Riwayat &amp; Timesheet
-        </a>
-        <a href="{{ route('team-recap.index') }}" class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm justify-between {{ request()->routeIs('team-recap.*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
-          <span class="flex items-center gap-2"><span class="material-symbols-outlined text-[20px]">groups</span> Rekapitulasi Tim</span>
-          @php($lemburPendingCount = \App\Models\AttendanceLog::where('status_lembur', 'pending')->whereNotNull('jam_pulang')->get()->filter(fn ($log) => $log->menitLembur() > 0)->count())
-          @if ($lemburPendingCount > 0)
-            <span class="px-1.5 py-0.5 rounded-full bg-error text-white text-[10px] font-bold">{{ $lemburPendingCount }}</span>
-          @endif
-        </a>
-        <a href="{{ route('attendance.import-errors') }}" class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm justify-between {{ request()->routeIs('attendance.import-errors*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
-          <span class="flex items-center gap-2"><span class="material-symbols-outlined text-[20px]">fact_check</span> Review Anomali</span>
-          @php($pendingCount = \App\Models\AttendanceImportError::where('status', 'pending')->count())
-          @if ($pendingCount > 0)
-            <span class="px-1.5 py-0.5 rounded-full bg-error text-white text-[10px] font-bold">{{ $pendingCount }}</span>
-          @endif
-        </a>
-      </nav>
-    </div>
+<div class="px-space-md py-space-xs">
+
+    {{-- =========================================================
+         KARYAWAN
+         ========================================================= --}}
+    @if(auth()->user()->isKaryawan())
+
+        <div class="px-space-sm pb-space-xs flex items-center justify-between">
+            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
+                Portal Karyawan
+            </span>
+
+            <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-surface-container-low text-on-surface-variant">
+                KARYAWAN
+            </span>
+        </div>
+
+        <nav class="flex flex-col gap-space-xs">
+
+            <a href="{{ route('dashboard') }}"
+               class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
+               {{ request()->routeIs('dashboard') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+                <span class="material-symbols-outlined text-[20px]">dashboard</span>
+                Dashboard
+            </a>
+
+            <a href="{{ route('timesheet.index') }}"
+               class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
+               {{ request()->routeIs('timesheet.*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+                <span class="material-symbols-outlined text-[20px]">event_available</span>
+                Absensi & Timesheet
+            </a>
+
+            <a href="{{ route('overtime.index') }}"
+               class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
+               {{ request()->routeIs('overtime.index') || request()->routeIs('overtime.store') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+                <span class="material-symbols-outlined text-[20px]">more_time</span>
+                Pengajuan Lembur
+            </a>
+
+            <a href="{{ route('overtime.history') }}"
+               class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
+               {{ request()->routeIs('overtime.history') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+                <span class="material-symbols-outlined text-[20px]">history</span>
+                Riwayat Lembur
+            </a>
+
+        </nav>
+
+
+    {{-- =========================================================
+         VP
+         ========================================================= --}}
+    @elseif(auth()->user()->isVp())
+
+        <div class="px-space-sm pb-space-xs flex items-center justify-between">
+            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
+                Portal VP Divisi
+            </span>
+
+            <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-surface-container-low text-on-surface-variant">
+                VP
+            </span>
+        </div>
+
+        <nav class="flex flex-col gap-space-xs">
+
+            <a href="{{ route('dashboard') }}"
+               class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
+               {{ request()->routeIs('dashboard') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+                <span class="material-symbols-outlined text-[20px]">dashboard</span>
+                Dashboard
+            </a>
+
+            <a href="{{ route('timesheet.index') }}"
+               class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
+               {{ request()->routeIs('timesheet.*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+                <span class="material-symbols-outlined text-[20px]">event_available</span>
+                Absensi Saya
+            </a>
+
+            <a href="{{ route('overtime.vp') }}"
+               class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
+               {{ request()->routeIs('overtime.vp') || request()->routeIs('overtime.vp.pending') || request()->routeIs('overtime.vp.approve') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+                <span class="material-symbols-outlined text-[20px]">approval</span>
+                Persetujuan Lembur
+            </a>
+
+            <a href="{{ route('overtime.vp.history') }}"
+               class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
+               {{ request()->routeIs('overtime.vp.history') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+                <span class="material-symbols-outlined text-[20px]">history</span>
+                Riwayat Keputusan
+            </a>
+
+            <a href="{{ route('team-recap.index') }}" class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm {{ request()->routeIs('reports.team') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+                <span class="material-symbols-outlined text-[20px]">summarize</span> Rekap Divisi
+            </a>
+
+        </nav>
+
+
+    {{-- =========================================================
+         HR ADMIN
+         ========================================================= --}}
+    @elseif(auth()->user()->isHrAdmin())
+
+        <div class="px-space-sm pb-space-xs flex items-center justify-between">
+<span class="font-title-sm text-title-sm text-primary">
+    @if(auth()->user()->isKaryawan())
+        Portal Karyawan
+    @elseif(auth()->user()->isVp())
+        Portal VP Divisi
+    @elseif(auth()->user()->isHrAdmin())
+        Portal HR &amp; Administrasi
+    @elseif(auth()->user()->isDirekturUtama())
+        Portal Direktur Utama
+    @else
+        Portal
+    @endif
+</span>
+
+            <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-surface-container-low text-on-surface-variant">
+                HR
+            </span>
+        </div>
+
+        <nav class="flex flex-col gap-space-xs">
+
+            <a href="{{ route('employees.index') }}"
+               class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
+               {{ request()->routeIs('employees.*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+                <span class="material-symbols-outlined text-[20px]">badge</span>
+                Data Karyawan
+            </a>
+
+            @if (\Illuminate\Support\Facades\Route::has('employees.import'))
+                <a href="{{ route('employees.import') }}"
+                   class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
+                   {{ request()->routeIs('employees.import*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+                    <span class="material-symbols-outlined text-[20px]">person_add</span>
+                    Import Karyawan
+                </a>
+            @endif
+
+            <a href="{{ route('divisions.index') }}"
+               class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
+               {{ request()->routeIs('divisions.*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+                <span class="material-symbols-outlined text-[20px]">account_tree</span>
+                Data Divisi
+            </a>
+
+            <a href="{{ route('attendance.index') }}"
+               class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
+               {{ request()->routeIs('attendance.*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+                <span class="material-symbols-outlined text-[20px]">event_available</span>
+                Rekap Absensi
+            </a>
+
+            <a href="{{ route('timesheet.index') }}"
+               class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
+               {{ request()->routeIs('timesheet.*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+                <span class="material-symbols-outlined text-[20px]">calendar_clock</span>
+                Riwayat &amp; Timesheet
+            </a>
+
+            <a href="{{ route('team-recap.index') }}"
+               class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
+               {{ request()->routeIs('team-recap.*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+                <span class="material-symbols-outlined text-[20px]">groups</span>
+                Rekapitulasi Tim
+            </a>
+
+            @if (\Illuminate\Support\Facades\Route::has('attendance.anomalies'))
+                <a href="{{ route('attendance.anomalies') }}"
+                   class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
+                   {{ request()->routeIs('attendance.anomalies*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+                    <span class="material-symbols-outlined text-[20px]">fact_check</span>
+                    Review Anomali
+                </a>
+            @endif
+
+            @if (\Illuminate\Support\Facades\Route::has('attendance.import-errors'))
+                <a href="{{ route('attendance.import-errors') }}"
+                   class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
+                   {{ request()->routeIs('attendance.import-errors*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+                    <span class="material-symbols-outlined text-[20px]">error_outline</span>
+                    Error Import
+                </a>
+            @endif
+
+            @if (\Illuminate\Support\Facades\Route::has('attendance.import.production'))
+                <a href="{{ route('attendance.import.production') }}"
+                   class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
+                   {{ request()->routeIs('attendance.import.production*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+                    <span class="material-symbols-outlined text-[20px]">upload_file</span>
+                    Import Absensi
+                </a>
+            @endif
+
+            @if (\Illuminate\Support\Facades\Route::has('overtime.hr.verification'))
+            <a href="{{ route('overtime.hr.verification') }}"
+               class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
+               {{ request()->routeIs('overtime.hr.*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+                <span class="material-symbols-outlined text-[20px]">verified_user</span>
+                Verifikasi Lembur
+            </a>
+            @endif
+
+            @if (\Illuminate\Support\Facades\Route::has('reports.index'))
+            <a href="{{ route('reports.index') }}" class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm {{ request()->routeIs('reports.*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+                <span class="material-symbols-outlined text-[20px]">summarize</span> Laporan HR
+            </a>
+            @endif
+            @if (\Illuminate\Support\Facades\Route::has('audit-logs.index'))
+            <a href="{{ route('audit-logs.index') }}" class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm {{ request()->routeIs('audit-logs.*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+                <span class="material-symbols-outlined text-[20px]">manage_search</span> Audit Trail
+            </a>
+            @endif
+
+        </nav>
+
+
+    {{-- =========================================================
+         DIREKTUR UTAMA
+         ========================================================= --}}
+    @elseif(auth()->user()->isDirekturUtama())
+
+        <div class="px-space-sm pb-space-xs flex items-center justify-between">
+            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
+                Portal Direktur Utama
+            </span>
+
+            <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-surface-container-low text-on-surface-variant">
+                DIREKTUR
+            </span>
+        </div>
+
+        <nav class="flex flex-col gap-space-xs">
+
+            <a href="{{ route('direktur.dashboard') }}"
+               class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
+               {{ request()->routeIs('direktur.dashboard') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+                <span class="material-symbols-outlined text-[20px]">dashboard</span>
+                Dashboard
+            </a>
+
+        </nav>
+
+    @endif
+
+</div>
   </div>
 
   <div class="p-space-md shrink-0 border-t border-surface-container-low">
@@ -168,6 +387,22 @@
     document.getElementById('sidebar').classList.toggle('-translate-x-full');
     document.getElementById('sidebar-backdrop').classList.toggle('hidden');
   }
+
+  // Palet warna dipakai bareng oleh semua chart di halaman HR - konsisten dengan token Tailwind di atas.
+  const chartPalet = {
+    primary: '#0f2942',
+    secondary: '#006a61',
+    error: '#ba1a1a',
+    outline: '#74777e',
+    tertiary: '#d77503',
+    grid: 'rgba(67,71,77,0.08)',
+    text: '#43474d',
+  };
+  if (window.Chart) {
+    Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+    Chart.defaults.color = chartPalet.text;
+  }
 </script>
+@yield('scripts')
 </body>
 </html>

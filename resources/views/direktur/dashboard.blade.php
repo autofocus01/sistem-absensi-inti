@@ -79,13 +79,6 @@
                 class="flex items-center px-space-md py-space-sm rounded-lg font-title-sm text-left bg-primary-container text-on-primary">
           Dashboard Direktur Utama
         </button>
-        <button type="button" onclick="showTab('otorisasi')" id="nav-otorisasi"
-                class="flex items-center justify-between px-space-md py-space-sm rounded-lg font-title-sm text-left text-on-surface hover:bg-surface-container-low">
-          <span>Otorisasi Khusus</span>
-          @if ($otorisasiLogs->count() > 0)
-            <span class="px-1.5 py-0.5 rounded-full bg-error text-white text-[10px] font-bold">{{ $otorisasiLogs->count() }}</span>
-          @endif
-        </button>
       </nav>
     </div>
   </div>
@@ -172,22 +165,15 @@
               class="px-4 py-2.5 font-title-sm text-title-sm border-b-2 border-primary text-primary -mb-px">
         Ringkasan Eksekutif
       </button>
-      <button type="button" onclick="showTab('otorisasi')" id="tabbtn-otorisasi"
-              class="flex items-center gap-2 px-4 py-2.5 font-title-sm text-title-sm border-b-2 border-transparent text-on-surface-variant hover:text-primary -mb-px">
-        Otorisasi Khusus
-        @if ($otorisasiLogs->count() > 0)
-          <span class="px-1.5 py-0.5 rounded-full bg-error text-white text-[10px] font-bold">{{ $otorisasiLogs->count() }}</span>
-        @endif
-      </button>
     </div>
 
     {{-- ============ TAB 1: RINGKASAN EKSEKUTIF ============ --}}
     <div id="tab-ringkasan">
 
       <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-space-base pb-space-lg">
-        <p class="font-body-md text-body-md text-on-surface-variant max-w-3xl">
+        <!-- <p class="font-body-md text-body-md text-on-surface-variant max-w-3xl">
           Rekap kehadiran berdasarkan 5 divisi resmi PT. INTI, dihitung langsung dari data absensi yang tersimpan di sistem.
-        </p>
+        </p> -->
 
         <div class="flex flex-wrap items-center gap-2">
           <form method="GET" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container-lowest shadow-sm">
@@ -489,52 +475,7 @@
       </div>
     </div>
 
-    {{-- ============ TAB 2: OTORISASI KHUSUS ============ --}}
-    <div id="tab-otorisasi" class="hidden">
-      <p class="font-body-md text-body-md text-on-surface-variant max-w-2xl mb-space-lg">
-        Lembur harian di atas 3 jam butuh persetujuan langsung Direktur Utama, tidak cukup lewat approval HR biasa.
-      </p>
-
-      <div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-x-auto">
-        <table class="w-full text-left min-w-[800px]">
-          <thead>
-            <tr class="bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
-              <th class="py-3 px-space-base rounded-l-lg">Tanggal</th>
-              <th class="py-3 px-space-base">Karyawan</th>
-              <th class="py-3 px-space-base">Divisi</th>
-              <th class="py-3 px-space-base">Jam Pulang</th>
-              <th class="py-3 px-space-base">Total Lembur</th>
-              <th class="py-3 px-space-base text-right rounded-r-lg">Aksi</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-surface-container-low font-body-md text-body-md">
-            @forelse ($otorisasiLogs as $log)
-            <tr class="hover:bg-surface-container-low/40 transition-colors">
-              <td class="py-space-base px-space-base">{{ $log->tanggal->translatedFormat('d M Y') }}</td>
-              <td class="py-space-base px-space-base font-title-sm text-title-sm text-primary">{{ $log->employee->nama }}</td>
-              <td class="py-space-base px-space-base"><span class="px-2 py-0.5 rounded bg-surface-container text-primary font-label-sm text-xs font-semibold">{{ $log->employee->division->nama }}</span></td>
-              <td class="py-space-base px-space-base tabular-nums">{{ \Carbon\Carbon::parse($log->jam_pulang)->format('H:i') }}</td>
-              <td class="py-space-base px-space-base tabular-nums font-title-sm text-title-sm text-error">{{ $log->lemburFormat() }}</td>
-              <td class="py-space-base px-space-base text-right space-x-3 whitespace-nowrap">
-                <form action="{{ route('direktur.otorisasi-khusus.approve', $log) }}" method="POST" class="inline">
-                  @csrf
-                  <button type="submit" class="text-secondary font-title-sm text-title-sm">Setuju</button>
-                </form>
-                <form action="{{ route('direktur.otorisasi-khusus.reject', $log) }}" method="POST" class="inline" onsubmit="return confirm('Tolak lembur ini?')">
-                  @csrf
-                  <button type="submit" class="text-error font-title-sm text-title-sm">Tolak</button>
-                </form>
-              </td>
-            </tr>
-            @empty
-            <tr><td colspan="6" class="py-8 px-4 text-center text-on-surface-variant">Tidak ada lembur yang butuh otorisasi khusus saat ini.</td></tr>
-            @endforelse
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-  </main>
+    {{-- ============ TAB 2: OTORISASI KHUSUS ============ --}}</main>
 </div>
 
 <script>
@@ -565,7 +506,7 @@
 
   // Ganti tab TANPA pindah halaman/URL.
   function showTab(tab) {
-    const tabs = ['ringkasan', 'otorisasi'];
+    const tabs = ['ringkasan'];
     tabs.forEach(function (t) {
       document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
       document.getElementById('tabbtn-' + t).classList.toggle('border-primary', t === tab);
@@ -588,7 +529,7 @@
 
   // Buka tab sesuai hash URL (dipakai waktu redirect balik dari approve/reject lembur).
   document.addEventListener('DOMContentLoaded', function () {
-    const initial = window.location.hash === '#otorisasi' ? 'otorisasi' : 'ringkasan';
+    const initial = 'ringkasan';
     showTab(initial);
   });
 </script>

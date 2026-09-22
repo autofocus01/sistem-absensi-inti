@@ -14,6 +14,47 @@
   </p>
 </div>
 
+{{-- Ringkasan status & jenis anomali --}}
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-space-md my-space-lg">
+  <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-base">
+    <div class="flex items-center justify-between">
+      <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Anomali Pending</span>
+      <span class="material-symbols-outlined text-[20px] {{ $totalPending > 0 ? 'text-error' : 'text-primary' }}">pending_actions</span>
+    </div>
+    <p class="font-headline-md text-headline-md {{ $totalPending > 0 ? 'text-error' : 'text-primary' }} mt-1">{{ $totalPending }}</p>
+  </div>
+  <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-base">
+    <div class="flex items-center justify-between">
+      <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Sudah Selesai</span>
+      <span class="material-symbols-outlined text-[20px] text-secondary">task_alt</span>
+    </div>
+    <p class="font-headline-md text-headline-md text-secondary mt-1">{{ $totalSelesai }}</p>
+  </div>
+</div>
+
+@if (($totalPending + $totalSelesai) > 0)
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-space-md mb-space-lg">
+  <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
+    <div class="flex items-center gap-2 pb-space-base border-b border-surface-container-low">
+      <span class="material-symbols-outlined text-primary text-[22px]">donut_large</span>
+      <h2 class="font-headline-md text-headline-md text-primary">Status Anomali</h2>
+    </div>
+    <div class="pt-space-base h-64">
+      <canvas id="chart-status-anomali"></canvas>
+    </div>
+  </div>
+  <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
+    <div class="flex items-center gap-2 pb-space-base border-b border-surface-container-low">
+      <span class="material-symbols-outlined text-primary text-[22px]">bar_chart</span>
+      <h2 class="font-headline-md text-headline-md text-primary">Sebaran Jenis Anomali</h2>
+    </div>
+    <div class="pt-space-base h-64">
+      <canvas id="chart-jenis-anomali"></canvas>
+    </div>
+  </div>
+</div>
+@endif
+
 <div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-x-auto">
   <table class="w-full text-left min-w-[920px]">
     <thead>
@@ -74,4 +115,55 @@
 </div>
 
 <div class="mt-space-base">{{ $importErrors->links() }}</div>
+@endsection
+
+@section('scripts')
+<script>
+  const sebaranJenisAnomali = @json($sebaranJenis);
+  const statusAnomali = { pending: {{ $totalPending }}, selesai: {{ $totalSelesai }} };
+
+  if (statusAnomali.pending + statusAnomali.selesai > 0) {
+    new Chart(document.getElementById('chart-status-anomali'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Pending', 'Selesai'],
+        datasets: [{
+          data: [statusAnomali.pending, statusAnomali.selesai],
+          backgroundColor: [chartPalet.error, chartPalet.secondary],
+          borderWidth: 2,
+          borderColor: '#ffffff',
+        }],
+      },
+      options: {
+        cutout: '65%',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12 } } },
+      },
+    });
+
+    new Chart(document.getElementById('chart-jenis-anomali'), {
+      type: 'bar',
+      data: {
+        labels: Object.keys(sebaranJenisAnomali),
+        datasets: [{
+          label: 'Jumlah Baris',
+          data: Object.values(sebaranJenisAnomali),
+          backgroundColor: [chartPalet.outline, chartPalet.primary],
+          borderRadius: 6,
+          maxBarThickness: 48,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false } },
+          y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: chartPalet.grid } },
+        },
+      },
+    });
+  }
+</script>
 @endsection

@@ -57,7 +57,7 @@
     <div class="h-6 w-[1px] bg-surface-container-low hidden sm:block"></div>
     <span class="font-title-sm text-title-sm text-primary hidden sm:inline">Profil Saya</span>
   </div>
-  <a href="{{ auth()->user()->isDirekturUtama() ? route('direktur.dashboard') : route('employees.index') }}"
+  <a href="{{ auth()->user()->isDirekturUtama() ? route('direktur.dashboard') : route('dashboard') }}"
      class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-container-low text-primary font-title-sm text-title-sm hover:bg-surface-container transition-colors">
     <span class="material-symbols-outlined text-[18px]">arrow_back</span>
     <span class="hidden sm:inline">Kembali ke Dashboard</span>
@@ -74,7 +74,13 @@
       <span class="font-label-sm text-label-sm text-surface-variant uppercase tracking-wider">Portal Kepegawaian &amp; Infrastruktur Presensi</span>
       <h1 class="font-headline-lg text-headline-lg text-on-primary tracking-tight">{{ auth()->user()->name }}</h1>
       <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-surface-container-lowest/10 text-on-primary font-label-sm text-label-sm font-semibold w-fit">
-        {{ auth()->user()->isDirekturUtama() ? 'Direktur Utama' : 'HR & Administrasi' }}
+        @switch(auth()->user()->role)
+          @case('direktur_utama') Direktur Utama @break
+          @case('hr_admin') HR & Administrasi @break
+          @case('vp') Vice President (VP) @break
+          @case('karyawan') Karyawan @break
+          @default {{ ucfirst(str_replace('_', ' ', auth()->user()->role ?? 'Pengguna')) }}
+        @endswitch
       </span>
     </div>
   </div>
@@ -183,7 +189,15 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-space-base mb-space-lg">
         <div class="flex flex-col gap-space-2xs p-space-md rounded-xl bg-surface-container-low">
           <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Role</span>
-          <span class="font-title-md text-title-md text-on-surface">{{ auth()->user()->isDirekturUtama() ? 'Direktur Utama' : 'HR & Administrasi' }}</span>
+          <span class="font-title-md text-title-md text-on-surface">
+            @switch(auth()->user()->role)
+              @case('direktur_utama') Direktur Utama @break
+              @case('hr_admin') HR & Administrasi @break
+              @case('vp') Vice President (VP) @break
+              @case('karyawan') Karyawan @break
+              @default {{ ucfirst(str_replace('_', ' ', auth()->user()->role ?? 'Pengguna')) }}
+            @endswitch
+          </span>
           <span class="font-body-sm text-body-sm text-on-surface-variant">Diatur administrator, tidak bisa diubah sendiri</span>
         </div>
         <div class="flex flex-col gap-space-2xs p-space-md rounded-xl bg-surface-container-low">

@@ -2,30 +2,26 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AttendanceLog;
 use App\Models\AttendanceRecap;
 use App\Models\Division;
 use App\Models\Employee;
+use App\Services\Overtime\OvertimeReportingService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class DirekturDashboardController extends Controller
 {
+    public function __construct(private readonly OvertimeReportingService $overtime) {}
+
     public function index(Request $request)
     {
-        $data = $this->buildReportData($request);
+        // Defense in depth: route middleware juga membatasi role ini.
+        abort_unless($request->user()?->isDirekturUtama(), 403);
 
-        // Digabung di sini (bukan controller/halaman terpisah) supaya Direktur bisa lihat semuanya
-        // di satu halaman lewat tab, tanpa pindah URL.
-        $data['otorisasiLogs'] = AttendanceLog::with(['employee.division'])
-            ->where('status_lembur', 'pending')
-            ->whereNotNull('jam_pulang')
-            ->get()
-            ->filter(fn (AttendanceLog $log) => $log->butuhOtorisasiKhusus())
-            ->sortByDesc('tanggal')
-            ->values();
+        $data = $this->buildReportData($request);
 
         return view('direktur.dashboard', $data);
     }
@@ -34,12 +30,26 @@ class DirekturDashboardController extends Controller
     {
         $tahun = (int) $request->input('tahun', now()->year);
         $bulan = (int) $request->input('bulan', now()->month);
-        $divisionId = $request->input('division_id');
 
-        $totalKaryawan = Employee::when($divisionId, fn ($q) => $q->where('division_id', $divisionId))->count();
+        // Jangan biarkan parameter GET menghasilkan periode yang tidak valid.
+        $tahun = max(2000, min(2100, $tahun));
+        $bulan = max(1, min(12, $bulan));
+
+        $divisionId = $request->filled('division_id')
+            ? (int) $request->input('division_id')
+            : null;
+
+        if ($divisionId !== null && ! Division::query()->whereKey($divisionId)->exists()) {
+            abort(404, 'Divisi tidak ditemukan.');
+        }
+
+        $totalKaryawan = Employee::when($divisionId !== null, fn ($q) => $q->where('division_id', $divisionId))->count();
 
         $recapBulanIni = AttendanceRecap::where('tahun', $tahun)->where('bulan', $bulan)
-            ->when($divisionId, fn ($q) => $q->whereHas('employee', fn ($e) => $e->where('division_id', $divisionId)));
+            ->when($divisionId !== null, fn ($q) => $q->whereHas(
+                'employee',
+                fn ($e) => $e->where('division_id', $divisionId)
+            ));
 
         $rataKehadiran = (clone $recapBulanIni)->avg('persen_kehadiran') ?? 0;
         $totalAlpha = (clone $recapBulanIni)->sum('alpha');
@@ -78,18 +88,15 @@ class DirekturDashboardController extends Controller
 
         // Disiplin & On-Time Rate: proporsi hari hadir yang TANPA catatan telat.
         $tingkatOnTime = $totalHadir > 0
-            ? round((($totalHadir - $totalTelatHari) / $totalHadir) * 100, 1)
+            ? max(0, min(100, round((($totalHadir - $totalTelatHari) / $totalHadir) * 100, 1)))
             : 0;
 
         // Lembur bulan ini: dihitung ulang dari log harian (bukan kolom tersimpan), biar konsisten
         // dengan Rekapitulasi Tim & Otorisasi Khusus. Ditampilkan dalam JAM, bukan Rupiah - sistem
         // ini tidak menyimpan data gaji/tarif lembur, jadi estimasi biaya sengaja tidak dibuat-buat.
-        $totalMenitLembur = AttendanceLog::whereYear('tanggal', $tahun)
-            ->whereMonth('tanggal', $bulan)
-            ->whereNotNull('jam_pulang')
-            ->when($divisionId, fn ($q) => $q->whereHas('employee', fn ($e) => $e->where('division_id', $divisionId)))
-            ->get()
-            ->sum(fn (AttendanceLog $log) => $log->menitLembur());
+        // Lembur resmi hanya berasal dari submission yang sudah VERIFIED_HR.
+        // Jam pulang semata tidak pernah dianggap sebagai lembur resmi.
+        $totalMenitLembur = $this->overtime->officialMinutes($tahun, $bulan, $divisionId);
         $totalJamLembur = round($totalMenitLembur / 60, 1);
 
         // Kelengkapan Data Rekap: berapa persen karyawan yang SUDAH punya rekap bulanan untuk periode ini.
@@ -110,11 +117,14 @@ class DirekturDashboardController extends Controller
         // dihitung dari AttendanceRecap juga, jadi konsisten dengan angka KPI di atas.
         $trenBulanan = collect(range(5, 0))
             ->map(function (int $i) use ($tahun, $bulan, $divisionId) {
-                $periode = \Carbon\Carbon::create($tahun, $bulan, 1)->subMonths($i);
+                $periode = Carbon::create($tahun, $bulan, 1)->subMonths($i);
 
                 $recapPeriode = AttendanceRecap::where('tahun', $periode->year)
                     ->where('bulan', $periode->month)
-                    ->when($divisionId, fn ($q) => $q->whereHas('employee', fn ($e) => $e->where('division_id', $divisionId)));
+                    ->when($divisionId !== null, fn ($q) => $q->whereHas(
+                'employee',
+                fn ($e) => $e->where('division_id', $divisionId)
+            ));
 
                 return [
                     'label'          => $periode->translatedFormat('M Y'),
@@ -176,7 +186,7 @@ class DirekturDashboardController extends Controller
     public function exportExcel(Request $request)
     {
         $data = $this->buildReportData($request);
-        $namaBulan = \Carbon\Carbon::create()->month($data['bulan'])->translatedFormat('F');
+        $namaBulan = Carbon::create()->month($data['bulan'])->translatedFormat('F');
 
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
@@ -253,7 +263,7 @@ class DirekturDashboardController extends Controller
     public function exportPdf(Request $request)
     {
         $data = $this->buildReportData($request);
-        $data['namaBulan'] = \Carbon\Carbon::create()->month($data['bulan'])->translatedFormat('F');
+        $data['namaBulan'] = Carbon::create()->month($data['bulan'])->translatedFormat('F');
 
         $pdf = Pdf::loadView('direktur.report-pdf', $data)->setPaper('a4', 'portrait');
 

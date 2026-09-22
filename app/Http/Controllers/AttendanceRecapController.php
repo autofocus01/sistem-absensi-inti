@@ -34,7 +34,52 @@ class AttendanceRecapController extends Controller
         $tahunTersedia = AttendanceRecap::select('tahun')->distinct()->orderByDesc('tahun')->pluck('tahun');
         $divisions = Division::orderBy('nama')->get();
 
-        return view('attendance.index', compact('recaps', 'tahunTersedia', 'divisions'));
+        // ===== Data grafik: pakai scope yang sama (tahun/bulan/divisi) TAPI tanpa filter teks/lokasi/paginasi,
+        // biar chart tetap jadi gambaran utuh periode yang lagi dilihat, bukan cuma baris yang ketemu pencarian.
+        $divisionId = $request->input('division_id');
+        $tahunChart = $request->input('tahun') ?: now()->year;
+        $bulanChart = $request->input('bulan');
+
+        $scopeChart = AttendanceRecap::where('tahun', $tahunChart)
+            ->when($bulanChart, fn ($q) => $q->where('bulan', $bulanChart))
+            ->when($divisionId, fn ($q) => $q->whereHas('employee', fn ($e) => $e->where('division_id', $divisionId)));
+
+        $totalRekapChart    = (clone $scopeChart)->count();
+        $rataKehadiranChart = round((clone $scopeChart)->avg('persen_kehadiran') ?? 0, 1);
+        $totalAlphaChart    = (clone $scopeChart)->sum('alpha');
+        $totalMenitTelatChart = (clone $scopeChart)->sum('menit_telat');
+        $totalBandungChart  = (clone $scopeChart)->sum('lokasi_bandung');
+        $totalJakartaChart  = (clone $scopeChart)->sum('lokasi_jakarta');
+
+        $kehadiranPerDivisi = $divisions->map(function (Division $division) use ($tahunChart, $bulanChart) {
+            $recapsDivisi = AttendanceRecap::whereHas('employee', fn ($q) => $q->where('division_id', $division->id))
+                ->where('tahun', $tahunChart)
+                ->when($bulanChart, fn ($q) => $q->where('bulan', $bulanChart))
+                ->get();
+
+            return [
+                'nama'           => $division->nama,
+                'rata_kehadiran' => round($recapsDivisi->avg('persen_kehadiran') ?? 0, 1),
+            ];
+        })->values();
+
+        // Tren rata-rata kehadiran per bulan sepanjang tahun yang dipilih (Jan-Des), hormati filter divisi.
+        $trenBulananTahunIni = collect(range(1, 12))->map(function (int $m) use ($tahunChart, $divisionId) {
+            $recapBulan = AttendanceRecap::where('tahun', $tahunChart)->where('bulan', $m)
+                ->when($divisionId, fn ($q) => $q->whereHas('employee', fn ($e) => $e->where('division_id', $divisionId)));
+
+            return [
+                'label'          => \Carbon\Carbon::create()->month($m)->translatedFormat('M'),
+                'rata_kehadiran' => round((clone $recapBulan)->avg('persen_kehadiran') ?? 0, 1),
+                'ada_data'       => (clone $recapBulan)->exists(),
+            ];
+        })->values();
+
+        return view('attendance.index', compact(
+            'recaps', 'tahunTersedia', 'divisions',
+            'totalRekapChart', 'rataKehadiranChart', 'totalAlphaChart', 'totalMenitTelatChart',
+            'totalBandungChart', 'totalJakartaChart', 'kehadiranPerDivisi', 'trenBulananTahunIni', 'tahunChart'
+        ));
     }
 
     public function create(Request $request)

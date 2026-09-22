@@ -27,7 +27,18 @@ class EmployeeController extends Controller
 
         $divisions = Division::orderBy('nama')->get();
 
-        return view('employees.index', compact('employees', 'divisions'));
+        // Grafik selalu tampilkan gambaran SELURUH karyawan (bukan hasil filter tabel di atas),
+        // biar tetap jadi "peta besar" yang stabil walau lagi nyari nama tertentu.
+        $sebaranDivisi = Division::withCount('employees')->orderBy('nama')->get()
+            ->map(fn (Division $d) => ['nama' => $d->nama, 'jumlah' => $d->employees_count]);
+
+        $sebaranGender = [
+            'Laki-laki'    => Employee::where('jenis_kelamin', 'L')->count(),
+            'Perempuan'    => Employee::where('jenis_kelamin', 'P')->count(),
+            'Tidak diisi'  => Employee::whereNull('jenis_kelamin')->count(),
+        ];
+
+        return view('employees.index', compact('employees', 'divisions', 'sebaranDivisi', 'sebaranGender'));
     }
 
     public function create()
