@@ -27,7 +27,7 @@ function createTestEmployee(
     Division $division,
     string $nipeg
 ): Employee {
-    return Employee::create([
+    return testPersistEmployee([
         'nipeg' => $nipeg,
         'nama' => $user->name,
         'jabatan' => 'Karyawan Test',
@@ -49,7 +49,7 @@ function createTestOvertime(
     Division $division,
     string $status = 'PENDING_VP'
 ): OvertimeSubmission {
-    return OvertimeSubmission::create([
+    return testPersistOvertimeSubmission([
         'user_id' => $employeeUser->id,
         'division_id' => $division->id,
 

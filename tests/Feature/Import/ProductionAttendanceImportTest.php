@@ -15,7 +15,7 @@ function makeHrImportUser(): User
 function makeImportEmployee(): Employee
 {
     $division = Division::create(['nama' => 'Import Test '.uniqid(), 'lini' => 'Test']);
-    return Employee::create(['nipeg' => 'IMP'.uniqid(), 'nama' => 'Import Test', 'jabatan' => 'Staff', 'division_id' => $division->id]);
+    return testPersistEmployee(['nipeg' => 'IMP'.uniqid(), 'nama' => 'Import Test', 'jabatan' => 'Staff', 'division_id' => $division->id]);
 }
 
 it('previews and commits a valid paired attendance file idempotently', function () {

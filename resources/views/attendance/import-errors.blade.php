@@ -1,7 +1,12 @@
 @extends('layouts.absensi')
+@section('p1_head')
+<link rel="stylesheet" href="{{ asset('css/p1-design-system.css') }}">
+<link rel="stylesheet" href="{{ asset('css/p1-hr-governance.css') }}">
+@endsection
 @section('title', 'Review Anomali Import')
 
 @section('content')
+<div class="inti-page p1-hr-governance">
 <div class="flex flex-col gap-1 pb-space-lg">
   <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-error text-white font-label-sm text-label-sm uppercase tracking-wider w-fit">
     <span class="material-symbols-outlined text-[14px]">fact_check</span> KENDALI MUTU DATA
@@ -166,4 +171,5 @@
     });
   }
 </script>
+</div>
 @endsection

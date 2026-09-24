@@ -13,22 +13,14 @@ class OvertimeSubmission extends Model
     protected $keyType = 'string';
     public $incrementing = false;
 
+    // Hanya field yang secara konseptual boleh berasal dari form bisnis.
+    // Ownership, status workflow, approver/verifier, ticket dan evidence
+    // server tidak boleh diisi melalui mass assignment umum.
     protected $fillable = [
-        'id',
-        'ticket_number',
-        'user_id',
-        'division_id',
         'submission_mode',
-        'attendance_log_id',
-        'actual_start_time',
-        'actual_end_time',
-        'actual_minutes',
-        'recognized_minutes',
-        'eligibility_status',
         'overtime_date',
         'start_time',
         'end_time',
-        'estimated_hours',
         'category',
         'reason',
         'employee_consent',
@@ -38,18 +30,12 @@ class OvertimeSubmission extends Model
         'employee_consent_source',
         'employee_consent_version',
         'employee_consent_text',
-        'status',
-        'vp_approver_id',
-        'vp_approved_at',
-        'vp_notes',
-        'hr_verifier_id',
-        'hr_verified_at',
-        'hr_notes',
     ];
 
     protected static function boot()
     {
         parent::boot();
+
         static::creating(function ($model) {
             if (empty($model->id)) {
                 $model->id = (string) Str::uuid();
@@ -68,29 +54,9 @@ class OvertimeSubmission extends Model
         'hr_verified_at' => 'datetime',
     ];
 
-    // Relasi
-  public function user()
-    {
-        return $this->belongsTo(User::class, 'user_id');
-    }
-
-    public function division()
-    {
-        return $this->belongsTo(Division::class);
-    }
-
-    public function attendanceLog()
-    {
-        return $this->belongsTo(AttendanceLog::class, 'attendance_log_id');
-    }
-
-    public function vpApprover()
-    {
-        return $this->belongsTo(User::class, 'vp_approver_id');
-    }
-
-    public function hrVerifier()
-    {
-        return $this->belongsTo(User::class, 'hr_verifier_id');
-    }
+    public function user() { return $this->belongsTo(User::class, 'user_id'); }
+    public function division() { return $this->belongsTo(Division::class); }
+    public function attendanceLog() { return $this->belongsTo(AttendanceLog::class, 'attendance_log_id'); }
+    public function vpApprover() { return $this->belongsTo(User::class, 'vp_approver_id'); }
+    public function hrVerifier() { return $this->belongsTo(User::class, 'hr_verifier_id'); }
 }

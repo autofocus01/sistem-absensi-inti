@@ -20,12 +20,23 @@ class StoreOvertimeRequest extends FormRequest
                 'date',
             ],
 
+            /*
+             * Dua mode tetap dikenali oleh validator.
+             *
+             * Keputusan bisnis bahwa lembur reguler hanya
+             * boleh POST_SUBMITTED dilakukan di OvertimeController.
+             */
             'submission_mode' => [
                 'required',
                 Rule::in([
                     'PRE_SUBMITTED',
                     'POST_SUBMITTED',
                 ]),
+            ],
+
+            'category' => [
+                'nullable',
+                'string',
             ],
 
             'start_time' => [
@@ -44,10 +55,24 @@ class StoreOvertimeRequest extends FormRequest
                 'max:1000',
             ],
 
+            /*
+             * Consent karyawan WAJIB.
+             */
             'employee_consent' => [
                 'required',
                 'accepted',
             ],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'employee_consent.required' =>
+                'Persetujuan karyawan wajib diberikan.',
+
+            'employee_consent.accepted' =>
+                'Persetujuan karyawan harus dicentang.',
         ];
     }
 }

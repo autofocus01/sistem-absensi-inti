@@ -14,7 +14,24 @@ return new class extends Migration
 
         Schema::create('audit_logs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
+
+            /*
+             * user_id sengaja TIDAK dibuat sebagai foreign key ke users.
+             *
+             * Alasannya:
+             * audit log harus tetap menyimpan ID user sebagai
+             * historical actor walaupun akun user tersebut sudah
+             * dihapus.
+             *
+             * Jika memakai:
+             * ->constrained('users')->nullOnDelete()
+             *
+             * maka ketika user dihapus, user_id audit akan berubah
+             * menjadi NULL dan audit trail kehilangan identitas
+             * aktor historisnya.
+             */
+            $table->unsignedBigInteger('user_id')->nullable();
+
             $table->string('action', 100);
             $table->string('subject_type')->nullable();
             $table->string('subject_id', 100)->nullable();

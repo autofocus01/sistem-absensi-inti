@@ -1,0 +1,28 @@
+/* P1 Batch 3 — HR Governance visual layer. Presentation only. */
+.p1-hr-governance { max-width: 1440px; margin: 0 auto; }
+.p1-hr-governance h1 { letter-spacing: -.02em; }
+.p1-hr-governance > div:first-child { max-width: 100%; }
+.p1-hr-governance .bg-white,
+.p1-hr-governance .bg-surface-container-lowest { background: var(--inti-surface) !important; border: 1px solid var(--inti-outline) !important; box-shadow: 0 8px 24px rgba(13,28,46,.06) !important; }
+.p1-hr-governance table { border-collapse: separate; border-spacing: 0; }
+.p1-hr-governance thead th { background: var(--inti-surface-low) !important; color: var(--inti-text) !important; font-weight: 700; }
+.p1-hr-governance tbody tr:hover { background: var(--inti-surface-low) !important; }
+.p1-hr-governance input:not([type=file]),
+.p1-hr-governance select,
+.p1-hr-governance textarea { border: 1px solid var(--inti-outline) !important; border-radius: .65rem; background: #fff; color: var(--inti-text); }
+.p1-hr-governance input:focus,
+.p1-hr-governance select:focus,
+.p1-hr-governance textarea:focus { outline: 2px solid rgba(0,106,97,.18); border-color: var(--inti-secondary) !important; }
+.p1-hr-governance button,
+.p1-hr-governance a[class*="bg-primary"],
+.p1-hr-governance a[class*="bg-secondary"] { transition: transform .15s ease, box-shadow .15s ease, opacity .15s ease; }
+.p1-hr-governance button:hover,
+.p1-hr-governance a[class*="bg-primary"]:hover,
+.p1-hr-governance a[class*="bg-secondary"]:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(13,28,46,.10); }
+.p1-hr-governance .bg-red-50 { background: #fff3f3 !important; border: 1px solid #f1b8b8; }
+.p1-hr-governance .bg-emerald-50 { background: #eefaf7 !important; border: 1px solid #b8e4dc; }
+.p1-hr-governance .text-gray-500 { color: var(--inti-muted) !important; }
+@media (max-width: 640px) {
+  .p1-hr-governance { padding-left: .25rem; padding-right: .25rem; }
+  .p1-hr-governance table { min-width: 760px; }
+}

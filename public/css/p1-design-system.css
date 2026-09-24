@@ -1,0 +1,117 @@
+/*
+ * PT INTI Attendance System — P1 Enterprise Design System
+ * Presentation-only. No routes, permissions, workflow, or data logic.
+ * Load after Tailwind so these utility classes can be used consistently.
+ */
+:root {
+  --inti-primary: #001428;
+  --inti-primary-container: #0f2942;
+  --inti-secondary: #006a61;
+  --inti-error: #ba1a1a;
+  --inti-warning: #d77503;
+  --inti-background: #f8f9ff;
+  --inti-surface: #ffffff;
+  --inti-surface-low: #eff4ff;
+  --inti-surface-high: #dce9ff;
+  --inti-text: #0d1c2e;
+  --inti-muted: #43474d;
+  --inti-outline: #c3c6ce;
+  --inti-radius: 12px;
+  --inti-radius-sm: 8px;
+  --inti-shadow: 0 1px 8px rgba(0,0,0,.04);
+  --inti-shadow-hover: 0 8px 24px rgba(15,41,66,.08);
+}
+
+html { font-family: 'Plus Jakarta Sans', sans-serif; }
+body { background: var(--inti-background); color: var(--inti-text); }
+
+/* Layout primitives */
+.inti-page { width: 100%; max-width: 1440px; margin-inline: auto; padding: 0 24px 48px; }
+.inti-page-header { display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:24px; }
+.inti-eyebrow { font-size:11px; line-height:14px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--inti-muted); }
+.inti-title { margin:4px 0 0; font-size:28px; line-height:36px; font-weight:600; letter-spacing:-.015em; color:var(--inti-primary); }
+.inti-subtitle { margin-top:4px; font-size:14px; line-height:20px; color:var(--inti-muted); }
+
+/* Cards */
+.inti-card { background:var(--inti-surface); border:1px solid rgba(195,198,206,.55); border-radius:var(--inti-radius); box-shadow:var(--inti-shadow); }
+.inti-card-pad { padding:24px; }
+.inti-card-hover { transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease; }
+.inti-card-hover:hover { transform:translateY(-1px); box-shadow:var(--inti-shadow-hover); border-color:rgba(15,41,66,.14); }
+.inti-section-title { display:flex; align-items:center; gap:8px; font-size:18px; line-height:24px; font-weight:600; color:var(--inti-primary); }
+.inti-section-title .material-symbols-outlined { font-size:22px; }
+
+/* KPI */
+.inti-kpi-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; }
+.inti-kpi { padding:20px; }
+.inti-kpi-label { font-size:11px; line-height:14px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--inti-muted); }
+.inti-kpi-value { margin-top:4px; font-size:22px; line-height:28px; font-weight:600; color:var(--inti-primary); font-variant-numeric:tabular-nums; }
+.inti-kpi-meta { margin-top:4px; font-size:12px; line-height:16px; color:var(--inti-muted); }
+
+/* Buttons */
+.inti-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:40px; padding:0 16px; border-radius:8px; border:1px solid transparent; font-size:14px; line-height:20px; font-weight:600; transition:.15s ease; cursor:pointer; }
+.inti-btn-primary { background:var(--inti-primary-container); color:#fff; }
+.inti-btn-primary:hover { filter:brightness(1.08); }
+.inti-btn-secondary { background:var(--inti-surface-low); color:var(--inti-text); border-color:rgba(195,198,206,.7); }
+.inti-btn-secondary:hover { background:var(--inti-surface-high); }
+.inti-btn-danger { background:var(--inti-error); color:#fff; }
+.inti-btn-danger:hover { filter:brightness(1.08); }
+.inti-btn-ghost { background:transparent; color:var(--inti-primary); }
+.inti-btn-ghost:hover { background:var(--inti-surface-low); }
+.inti-btn:disabled { opacity:.55; cursor:not-allowed; }
+
+/* Status badges */
+.inti-badge { display:inline-flex; align-items:center; gap:6px; min-height:24px; padding:2px 9px; border-radius:999px; font-size:12px; line-height:16px; font-weight:600; white-space:nowrap; }
+.inti-badge-success { color:#006a61; background:#e1f5f1; }
+.inti-badge-warning { color:#8a4b00; background:#fff1dc; }
+.inti-badge-danger { color:#a71919; background:#ffe5e1; }
+.inti-badge-info { color:#174d78; background:#e5effa; }
+.inti-badge-neutral { color:#43474d; background:#eef0f4; }
+
+/* Alerts */
+.inti-alert { display:flex; align-items:flex-start; gap:12px; padding:14px 16px; border-radius:10px; border:1px solid; font-size:14px; line-height:20px; }
+.inti-alert-success { color:#006a61; background:#e8f7f4; border-color:#b9e4dd; }
+.inti-alert-warning { color:#7a4300; background:#fff5e7; border-color:#f2d4a4; }
+.inti-alert-danger { color:#a71919; background:#fff0ee; border-color:#f0c2bd; }
+.inti-alert-info { color:#174d78; background:#edf5fc; border-color:#c8ddec; }
+
+/* Forms */
+.inti-label { display:block; margin-bottom:6px; font-size:13px; line-height:16px; font-weight:600; color:var(--inti-text); }
+.inti-help { margin-top:4px; font-size:12px; line-height:16px; color:var(--inti-muted); }
+.inti-input { width:100%; min-height:40px; border:1px solid var(--inti-outline); border-radius:8px; background:#fff; color:var(--inti-text); padding:8px 12px; font-size:14px; line-height:20px; outline:none; }
+.inti-input:focus { border-color:var(--inti-primary-container); box-shadow:0 0 0 3px rgba(15,41,66,.10); }
+
+/* Tables */
+.inti-table-wrap { overflow-x:auto; border:1px solid rgba(195,198,206,.55); border-radius:var(--inti-radius); background:#fff; box-shadow:var(--inti-shadow); }
+.inti-table { width:100%; border-collapse:collapse; font-size:13px; line-height:18px; }
+.inti-table th { padding:12px 16px; background:var(--inti-surface-low); color:var(--inti-muted); font-size:11px; line-height:14px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; text-align:left; white-space:nowrap; }
+.inti-table td { padding:14px 16px; border-top:1px solid rgba(195,198,206,.42); color:var(--inti-text); vertical-align:middle; }
+.inti-table tbody tr:hover { background:#fafbff; }
+
+/* Empty state */
+.inti-empty { padding:40px 20px; text-align:center; color:var(--inti-muted); }
+.inti-empty-icon { width:48px; height:48px; margin:0 auto 12px; display:flex; align-items:center; justify-content:center; border-radius:14px; background:var(--inti-surface-low); color:var(--inti-primary); }
+.inti-empty-title { font-size:16px; line-height:22px; font-weight:600; color:var(--inti-text); }
+.inti-empty-text { margin-top:4px; font-size:13px; line-height:18px; }
+
+/* Sidebar safety: visual only; does not alter route structure */
+.inti-nav-item { min-height:40px; border-radius:8px; transition:background .15s ease, color .15s ease; }
+.inti-nav-item:hover { background:var(--inti-surface-low); }
+.inti-nav-item.is-active { background:var(--inti-primary-container); color:#fff; }
+.inti-nav-section { margin:16px 8px 6px; font-size:11px; line-height:14px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--inti-muted); }
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .inti-kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .inti-page { padding-inline:20px; }
+}
+@media (max-width: 640px) {
+  .inti-page { padding-inline:16px; padding-bottom:32px; }
+  .inti-title { font-size:24px; line-height:32px; }
+  .inti-kpi-grid { grid-template-columns:1fr; gap:12px; }
+  .inti-card-pad { padding:16px; }
+  .inti-table-wrap { border-radius:10px; }
+  .inti-btn { min-height:42px; }
+}
+
+/* Utility to avoid horizontal overflow from long NIPEG/ticket values */
+.inti-mono { font-variant-numeric:tabular-nums; font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace; }

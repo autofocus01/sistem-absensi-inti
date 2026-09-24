@@ -3,16 +3,13 @@
 @section('title', 'Riwayat & Timesheet')
 
 @section('content')
-
 @php
     $timesheetRows = $timesheet ?? collect();
 
     $displayStartDate = isset($startDate) && $startDate
-        ? (
-            $startDate instanceof \Carbon\CarbonInterface
-                ? $startDate
-                : \Carbon\Carbon::parse($startDate)
-        )
+        ? ($startDate instanceof \Carbon\CarbonInterface
+            ? $startDate
+            : \Carbon\Carbon::parse($startDate))
         : now();
 
     $displayEmployee = $employee ?? null;
@@ -20,577 +17,479 @@
     $displayTotalOfficialOvertime =
         $totalOfficialOvertimeFormat ?? '0j 00m';
 
-    $selectedMonth = (int) ($month ?? now()->month);
+    $hrMode = (bool) ($isHrAdmin ?? false);
 
-    $selectedYear = (int) ($year ?? now()->year);
+    $displayAttendanceDays = $totalAttendanceDays
+        ?? $timesheetRows
+            ->filter(fn ($row) => ($row['attendance'] ?? null) !== null)
+            ->count();
 
-    $years = $availableYears ?? range(
-        now()->year - 3,
-        now()->year + 1
-    );
+    $displayLateDays = $totalLateDays
+        ?? $timesheetRows
+            ->filter(fn ($row) => (int) ($row['menit_telat'] ?? 0) > 0)
+            ->count();
 @endphp
 
+<div class="flex flex-col gap-space-base">
 
-{{-- ============================================================
-     HEADER
-============================================================ --}}
+    {{-- ============================================================
+         HEADER
+         ============================================================ --}}
+    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-space-base">
 
-<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-base pb-space-lg">
+        <div class="flex flex-col gap-1">
+            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
+                RIWAYAT &amp; TIMESHEET
+            </span>
 
-    <div class="flex flex-col gap-1">
+            <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">
+                {{ $hrMode ? 'Timesheet Administrasi' : 'Riwayat Presensi & Lembur' }}
+            </h1>
 
-        <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
-            RIWAYAT &amp; TIMESHEET
-        </span>
-
-        <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">
-            Riwayat Presensi &amp; Lembur
-        </h1>
-
-        <p class="font-body-md text-body-md text-on-surface-variant">
-
-            @if ($displayEmployee)
-
-                {{ $displayEmployee->nama ?? 'Karyawan' }}
-
-                @if (!empty($displayEmployee->nipeg))
-                    — {{ $displayEmployee->nipeg }}
+            <p class="font-body-md text-body-md text-on-surface-variant">
+                @if ($hrMode)
+                    Rekap presensi dan lembur resmi seluruh karyawan sesuai periode yang dipilih.
+                @elseif ($displayEmployee)
+                    {{ $displayEmployee->nama ?? 'Karyawan' }}
+                    @if (!empty($displayEmployee->nipeg))
+                        — {{ $displayEmployee->nipeg }}
+                    @endif
+                    · {{ $displayStartDate->translatedFormat('F Y') }}
+                @else
+                    {{ $displayStartDate->translatedFormat('F Y') }}
                 @endif
+            </p>
+        </div>
 
-                ·
-
-            @endif
-
-            {{ $displayStartDate->translatedFormat('F Y') }}
-
-        </p>
-
+        @if ($hrMode)
+            <div class="px-3 py-2 rounded-lg bg-primary-container/30 text-primary font-label-sm">
+                Mode HR Administrasi
+            </div>
+        @endif
     </div>
 
-</div>
+    {{-- ============================================================
+         FILTER HR
+         ============================================================ --}}
+    @if ($hrMode)
+        <form method="GET"
+              action="{{ route('timesheet.index') }}"
+              class="bg-surface-container-lowest rounded-xl shadow-sm p-space-base">
 
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-space-base">
 
-{{-- ============================================================
-     FILTER PERIODE
-============================================================ --}}
+                <div class="lg:col-span-2">
+                    <label for="q"
+                           class="block font-label-sm text-label-sm text-on-surface-variant mb-1">
+                        Cari Karyawan
+                    </label>
 
-<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-base mb-space-lg">
-
-    <form
-        method="GET"
-        action="{{ route('timesheet.index') }}"
-        class="flex flex-col lg:flex-row lg:items-end gap-space-base"
-    >
-
-        {{-- BULAN --}}
-        <div class="flex flex-col gap-1.5">
-
-            <label
-                for="bulan"
-                class="font-label-sm text-label-sm text-on-surface-variant"
-            >
-                Bulan
-            </label>
-
-            <select
-                id="bulan"
-                name="bulan"
-                class="min-w-[180px] rounded-lg border border-outline-variant/50 bg-surface-container-lowest text-on-surface font-body-md text-body-md px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-
-                @foreach (range(1, 12) as $m)
-
-                    @php
-                        $monthName = \Carbon\Carbon::create(
-                            2000,
-                            $m,
-                            1
-                        )->translatedFormat('F');
-                    @endphp
-
-                    <option
-                        value="{{ $m }}"
-                        @selected($selectedMonth === $m)
+                    <input
+                        id="q"
+                        name="q"
+                        type="text"
+                        value="{{ $search ?? '' }}"
+                        placeholder="Nama atau NIPEG"
+                        class="w-full rounded-lg border border-outline bg-surface px-3 py-2 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
                     >
-                        {{ $monthName }}
-                    </option>
+                </div>
 
-                @endforeach
+                <div>
+                    <label for="division_id"
+                           class="block font-label-sm text-label-sm text-on-surface-variant mb-1">
+                        Divisi
+                    </label>
 
-            </select>
-
-        </div>
-
-
-        {{-- TAHUN --}}
-        <div class="flex flex-col gap-1.5">
-
-            <label
-                for="tahun"
-                class="font-label-sm text-label-sm text-on-surface-variant"
-            >
-                Tahun
-            </label>
-
-            <select
-                id="tahun"
-                name="tahun"
-                class="min-w-[140px] rounded-lg border border-outline-variant/50 bg-surface-container-lowest text-on-surface font-body-md text-body-md px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-
-                @foreach ($years as $availableYear)
-
-                    <option
-                        value="{{ $availableYear }}"
-                        @selected($selectedYear === (int) $availableYear)
+                    <select
+                        id="division_id"
+                        name="division_id"
+                        class="w-full rounded-lg border border-outline bg-surface px-3 py-2 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
                     >
-                        {{ $availableYear }}
-                    </option>
+                        <option value="">Semua Divisi</option>
 
-                @endforeach
+                        @foreach (($divisions ?? collect()) as $division)
+                            <option
+                                value="{{ $division->id }}"
+                                @selected((int) ($selectedDivisionId ?? 0) === (int) $division->id)
+                            >
+                                {{ $division->nama }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
 
-            </select>
+                <div>
+                    <label for="month"
+                           class="block font-label-sm text-label-sm text-on-surface-variant mb-1">
+                        Bulan
+                    </label>
 
-        </div>
+                    <select
+                        id="month"
+                        name="month"
+                        class="w-full rounded-lg border border-outline bg-surface px-3 py-2 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    >
+                        @for ($m = 1; $m <= 12; $m++)
+                            <option value="{{ $m }}" @selected((int) $month === $m)>
+                                {{ \Carbon\Carbon::create()->month($m)->translatedFormat('F') }}
+                            </option>
+                        @endfor
+                    </select>
+                </div>
 
+                <div>
+                    <label for="year"
+                           class="block font-label-sm text-label-sm text-on-surface-variant mb-1">
+                        Tahun
+                    </label>
 
-        {{-- TOMBOL CARI --}}
-        <div class="flex gap-2">
+                    <select
+                        id="year"
+                        name="year"
+                        class="w-full rounded-lg border border-outline bg-surface px-3 py-2 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    >
+                        @foreach (($availableYears ?? []) as $availableYear)
+                            <option
+                                value="{{ $availableYear }}"
+                                @selected((int) $year === (int) $availableYear)
+                            >
+                                {{ $availableYear }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
 
-            <button
-                type="submit"
-                class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-primary-container text-on-primary font-title-sm text-title-sm shadow-sm hover:opacity-90 transition"
-            >
-
-                <span class="material-symbols-outlined text-[18px]">
-                    search
-                </span>
-
-                Tampilkan
-
-            </button>
-
-
-            {{-- RESET --}}
-            @if (
-                $selectedMonth !== now()->month ||
-                $selectedYear !== now()->year
-            )
+            <div class="flex flex-wrap items-center gap-2 mt-space-base">
+                <button
+                    type="submit"
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-on-primary font-title-sm"
+                >
+                    <span class="material-symbols-outlined text-[18px]">search</span>
+                    Tampilkan
+                </button>
 
                 <a
                     href="{{ route('timesheet.index') }}"
-                    class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-surface-container-low text-on-surface font-title-sm text-title-sm hover:bg-surface-container transition"
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container text-on-surface font-title-sm"
                 >
-
-                    <span class="material-symbols-outlined text-[18px]">
-                        restart_alt
-                    </span>
-
-                    Bulan Ini
-
+                    <span class="material-symbols-outlined text-[18px]">restart_alt</span>
+                    Reset
                 </a>
+            </div>
+        </form>
+    @endif
 
-            @endif
+    {{-- ============================================================
+         RINGKASAN
+         ============================================================ --}}
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-space-base">
 
-        </div>
-
-    </form>
-
-</div>
-
-
-{{-- ============================================================
-     RINGKASAN
-============================================================ --}}
-
-<div class="grid grid-cols-1 sm:grid-cols-3 gap-space-base mb-space-lg">
-
-
-    {{-- LEMBUR --}}
-    <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-base">
-
-        <div class="flex items-center justify-between">
-
-            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
-                Lembur Resmi
-            </span>
-
-            <span class="material-symbols-outlined text-[20px] text-primary">
-                more_time
-            </span>
-
-        </div>
-
-        <p class="font-headline-md text-headline-md text-primary mt-1">
-            {{ $displayTotalOfficialOvertime }}
-        </p>
-
-        <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
-            Sudah Verified HR
-        </p>
-
-    </div>
-
-
-    {{-- HADIR --}}
-    <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-base">
-
-        <div class="flex items-center justify-between">
-
-            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
-                Hari Hadir
-            </span>
-
-            <span class="material-symbols-outlined text-[20px] text-primary">
-                fact_check
-            </span>
-
-        </div>
-
-        <p class="font-headline-md text-headline-md text-primary mt-1">
-
-            {{ $timesheetRows->filter(
-                fn ($row) => ($row['attendance'] ?? null) !== null
-            )->count() }}
-
-            <span class="font-body-md text-body-md text-on-surface-variant">
-                Hari
-            </span>
-
-        </p>
-
-    </div>
-
-
-    {{-- TELAT --}}
-    <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-base">
-
-        <div class="flex items-center justify-between">
-
-            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
-                Hari Telat
-            </span>
-
-            <span class="material-symbols-outlined text-[20px] text-error">
-                timer_off
-            </span>
-
-        </div>
-
-        <p class="font-headline-md text-headline-md text-primary mt-1">
-
-            {{ $timesheetRows->filter(
-                fn ($row) => (int) ($row['menit_telat'] ?? 0) > 0
-            )->count() }}
-
-            <span class="font-body-md text-body-md text-on-surface-variant">
-                Hari
-            </span>
-
-        </p>
-
-    </div>
-
-</div>
-
-
-{{-- ============================================================
-     TABEL TIMESHEET
-============================================================ --}}
-
-<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-x-auto">
-
-    <table class="w-full text-left min-w-[980px]">
-
-        <thead>
-
-            <tr class="bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
-
-                <th class="py-3 px-space-base rounded-l-lg">
-                    Tanggal
-                </th>
-
-                <th class="py-3 px-space-base">
-                    Jam Masuk
-                </th>
-
-                <th class="py-3 px-space-base">
-                    Jam Pulang
-                </th>
-
-                <th class="py-3 px-space-base">
-                    Durasi
-                </th>
-
-                <th class="py-3 px-space-base">
-                    Keterlambatan
-                </th>
-
-                <th class="py-3 px-space-base">
-                    Status
-                </th>
-
-                <th class="py-3 px-space-base text-right rounded-r-lg">
+        <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-base">
+            <div class="flex items-center justify-between">
+                <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
                     Lembur Resmi
-                </th>
+                </span>
 
-            </tr>
+                <span class="material-symbols-outlined text-[20px] text-primary">
+                    more_time
+                </span>
+            </div>
 
-        </thead>
+            <p class="font-headline-md text-headline-md text-primary mt-1">
+                {{ $displayTotalOfficialOvertime }}
+            </p>
 
+            <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+                Sudah Verified HR
+            </p>
+        </div>
 
-        <tbody class="divide-y divide-surface-container-low font-body-md text-body-md">
+        <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-base">
+            <div class="flex items-center justify-between">
+                <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
+                    Hari Hadir
+                </span>
 
-            @forelse ($timesheetRows as $row)
+                <span class="material-symbols-outlined text-[20px] text-primary">
+                    fact_check
+                </span>
+            </div>
 
-                @php
+            <p class="font-headline-md text-headline-md text-primary mt-1">
+                {{ $displayAttendanceDays }}
+                <span class="font-body-md text-body-md text-on-surface-variant">
+                    Hari
+                </span>
+            </p>
+        </div>
 
-                    $attendance = $row['attendance'] ?? null;
+        <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-base">
+            <div class="flex items-center justify-between">
+                <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
+                    Hari Telat
+                </span>
 
-                    $status = $row['status'] ?? 'Belum ada data';
+                <span class="material-symbols-outlined text-[20px] text-error">
+                    timer_off
+                </span>
+            </div>
 
-                    $lateMinutes =
-                        (int) ($row['menit_telat'] ?? 0);
+            <p class="font-headline-md text-headline-md text-primary mt-1">
+                {{ $displayLateDays }}
+                <span class="font-body-md text-body-md text-on-surface-variant">
+                    Hari
+                </span>
+            </p>
+        </div>
+    </div>
 
-                    $overtimeMinutes =
-                        (int) ($row['lembur_resmi_menit'] ?? 0);
+    {{-- ============================================================
+         TABEL
+         ============================================================ --}}
+    <div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-x-auto">
 
-                    $rowDate = isset($row['tanggal']) && $row['tanggal']
-                        ? (
-                            $row['tanggal'] instanceof \Carbon\CarbonInterface
+        <table class="w-full text-left min-w-[980px]">
+
+            <thead>
+                <tr class="bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
+
+                    @if ($hrMode)
+                        <th class="py-3 px-space-base rounded-l-lg">
+                            Karyawan
+                        </th>
+
+                        <th class="py-3 px-space-base">
+                            Divisi
+                        </th>
+                    @else
+                        <th class="py-3 px-space-base rounded-l-lg">
+                            Tanggal
+                        </th>
+                    @endif
+
+                    @if ($hrMode)
+                        <th class="py-3 px-space-base">
+                            Tanggal
+                        </th>
+                    @endif
+
+                    <th class="py-3 px-space-base">
+                        Jam Masuk
+                    </th>
+
+                    <th class="py-3 px-space-base">
+                        Jam Pulang
+                    </th>
+
+                    <th class="py-3 px-space-base">
+                        Durasi
+                    </th>
+
+                    <th class="py-3 px-space-base">
+                        Keterlambatan
+                    </th>
+
+                    <th class="py-3 px-space-base">
+                        Status
+                    </th>
+
+                    <th class="py-3 px-space-base text-right rounded-r-lg">
+                        Lembur Resmi
+                    </th>
+                </tr>
+            </thead>
+
+            <tbody class="divide-y divide-surface-container-low font-body-md text-body-md">
+
+                @forelse ($timesheetRows as $row)
+
+                    @php
+                        $attendance = $row['attendance'] ?? null;
+                        $status = $row['status'] ?? 'Belum ada data';
+                        $lateMinutes = (int) ($row['menit_telat'] ?? 0);
+                        $overtimeMinutes = (int) ($row['lembur_resmi_menit'] ?? 0);
+
+                        $tanggal = isset($row['tanggal']) && $row['tanggal']
+                            ? ($row['tanggal'] instanceof \Carbon\CarbonInterface
                                 ? $row['tanggal']
-                                : \Carbon\Carbon::parse($row['tanggal'])
-                        )
-                        : null;
+                                : \Carbon\Carbon::parse($row['tanggal']))
+                            : null;
+                    @endphp
 
-                @endphp
+                    <tr class="hover:bg-surface-container-low/40 transition-colors">
 
+                        @if ($hrMode)
+                            <td class="py-space-base px-space-base">
+                                <div class="font-title-sm text-title-sm text-primary">
+                                    {{ $row['employee_name'] ?? '-' }}
+                                </div>
 
-                <tr class="hover:bg-surface-container-low/40 transition-colors">
+                                @if (!empty($row['employee_nipeg']))
+                                    <div class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">
+                                        {{ $row['employee_nipeg'] }}
+                                    </div>
+                                @endif
+                            </td>
 
+                            <td class="py-space-base px-space-base">
+                                {{ $row['employee_division'] ?? '-' }}
+                            </td>
 
-                    {{-- TANGGAL --}}
-                    <td class="py-space-base px-space-base">
+                            <td class="py-space-base px-space-base">
+                                <div class="font-title-sm text-title-sm text-primary">
+                                    {{ $tanggal ? $tanggal->translatedFormat('l, d M Y') : '-' }}
+                                </div>
 
-                        @if ($rowDate)
+                                @if ($tanggal && $tanggal->isWeekend())
+                                    <span class="font-label-sm text-label-sm text-on-surface-variant">
+                                        Akhir pekan
+                                    </span>
+                                @endif
+                            </td>
+                        @else
+                            <td class="py-space-base px-space-base">
+                                <div class="font-title-sm text-title-sm text-primary">
+                                    {{ $tanggal ? $tanggal->translatedFormat('l, d M Y') : '-' }}
+                                </div>
 
-                            <div class="font-title-sm text-title-sm text-primary">
-                                {{ $rowDate->translatedFormat('l, d M Y') }}
-                            </div>
+                                @if ($tanggal && $tanggal->isWeekend())
+                                    <span class="font-label-sm text-label-sm text-on-surface-variant">
+                                        Akhir pekan
+                                    </span>
+                                @endif
+                            </td>
+                        @endif
 
-                            @if ($rowDate->isWeekend())
+                        <td class="py-space-base px-space-base tabular-nums">
+                            {{ !empty($row['jam_masuk'])
+                                ? \Carbon\Carbon::parse($row['jam_masuk'])->format('H:i')
+                                : '-' }}
+                        </td>
 
-                                <span class="font-label-sm text-label-sm text-on-surface-variant">
-                                    Akhir pekan
-                                </span>
+                        <td class="py-space-base px-space-base tabular-nums">
+                            {{ !empty($row['jam_pulang'])
+                                ? \Carbon\Carbon::parse($row['jam_pulang'])->format('H:i')
+                                : '-' }}
+                        </td>
 
+                        <td class="py-space-base px-space-base tabular-nums">
+                            @if (
+                                isset($row['durasi_kerja_menit'])
+                                && $row['durasi_kerja_menit'] !== null
+                            )
+                                {{ intdiv((int) $row['durasi_kerja_menit'], 60) }}j
+                                {{ str_pad(
+                                    (string) ((int) $row['durasi_kerja_menit'] % 60),
+                                    2,
+                                    '0',
+                                    STR_PAD_LEFT
+                                ) }}m
+                            @else
+                                -
                             @endif
+                        </td>
 
-                        @else
+                        <td class="py-space-base px-space-base tabular-nums">
+                            @if ($lateMinutes > 0)
+                                <span class="text-error">
+                                    {{ $lateMinutes }} menit
+                                </span>
+                            @else
+                                <span class="text-on-surface-variant">
+                                    0 menit
+                                </span>
+                            @endif
+                        </td>
 
-                            -
-
-                        @endif
-
-                    </td>
-
-
-                    {{-- MASUK --}}
-                    <td class="py-space-base px-space-base tabular-nums">
-
-                        @if (!empty($row['jam_masuk']))
-
-                            {{ \Carbon\Carbon::parse(
-                                $row['jam_masuk']
-                            )->format('H:i') }}
-
-                        @else
-
-                            -
-
-                        @endif
-
-                    </td>
-
-
-                    {{-- PULANG --}}
-                    <td class="py-space-base px-space-base tabular-nums">
-
-                        @if (!empty($row['jam_pulang']))
-
-                            {{ \Carbon\Carbon::parse(
-                                $row['jam_pulang']
-                            )->format('H:i') }}
-
-                        @else
-
-                            -
-
-                        @endif
-
-                    </td>
-
-
-                    {{-- DURASI --}}
-                    <td class="py-space-base px-space-base tabular-nums">
-
-                        @if (
-                            isset($row['durasi_kerja_menit']) &&
-                            $row['durasi_kerja_menit'] !== null
-                        )
-
-                            {{ intdiv(
-                                (int) $row['durasi_kerja_menit'],
-                                60
-                            ) }}j
-
-                            {{ str_pad(
-                                (string) (
-                                    (int) $row['durasi_kerja_menit'] % 60
-                                ),
-                                2,
-                                '0',
-                                STR_PAD_LEFT
-                            ) }}m
-
-                        @else
-
-                            -
-
-                        @endif
-
-                    </td>
-
-
-                    {{-- KETERLAMBATAN --}}
-                    <td class="py-space-base px-space-base tabular-nums">
-
-                        @if ($lateMinutes > 0)
-
-                            <span class="text-error">
-                                {{ $lateMinutes }} menit
+                        <td class="py-space-base px-space-base">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full font-label-sm text-label-sm font-semibold
+                                {{
+                                    $status === 'Hadir'
+                                        ? 'bg-secondary-container/50 text-secondary'
+                                        : (
+                                            $status === 'Hadir + Lembur'
+                                                ? 'bg-tertiary-container text-on-tertiary-container'
+                                                : 'bg-surface-container text-on-surface-variant'
+                                        )
+                                }}">
+                                {{ $status }}
                             </span>
+                        </td>
 
-                        @else
+                        <td class="py-space-base px-space-base text-right tabular-nums font-title-sm text-title-sm
+                            {{ $overtimeMinutes > 0 ? 'text-primary' : 'text-on-surface-variant' }}">
 
-                            <span class="text-on-surface-variant">
-                                0 menit
-                            </span>
-
-                        @endif
-
-                    </td>
-
-
-                    {{-- STATUS --}}
-                    <td class="py-space-base px-space-base">
-
-                        <span
-                            class="inline-flex items-center px-2 py-0.5 rounded-full font-label-sm text-label-sm font-semibold
-                            {{
-                                $status === 'Hadir'
-                                    ? 'bg-secondary-container/50 text-secondary'
-                                    : (
-                                        $status === 'Hadir + Lembur'
-                                            ? 'bg-tertiary-container text-on-tertiary-container'
-                                            : 'bg-surface-container text-on-surface-variant'
+                            @if ($overtimeMinutes > 0)
+                                {{
+                                    $row['lembur_resmi_format']
+                                    ?? (
+                                        intdiv($overtimeMinutes, 60)
+                                        . 'j '
+                                        . str_pad(
+                                            (string) ($overtimeMinutes % 60),
+                                            2,
+                                            '0',
+                                            STR_PAD_LEFT
+                                        )
+                                        . 'm'
                                     )
-                            }}"
+                                }}
+
+                                <div class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">
+                                    Verified HR
+                                </div>
+                            @else
+                                -
+                            @endif
+                        </td>
+                    </tr>
+
+                @empty
+
+                    <tr>
+                        <td
+                            colspan="{{ $hrMode ? 9 : 7 }}"
+                            class="py-10 px-4 text-center text-on-surface-variant"
                         >
-                            {{ $status }}
-                        </span>
+                            @if ($hrMode)
+                                Tidak ada data karyawan atau presensi untuk filter yang dipilih.
+                            @else
+                                Belum ada data timesheet untuk periode ini.
+                            @endif
+                        </td>
+                    </tr>
 
-                    </td>
+                @endforelse
 
+            </tbody>
+        </table>
+    </div>
 
-                    {{-- LEMBUR --}}
-                    <td
-                        class="py-space-base px-space-base text-right tabular-nums font-title-sm text-title-sm
-                        {{
-                            $overtimeMinutes > 0
-                                ? 'text-primary'
-                                : 'text-on-surface-variant'
-                        }}"
-                    >
+    {{-- ============================================================
+         FOOTER INFO
+         ============================================================ --}}
+    <div class="flex flex-wrap gap-2 text-body-sm text-on-surface-variant">
+        <span>
+            Periode: {{ $displayStartDate->translatedFormat('F Y') }}
+        </span>
 
-                        @if ($overtimeMinutes > 0)
+        <span>•</span>
 
-                            {{
-                                $row['lembur_resmi_format']
-                                ?? (
-                                    intdiv(
-                                        $overtimeMinutes,
-                                        60
-                                    )
-                                    . 'j '
-                                    . str_pad(
-                                        (string) (
-                                            $overtimeMinutes % 60
-                                        ),
-                                        2,
-                                        '0',
-                                        STR_PAD_LEFT
-                                    )
-                                    . 'm'
-                                )
-                            }}
+        @if ($hrMode)
+            <span>
+                Scope:
+                {{ $employees->count() }} karyawan
+            </span>
 
-                            <div class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">
-                                Verified HR
-                            </div>
+            <span>•</span>
+        @endif
 
-                        @else
-
-                            -
-
-                        @endif
-
-                    </td>
-
-                </tr>
-
-            @empty
-
-                <tr>
-
-                    <td
-                        colspan="7"
-                        class="py-8 px-4 text-center text-on-surface-variant"
-                    >
-                        Belum ada data timesheet untuk periode ini.
-                    </td>
-
-                </tr>
-
-            @endforelse
-
-        </tbody>
-
-    </table>
+        <span>
+            Lembur resmi hanya dihitung dari pengajuan yang sudah
+            <strong>Verified HR</strong>.
+        </span>
+    </div>
 
 </div>
-
-
-{{-- ============================================================
-     FOOTER INFO
-============================================================ --}}
-
-<div class="mt-space-base flex flex-wrap gap-2 text-body-sm text-on-surface-variant">
-
-    <span>
-        Periode:
-        <strong>
-            {{ $displayStartDate->translatedFormat('F Y') }}
-        </strong>
-    </span>
-
-    <span>•</span>
-
-    <span>
-        Lembur resmi hanya dihitung dari pengajuan yang sudah
-        <strong>Verified HR</strong>.
-    </span>
-
-</div>
-
 @endsection

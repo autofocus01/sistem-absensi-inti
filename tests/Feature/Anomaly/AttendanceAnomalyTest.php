@@ -11,7 +11,7 @@ use Carbon\Carbon;
 function anomalyEmployee(): Employee
 {
     $division = Division::create(['nama' => 'Anomaly Test '.uniqid(), 'lini' => 'Test']);
-    return Employee::create(['nipeg' => 'AN'.uniqid(), 'nama' => 'Anomaly Test', 'jabatan' => 'Staff', 'division_id' => $division->id]);
+    return testPersistEmployee(['nipeg' => 'AN'.uniqid(), 'nama' => 'Anomaly Test', 'jabatan' => 'Staff', 'division_id' => $division->id]);
 }
 
 it('detects invalid attendance time order', function () {

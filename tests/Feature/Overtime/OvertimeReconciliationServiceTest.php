@@ -21,7 +21,7 @@ function reconciliationEmployee(): array
         'lini' => 'Test',
     ]);
 
-    $employee = Employee::create([
+    $employee = testPersistEmployee([
         'nipeg' => 'REC-' . $user->id,
         'nama' => $user->name,
         'division_id' => $division->id,
@@ -70,7 +70,7 @@ function reconciliationSubmission(
         'updated_at' => now(),
     ]);
 
-    $submission = OvertimeSubmission::create([
+    $submission = testPersistOvertimeSubmission([
         'user_id' => $user->id,
         'division_id' => $division->id,
         'overtime_date' => $date,

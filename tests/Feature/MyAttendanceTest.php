@@ -20,7 +20,7 @@ function makeKaryawanWithEmployee(): array
         'lini' => 'Test',
     ]);
 
-    $employee = Employee::create([
+    $employee = testPersistEmployee([
         'nipeg' => 'TEST-' . $user->id,
         'nama' => $user->name,
         'division_id' => $division->id,

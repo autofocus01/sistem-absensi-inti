@@ -26,7 +26,10 @@ class ProductionAttendanceImportController extends Controller
         try {
             $path = $this->imports->store($validated['file']);
             $preview = $this->imports->preview($path);
-            session(['attendance_import_path'=>$path]);
+            session([
+                'attendance_import' => ['path' => $path, 'user_id' => $request->user()->id, 'created_at' => now()->timestamp],
+                'attendance_import_path' => $path,
+            ]);
             return view('attendance.import.preview', compact('preview'));
         } catch (Throwable $e) {
             report($e);
@@ -37,12 +40,17 @@ class ProductionAttendanceImportController extends Controller
     public function commit(Request $request): RedirectResponse
     {
         abort_unless($request->user()?->isHrAdmin(), 403);
-        $path = (string) session('attendance_import_path');
+        $meta = session('attendance_import', []);
+        $path = (string) ($meta['path'] ?? '');
+        if ((int) ($meta['user_id'] ?? 0) !== (int) $request->user()->id || now()->timestamp - (int) ($meta['created_at'] ?? 0) > 1800) {
+            $request->session()->forget(['attendance_import', 'attendance_import_path']);
+            return back()->withErrors(['file' => 'Sesi preview import tidak valid atau sudah kedaluwarsa. Upload ulang file.']);
+        }
         if ($path === '') return back()->withErrors(['file'=>'Sesi preview import tidak ditemukan. Upload ulang file.']);
         try {
             $result = $this->imports->commit($path, $request->user()->id);
             $this->imports->forget($path);
-            $request->session()->forget('attendance_import_path');
+            $request->session()->forget(['attendance_import', 'attendance_import_path']);
             return redirect()->route('attendance.import.production')->with('import_result', $result);
         } catch (Throwable $e) {
             report($e);

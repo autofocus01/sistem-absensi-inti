@@ -2,32 +2,40 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\EmployeeImportController;
 use App\Http\Controllers\DivisionController;
 use App\Http\Controllers\AttendanceRecapController;
-use App\Http\Controllers\DirekturDashboardController;
 use App\Http\Controllers\AttendanceImportErrorController;
+use App\Http\Controllers\AttendanceAnomalyController;
+use App\Http\Controllers\ProductionAttendanceImportController;
 use App\Http\Controllers\TimesheetController;
 use App\Http\Controllers\TeamRecapController;
 use App\Http\Controllers\OvertimeController;
 use App\Http\Controllers\ProductionReportController;
 use App\Http\Controllers\MyAttendanceController;
 use App\Http\Controllers\AuditLogController;
-use App\Http\Controllers\ProductionAttendanceImportController;
-use App\Http\Controllers\EmployeeImportController;
-use App\Http\Controllers\AttendanceAnomalyController;
+use App\Http\Controllers\DirekturDashboardController;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+
 /*
 |--------------------------------------------------------------------------
-| Public
+| PUBLIC
 |--------------------------------------------------------------------------
 */
 
 Route::get('/', function () {
     return view('welcome');
 });
+
+
+/*
+|--------------------------------------------------------------------------
+| DASHBOARD
+|--------------------------------------------------------------------------
+*/
 
 Route::get('/dashboard', function () {
     return view('dashboard');
@@ -44,7 +52,7 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Profile
+    | PROFILE
     |--------------------------------------------------------------------------
     */
 
@@ -60,10 +68,10 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Timesheet
+    | TIMESHEET
     |--------------------------------------------------------------------------
     |
-    | VP/Karyawan/HR boleh masuk.
+    | Karyawan, VP, dan HR dapat mengakses timesheet.
     | Pembatasan data dilakukan di controller berdasarkan user/employee.
     |
     */
@@ -78,10 +86,10 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Absensi Saya
+    | ABSENSI SAYA
     |--------------------------------------------------------------------------
     |
-    | Karyawan dan VP hanya boleh melihat absensi dirinya sendiri.
+    | Karyawan dan VP hanya mengakses data absensinya sendiri.
     |
     */
 
@@ -97,25 +105,28 @@ Route::middleware('auth')->group(function () {
 
             Route::post('/clock-out', [MyAttendanceController::class, 'clockOut'])
                 ->name('attendance.my.clock-out');
+
         });
 
 
     /*
     |--------------------------------------------------------------------------
-    | Overtime Entry Point
+    | OVERTIME ENTRY POINT
     |--------------------------------------------------------------------------
     |
-    | /overtime adalah entry point berbasis role:
+    | GET /overtime:
     | - Karyawan -> form pengajuan lembur
     | - VP       -> halaman approval VP
     | - HR       -> halaman verifikasi HR
     |
-    | Endpoint POST pengajuan tetap khusus karyawan.
+    | POST /overtime/submit:
+    | - hanya Karyawan
     |
     */
 
     Route::middleware('role:karyawan,vp,hr_admin')
         ->get('/overtime', function (Request $request) {
+
             $role = (string) ($request->user()?->role ?? '');
 
             if ($role === 'vp') {
@@ -127,15 +138,32 @@ Route::middleware('auth')->group(function () {
             }
 
             return view('overtime.index');
-        })->name('overtime.index');
+
+        })
+        ->name('overtime.index');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | SUBMIT OVERTIME
+    |--------------------------------------------------------------------------
+    */
 
     Route::middleware('role:karyawan')
         ->post('/overtime/submit', [OvertimeController::class, 'store'])
         ->name('overtime.store');
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | OVERTIME HISTORY - KARYAWAN
+    |--------------------------------------------------------------------------
+    */
+
     Route::middleware('role:karyawan')
         ->get('/overtime/history', [OvertimeController::class, 'employeeHistory'])
         ->name('overtime.history');
+
 });
 
 
@@ -144,7 +172,7 @@ Route::middleware('auth')->group(function () {
 | VP DIVISI
 |--------------------------------------------------------------------------
 |
-| VP hanya mengelola data dan approval divisinya sendiri.
+| VP hanya mengelola approval lembur dari divisinya sendiri.
 |
 */
 
@@ -152,28 +180,56 @@ Route::middleware(['auth', 'role:vp'])
     ->prefix('overtime/vp')
     ->group(function () {
 
+        /*
+        |--------------------------------------------------------------------------
+        | Dashboard Approval VP
+        |--------------------------------------------------------------------------
+        */
+
         Route::get('/', function () {
             return view('overtime.vp-approval');
         })->name('overtime.vp');
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pending Overtime
+        |--------------------------------------------------------------------------
+        */
+
         Route::get('/pending-data', [OvertimeController::class, 'vpPendingList'])
             ->name('overtime.vp.pending');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Approve / Reject Overtime
+        |--------------------------------------------------------------------------
+        */
 
         Route::post('/approve/{id}', [OvertimeController::class, 'vpApprove'])
             ->name('overtime.vp.approve');
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | History Approval VP
+        |--------------------------------------------------------------------------
+        */
+
         Route::get('/history', [OvertimeController::class, 'vpHistory'])
             ->name('overtime.vp.history');
+
     });
 
 
 /*
 |--------------------------------------------------------------------------
-| REKAP DIVISI / TEAM
+| REKAPITULASI TIM / DIVISI
 |--------------------------------------------------------------------------
 |
-| VP  -> hanya divisinya sendiri
-| HR  -> dapat mengakses sesuai kewenangan HR
+| VP  -> hanya divisinya sendiri.
+| HR  -> dapat mengakses rekap sesuai kewenangannya.
 |
 */
 
@@ -183,7 +239,10 @@ Route::middleware(['auth', 'role:hr_admin,vp'])
         Route::get('/rekapitulasi-tim', [TeamRecapController::class, 'index'])
             ->name('team-recap.index');
 
-        // Compatibility route for the current sidebar/dashboard.
+        /*
+        | Compatibility route untuk sidebar/dashboard.
+        */
+
         Route::get('/reports/team', [TeamRecapController::class, 'index'])
             ->name('reports.team');
 
@@ -201,24 +260,33 @@ Route::middleware(['auth', 'role:hr_admin'])
 
         /*
         |--------------------------------------------------------------------------
-        | Employees
+        | EMPLOYEES
         |--------------------------------------------------------------------------
         */
 
         Route::resource('employees', EmployeeController::class)
             ->except(['show']);
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | EMPLOYEE IMPORT
+        |--------------------------------------------------------------------------
+        */
+
         Route::get('/employees/import', [EmployeeImportController::class, 'index'])
             ->name('employees.import');
+
         Route::post('/employees/import/preview', [EmployeeImportController::class, 'preview'])
             ->name('employees.import.preview');
+
         Route::post('/employees/import/commit', [EmployeeImportController::class, 'commit'])
             ->name('employees.import.commit');
 
 
         /*
         |--------------------------------------------------------------------------
-        | Attendance Admin
+        | ATTENDANCE ADMIN
         |--------------------------------------------------------------------------
         */
 
@@ -228,7 +296,7 @@ Route::middleware(['auth', 'role:hr_admin'])
 
         /*
         |--------------------------------------------------------------------------
-        | Divisions
+        | DIVISIONS
         |--------------------------------------------------------------------------
         */
 
@@ -238,63 +306,66 @@ Route::middleware(['auth', 'role:hr_admin'])
 
         /*
         |--------------------------------------------------------------------------
-        | Attendance Import Errors
+        | ATTENDANCE IMPORT ERRORS
         |--------------------------------------------------------------------------
         */
 
         Route::get('/attendance-import-errors', [
             AttendanceImportErrorController::class,
-            'index'
+            'index',
         ])->name('attendance.import-errors');
 
         Route::post('/attendance-import-errors/{importError}/resolve', [
             AttendanceImportErrorController::class,
-            'resolve'
+            'resolve',
         ])->name('attendance.import-errors.resolve');
 
 
         /*
         |--------------------------------------------------------------------------
-        | Production Attendance Import
+        | PRODUCTION ATTENDANCE IMPORT
         |--------------------------------------------------------------------------
+        |
+        | Import dari sistem Face Recognition resmi.
+        |
         */
 
         Route::get('/attendance/import-production', [
             ProductionAttendanceImportController::class,
-            'index'
+            'index',
         ])->name('attendance.import.production');
 
         Route::post('/attendance/import-production/preview', [
             ProductionAttendanceImportController::class,
-            'preview'
+            'preview',
         ])->name('attendance.import.production.preview');
 
         Route::post('/attendance/import-production/commit', [
             ProductionAttendanceImportController::class,
-            'commit'
+            'commit',
         ])->name('attendance.import.production.commit');
 
 
         /*
         |--------------------------------------------------------------------------
-        | Attendance Anomalies
+        | ATTENDANCE ANOMALIES
         |--------------------------------------------------------------------------
         */
 
         Route::get('/attendance/anomalies', [
             AttendanceAnomalyController::class,
-            'index'
+            'index',
         ])->name('attendance.anomalies');
 
         Route::patch('/attendance/anomalies/{anomaly}', [
             AttendanceAnomalyController::class,
-            'resolve'
+            'resolve',
         ])->name('attendance.anomalies.resolve');
 
 
         /*
         |--------------------------------------------------------------------------
-        | HR Overtime Verification
+        | HR OVERTIME VERIFICATION
         |--------------------------------------------------------------------------
         */
 
@@ -302,69 +373,92 @@ Route::middleware(['auth', 'role:hr_admin'])
             return view('overtime.hr-verification');
         })->name('overtime.hr.verification');
 
+
         Route::get('/overtime/hr/pending-data', [
             OvertimeController::class,
-            'hrPendingList'
+            'hrPendingList',
         ])->name('overtime.hr.pending');
+
 
         Route::post('/overtime/hr/verify/{id}', [
             OvertimeController::class,
-            'hrVerify'
+            'hrVerify',
         ])->name('overtime.hr.verify');
 
 
         /*
         |--------------------------------------------------------------------------
-        | HR Reports
+        | HR REPORTS
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('/reports', [
+            ProductionReportController::class,
+            'index',
+        ])->name('reports.index');
+
+        Route::get('/reports/excel', [
+            ProductionReportController::class,
+            'excel',
+        ])->name('reports.excel');
+
+        Route::get('/reports/pdf', [
+            ProductionReportController::class,
+            'pdf',
+        ])->name('reports.pdf');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | AUDIT LOG
         |--------------------------------------------------------------------------
         */
 
         Route::get('/audit-logs', [
             AuditLogController::class,
-            'index'
+            'index',
         ])->name('audit-logs.index');
 
-            // ------------------------------------------------------------------
-    // LAPORAN HR
-    // ------------------------------------------------------------------
-
-    Route::get('/reports', [ProductionReportController::class, 'index'])
-        ->name('reports.index');
-
-    Route::get('/reports/excel', [ProductionReportController::class, 'excel'])
-        ->name('reports.excel');
-
-    Route::get('/reports/pdf', [ProductionReportController::class, 'pdf'])
-        ->name('reports.pdf');
     });
 
-    /*
+
+/*
 |--------------------------------------------------------------------------
 | DIREKTUR UTAMA
 |--------------------------------------------------------------------------
 |
-| Executive monitoring only.
-| Tidak memberikan akses otomatis ke modul HR/VP atau approval lembur.
+| Executive monitoring.
+| Tidak memberikan akses otomatis ke modul HR atau VP.
 |
 */
 
-Route::middleware(['auth', 'role:direktur_utama'])->group(function () {
-    Route::get('/direktur/dashboard', [
-        DirekturDashboardController::class,
-        'index',
-    ])->name('direktur.dashboard');
+Route::middleware(['auth', 'role:direktur_utama'])
+    ->group(function () {
 
-    Route::get('/direktur/dashboard/export/excel', [
-        DirekturDashboardController::class,
-        'exportExcel',
-    ])->name('direktur.export-excel');
+        Route::get('/direktur/dashboard', [
+            DirekturDashboardController::class,
+            'index',
+        ])->name('direktur.dashboard');
 
-    Route::get('/direktur/dashboard/export/pdf', [
-        DirekturDashboardController::class,
-        'exportPdf',
-    ])->name('direktur.export-pdf');
 
-});
+        Route::get('/direktur/dashboard/export/excel', [
+            DirekturDashboardController::class,
+            'exportExcel',
+        ])->name('direktur.export-excel');
 
+
+        Route::get('/direktur/dashboard/export/pdf', [
+            DirekturDashboardController::class,
+            'exportPdf',
+        ])->name('direktur.export-pdf');
+
+    });
+
+
+/*
+|--------------------------------------------------------------------------
+| AUTH ROUTES
+|--------------------------------------------------------------------------
+*/
 
 require __DIR__.'/auth.php';

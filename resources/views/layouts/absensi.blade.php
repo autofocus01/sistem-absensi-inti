@@ -8,6 +8,8 @@
 <link href="https://fonts.googleapis.com" rel="preconnect">
 <link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ asset('css/p1-design-system.css') }}">
+<link rel="stylesheet" href="{{ asset('css/p1-responsive-enterprise.css') }}">
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
@@ -98,26 +100,35 @@
                 Dashboard
             </a>
 
+            <a href="{{ route('attendance.my') }}"
+               class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
+               {{ request()->routeIs('attendance.my*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+                <span class="material-symbols-outlined text-[20px]">event_available</span>
+                Absensi Saya
+            </a>
+
             <a href="{{ route('timesheet.index') }}"
                class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
                {{ request()->routeIs('timesheet.*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
-                <span class="material-symbols-outlined text-[20px]">event_available</span>
-                Absensi & Timesheet
+                <span class="material-symbols-outlined text-[20px]">calendar_clock</span>
+                Riwayat &amp; Timesheet
             </a>
 
             <a href="{{ route('overtime.index') }}"
                class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
-               {{ request()->routeIs('overtime.index') || request()->routeIs('overtime.store') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+               {{ request()->routeIs('overtime.index') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
                 <span class="material-symbols-outlined text-[20px]">more_time</span>
                 Pengajuan Lembur
             </a>
 
-            <a href="{{ route('overtime.history') }}"
-               class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
-               {{ request()->routeIs('overtime.history') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
-                <span class="material-symbols-outlined text-[20px]">history</span>
-                Riwayat Lembur
-            </a>
+            @if (\Illuminate\Support\Facades\Route::has('overtime.history'))
+                <a href="{{ route('overtime.history') }}"
+                   class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
+                   {{ request()->routeIs('overtime.history*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+                    <span class="material-symbols-outlined text-[20px]">history</span>
+                    Riwayat Lembur
+                </a>
+            @endif
 
         </nav>
 
@@ -146,25 +157,25 @@
                 Dashboard
             </a>
 
-            <a href="{{ route('timesheet.index') }}"
+            <a href="{{ route('attendance.my') }}"
                class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
-               {{ request()->routeIs('timesheet.*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+               {{ request()->routeIs('attendance.my*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
                 <span class="material-symbols-outlined text-[20px]">event_available</span>
                 Absensi Saya
             </a>
 
-            <a href="{{ route('overtime.vp') }}"
+            <a href="{{ route('timesheet.index') }}"
                class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
-               {{ request()->routeIs('overtime.vp') || request()->routeIs('overtime.vp.pending') || request()->routeIs('overtime.vp.approve') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
-                <span class="material-symbols-outlined text-[20px]">approval</span>
-                Persetujuan Lembur
+               {{ request()->routeIs('timesheet.*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+                <span class="material-symbols-outlined text-[20px]">calendar_clock</span>
+                Riwayat &amp; Timesheet
             </a>
 
-            <a href="{{ route('overtime.vp.history') }}"
+            <a href="{{ route('overtime.vp') }}"
                class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
-               {{ request()->routeIs('overtime.vp.history') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
-                <span class="material-symbols-outlined text-[20px]">history</span>
-                Riwayat Keputusan
+               {{ request()->routeIs('overtime.vp*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+                <span class="material-symbols-outlined text-[20px]">approval</span>
+                Persetujuan Lembur
             </a>
 
             <a href="{{ route('team-recap.index') }}" class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm {{ request()->routeIs('reports.team') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
@@ -208,14 +219,12 @@
                 Data Karyawan
             </a>
 
-            @if (\Illuminate\Support\Facades\Route::has('employees.import'))
-                <a href="{{ route('employees.import') }}"
-                   class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
-                   {{ request()->routeIs('employees.import*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
-                    <span class="material-symbols-outlined text-[20px]">person_add</span>
-                    Import Karyawan
-                </a>
-            @endif
+            <a href="{{ route('employees.import') }}"
+               class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
+               {{ request()->routeIs('employees.import*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+                <span class="material-symbols-outlined text-[20px]">upload_file</span>
+                Import Karyawan
+            </a>
 
             <a href="{{ route('divisions.index') }}"
                class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm

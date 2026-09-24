@@ -21,7 +21,7 @@ function reportingEmployee(): array
         'lini' => 'Test',
     ]);
 
-    $employee = Employee::create([
+    $employee = testPersistEmployee([
         'nipeg' => 'RPT-' . $user->id,
         'nama' => $user->name,
         'division_id' => $division->id,
@@ -52,27 +52,27 @@ test('official overtime hanya menghitung VERIFIED_HR yang eligible', function ()
     ];
 
     // Belum disetujui VP → bukan official
-    OvertimeSubmission::create([
+    testPersistOvertimeSubmission([
         ...$base,
         'status' => 'PENDING_VP',
     ]);
 
     // Sudah disetujui VP tetapi belum diverifikasi HR → bukan official
-    OvertimeSubmission::create([
+    testPersistOvertimeSubmission([
         ...$base,
         'status' => 'APPROVED_VP',
         'overtime_date' => '2026-09-22',
     ]);
 
     // Sudah VERIFIED_HR + ELIGIBLE → official
-    OvertimeSubmission::create([
+    testPersistOvertimeSubmission([
         ...$base,
         'status' => 'VERIFIED_HR',
         'overtime_date' => '2026-09-23',
     ]);
 
     // VERIFIED_HR tetapi NOT_ELIGIBLE → bukan official
-    OvertimeSubmission::create([
+    testPersistOvertimeSubmission([
         ...$base,
         'status' => 'VERIFIED_HR',
         'eligibility_status' => 'NOT_ELIGIBLE',

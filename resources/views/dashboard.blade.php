@@ -1,363 +1,46 @@
-<x-app-layout>
-
-    <x-slot name="header">
-
-        <div class="flex items-center justify-between">
-
-            <div>
-                <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                    {{ __('Dashboard') }}
-                </h2>
-
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    Sistem Absensi & Overtime PT INTI
-                </p>
-            </div>
-
-        </div>
-
-    </x-slot>
-
-
-    <div class="py-8">
-
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-
-
-            <!-- Welcome -->
-            <div class="bg-white dark:bg-gray-800
-                        overflow-hidden shadow-sm sm:rounded-lg
-                        mb-6">
-
-                <div class="p-6">
-
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                        Selamat datang, {{ auth()->user()->name }}
-                    </h3>
-
-                    <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                        Anda login sebagai
-                        <span class="font-semibold">
-                            {{ strtoupper(auth()->user()->role) }}
-                        </span>
-                    </p>
-
-                </div>
-
-            </div>
-
-
-            <!-- =========================================================
-                 KARYAWAN
-                 ========================================================= -->
-
-            @if(auth()->user()->isKaryawan())
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-
-                    <!-- Absensi -->
-                    <a
-                        href="{{ route('attendance.my') }}"
-                        class="block bg-white dark:bg-gray-800
-                               overflow-hidden shadow-sm
-                               sm:rounded-lg
-                               hover:shadow-md transition">
-
-                        <div class="p-6">
-
-                            <div class="flex items-center">
-
-                                <div class="p-3 rounded-lg bg-indigo-100 dark:bg-indigo-900">
-
-                                    <svg
-                                        class="w-6 h-6 text-indigo-600 dark:text-indigo-300"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24">
-
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="2"
-                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                        />
-
-                                    </svg>
-
-                                </div>
-
-                                <div class="ms-4">
-
-                                    <h3 class="font-semibold text-gray-900 dark:text-gray-100">
-                                        Absensi
-                                    </h3>
-
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">
-                                        Status, Clock In/Out, dan riwayat presensi Anda.
-                                    </p>
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                    </a>
-
-
-                    <!-- Overtime -->
-                    <a
-                        href="{{ route('overtime.index') }}"
-                        class="block bg-white dark:bg-gray-800
-                               overflow-hidden shadow-sm
-                               sm:rounded-lg
-                               hover:shadow-md transition">
-
-                        <div class="p-6">
-
-                            <div class="flex items-center">
-
-                                <div class="p-3 rounded-lg bg-amber-100 dark:bg-amber-900">
-
-                                    <svg
-                                        class="w-6 h-6 text-amber-600 dark:text-amber-300"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24">
-
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="2"
-                                            d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                        />
-
-                                    </svg>
-
-                                </div>
-
-                                <div class="ms-4">
-
-                                    <h3 class="font-semibold text-gray-900 dark:text-gray-100">
-                                        Overtime
-                                    </h3>
-
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">
-                                        Ajukan dan lihat status overtime.
-                                    </p>
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                    </a>
-
-                </div>
-
-            @endif
-
-
-            <!-- =========================================================
-                 VP
-                 ========================================================= -->
-
-            @if(auth()->user()->isVp())
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-
-                    <a
-                        href="{{ route('attendance.my') }}"
-                        class="block bg-white dark:bg-gray-800
-                               overflow-hidden shadow-sm
-                               sm:rounded-lg hover:shadow-md transition">
-
-                        <div class="p-6">
-
-                            <h3 class="font-semibold text-gray-900 dark:text-gray-100">
-                                Absensi
-                            </h3>
-
-                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                Monitoring data absensi.
-                            </p>
-
-                        </div>
-
-                    </a>
-
-
-                    <a
-                        href="{{ route('overtime.vp') }}"
-                        class="block bg-white dark:bg-gray-800
-                               overflow-hidden shadow-sm
-                               sm:rounded-lg hover:shadow-md transition">
-
-                        <div class="p-6">
-
-                            <h3 class="font-semibold text-gray-900 dark:text-gray-100">
-                                Persetujuan Overtime
-                            </h3>
-
-                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                Review dan proses pengajuan overtime dari divisi Anda.
-                            </p>
-
-                        </div>
-
-                    </a>
-
-                    <a href="{{ route('team-recap.index') }}" class="block bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg hover:shadow-md transition">
-                        <div class="p-6"><h3 class="font-semibold text-gray-900 dark:text-gray-100">Rekap Divisi</h3><p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Monitoring presensi dan lembur resmi divisi Anda.</p></div>
-                    </a>
-
-                </div>
-
-            @endif
-
-
-            <!-- =========================================================
-                 HR ADMIN
-                 ========================================================= -->
-
-            @if(auth()->user()->isHrAdmin())
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-
-
-                    <a
-                        href="{{ route('attendance.index') }}"
-                        class="block bg-white dark:bg-gray-800
-                               overflow-hidden shadow-sm
-                               sm:rounded-lg hover:shadow-md transition">
-
-                        <div class="p-6">
-
-                            <h3 class="font-semibold text-gray-900 dark:text-gray-100">
-                                Absensi
-                            </h3>
-
-                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                Kelola dan monitor absensi.
-                            </p>
-
-                        </div>
-
-                    </a>
-
-
-                    <a
-                        href="{{ route('overtime.hr.verification') }}"
-                        class="block bg-white dark:bg-gray-800
-                               overflow-hidden shadow-sm
-                               sm:rounded-lg hover:shadow-md transition">
-
-                        <div class="p-6">
-
-                            <h3 class="font-semibold text-gray-900 dark:text-gray-100">
-                                Verifikasi Overtime
-                            </h3>
-
-                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                Verifikasi overtime yang telah disetujui VP.
-                            </p>
-
-                        </div>
-
-                    </a>
-
-
-                    <a
-                        href="{{ route('employees.index') }}"
-                        class="block bg-white dark:bg-gray-800
-                               overflow-hidden shadow-sm
-                               sm:rounded-lg hover:shadow-md transition">
-
-                        <div class="p-6">
-
-                            <h3 class="font-semibold text-gray-900 dark:text-gray-100">
-                                Karyawan
-                            </h3>
-
-                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                Kelola data karyawan.
-                            </p>
-
-                        </div>
-
-                    </a>
-
-
-                    <a
-                        href="{{ route('divisions.index') }}"
-                        class="block bg-white dark:bg-gray-800
-                               overflow-hidden shadow-sm
-                               sm:rounded-lg hover:shadow-md transition">
-
-                        <div class="p-6">
-
-                            <h3 class="font-semibold text-gray-900 dark:text-gray-100">
-                                Divisi
-                            </h3>
-
-                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                Kelola struktur divisi.
-                            </p>
-
-                        </div>
-
-                    </a>
-
-                    <a href="{{ route('team-recap.index') }}" class="block bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg hover:shadow-md transition">
-                        <div class="p-6"><h3 class="font-semibold text-gray-900 dark:text-gray-100">Laporan Team</h3><p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Rekap kehadiran tim.</p></div>
-                    </a>
-                    <a href="{{ route('audit-logs.index') }}" class="block bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg hover:shadow-md transition">
-                        <div class="p-6"><h3 class="font-semibold text-gray-900 dark:text-gray-100">Audit Trail</h3><p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Telusuri aktivitas penting sistem.</p></div>
-                    </a>
-
-                </div>
-
-            @endif
-
-
-            <!-- =========================================================
-                 DIREKTUR UTAMA
-                 ========================================================= -->
-
-            @if(auth()->user()->isDirekturUtama())
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                    <a
-                        href="{{ route('direktur.dashboard') }}"
-                        class="block bg-white dark:bg-gray-800
-                               overflow-hidden shadow-sm
-                               sm:rounded-lg hover:shadow-md transition">
-
-                        <div class="p-6">
-
-                            <h3 class="font-semibold text-gray-900 dark:text-gray-100">
-                                Absensi
-                            </h3>
-
-                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                Monitoring absensi.
-                            </p>
-
-                        </div>
-
-                    </a>
-
-                </div>
-
-            @endif
-
-
-        </div>
-
+@extends('layouts.absensi')
+@section('title','Dashboard — Sistem Absensi PT. INTI')
+@section('content')
+<div class="inti-page">
+  <div class="inti-page-header">
+    <div><div class="inti-eyebrow">Sistem Absensi & Lembur PT. INTI</div><h1 class="inti-title">Dashboard</h1><p class="inti-subtitle">Ringkasan akses dan aktivitas sesuai peran Anda.</p></div>
+  </div>
+
+  <div class="inti-card inti-card-pad" style="margin-bottom:1rem;background:linear-gradient(135deg,#0f2942,#001428);color:#fff">
+    <div style="display:flex;align-items:center;gap:1rem">
+      <div style="width:48px;height:48px;border-radius:14px;background:rgba(255,255,255,.12);display:grid;place-items:center"><span class="material-symbols-outlined">waving_hand</span></div>
+      <div><div style="font-size:18px;font-weight:700">Selamat datang, {{ auth()->user()->name }}</div><div style="font-size:13px;opacity:.8;margin-top:.2rem">Akses {{ strtoupper((string) auth()->user()->role) }} · {{ now()->translatedFormat('l, d F Y') }}</div></div>
     </div>
+  </div>
 
-</x-app-layout>
+  @if(auth()->user()->isKaryawan())
+    <div class="inti-kpi-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:1rem">
+      <a href="{{ route('attendance.my') }}" class="inti-card inti-card-pad inti-card-hover" style="text-decoration:none"><div class="inti-kpi-label">Presensi</div><div class="inti-kpi-value"><span class="material-symbols-outlined" style="font-size:28px;vertical-align:-5px">event_available</span> Absensi Saya</div><div class="inti-kpi-meta">Clock In, Clock Out & riwayat</div></a>
+      <a href="{{ route('timesheet.index') }}" class="inti-card inti-card-pad inti-card-hover" style="text-decoration:none"><div class="inti-kpi-label">Monitoring</div><div class="inti-kpi-value"><span class="material-symbols-outlined" style="font-size:28px;vertical-align:-5px">calendar_clock</span> Timesheet</div><div class="inti-kpi-meta">Presensi dan lembur resmi</div></a>
+      <a href="{{ route('overtime.index') }}" class="inti-card inti-card-pad inti-card-hover" style="text-decoration:none"><div class="inti-kpi-label">Operasional</div><div class="inti-kpi-value"><span class="material-symbols-outlined" style="font-size:28px;vertical-align:-5px">more_time</span> Lembur</div><div class="inti-kpi-meta">Ajukan dan pantau proses</div></a>
+    </div>
+  @elseif(auth()->user()->isVp())
+    <div class="inti-kpi-grid" style="margin-bottom:1rem">
+      <a href="{{ route('attendance.my') }}" class="inti-card inti-card-pad inti-card-hover" style="text-decoration:none"><div class="inti-kpi-label">Presensi Pribadi</div><div class="inti-kpi-value">Absensi Saya</div><div class="inti-kpi-meta">Clock In / Clock Out</div></a>
+      <a href="{{ route('timesheet.index') }}" class="inti-card inti-card-pad inti-card-hover" style="text-decoration:none"><div class="inti-kpi-label">Monitoring</div><div class="inti-kpi-value">Timesheet</div><div class="inti-kpi-meta">Riwayat presensi & lembur</div></a>
+      <a href="{{ route('overtime.vp') }}" class="inti-card inti-card-pad inti-card-hover" style="text-decoration:none"><div class="inti-kpi-label">Approval</div><div class="inti-kpi-value">Persetujuan Lembur</div><div class="inti-kpi-meta">Antrean anggota divisi</div></a>
+      <a href="{{ route('team-recap.index') }}" class="inti-card inti-card-pad inti-card-hover" style="text-decoration:none"><div class="inti-kpi-label">Reporting</div><div class="inti-kpi-value">Rekap Divisi</div><div class="inti-kpi-meta">Monitoring tim</div></a>
+    </div>
+  @elseif(auth()->user()->isHrAdmin())
+    <div class="inti-kpi-grid" style="margin-bottom:1rem">
+      <a href="{{ route('employees.index') }}" class="inti-card inti-card-pad inti-card-hover" style="text-decoration:none"><div class="inti-kpi-label">Master Data</div><div class="inti-kpi-value">Karyawan</div><div class="inti-kpi-meta">Kelola personel</div></a>
+      <a href="{{ route('attendance.index') }}" class="inti-card inti-card-pad inti-card-hover" style="text-decoration:none"><div class="inti-kpi-label">Presensi</div><div class="inti-kpi-value">Rekap Absensi</div><div class="inti-kpi-meta">Monitoring attendance</div></a>
+      <a href="{{ route('team-recap.index') }}" class="inti-card inti-card-pad inti-card-hover" style="text-decoration:none"><div class="inti-kpi-label">Reporting</div><div class="inti-kpi-value">Rekapitulasi Tim</div><div class="inti-kpi-meta">KPI operasional</div></a>
+      @if(Route::has('overtime.hr.verification'))<a href="{{ route('overtime.hr.verification') }}" class="inti-card inti-card-pad inti-card-hover" style="text-decoration:none"><div class="inti-kpi-label">Governance</div><div class="inti-kpi-value">Verifikasi Lembur</div><div class="inti-kpi-meta">Proses setelah approval VP</div></a>@endif
+    </div>
+    <div class="inti-card inti-card-pad"><div class="inti-section-title">Pusat Operasional HR</div><div style="display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1rem">
+      @if(Route::has('employees.import'))<a class="inti-btn inti-btn-primary" href="{{ route('employees.import') }}"><span class="material-symbols-outlined">upload_file</span>Import Karyawan</a>@endif
+      @if(Route::has('attendance.import.production'))<a class="inti-btn inti-btn-ghost" href="{{ route('attendance.import.production') }}"><span class="material-symbols-outlined">file_upload</span>Import Absensi</a>@endif
+      @if(Route::has('attendance.anomalies'))<a class="inti-btn inti-btn-ghost" href="{{ route('attendance.anomalies') }}"><span class="material-symbols-outlined">fact_check</span>Review Anomali</a>@endif
+      @if(Route::has('audit-logs.index'))<a class="inti-btn inti-btn-ghost" href="{{ route('audit-logs.index') }}"><span class="material-symbols-outlined">manage_search</span>Audit Trail</a>@endif
+    </div></div>
+  @elseif(auth()->user()->isDirekturUtama())
+    <a href="{{ route('direktur.dashboard') }}" class="inti-card inti-card-pad inti-card-hover" style="display:block;text-decoration:none"><div class="inti-kpi-label">Executive Monitoring</div><div class="inti-kpi-value">Dashboard Direktur Utama</div><div class="inti-kpi-meta">Ringkasan kinerja presensi dan lembur perusahaan</div></a>
+  @endif
+</div>
+@endsection

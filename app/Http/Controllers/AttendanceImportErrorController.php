@@ -8,13 +8,17 @@ use Illuminate\Http\Request;
 
 class AttendanceImportErrorController extends Controller
 {
+    public function __construct(
+        private readonly AuditLogService $audit,
+    ) {
+    }
+
     public function index()
     {
         $importErrors = AttendanceImportError::orderBy('status')
             ->orderByDesc('created_at')
             ->paginate(20);
 
-        // Ringkasan buat KPI & grafik - dihitung dari SELURUH data, bukan cuma halaman yang lagi tampil.
         $totalPending = AttendanceImportError::where('status', 'pending')->count();
         $totalSelesai = AttendanceImportError::where('status', 'selesai')->count();
         $sebaranJenis = [
@@ -27,14 +31,19 @@ class AttendanceImportErrorController extends Controller
 
     public function resolve(Request $request, AttendanceImportError $importError)
     {
+        if ($importError->status === 'selesai') {
+            return back()->with('status', 'Baris anomali sudah berstatus selesai.');
+        }
+
         $before = $importError->toArray();
         $importError->update(['status' => 'selesai']);
+        $fresh = $importError->fresh();
 
         $this->audit->record(
             'ATTENDANCE_IMPORT_ERROR_RESOLVED',
-            $importError,
+            $fresh,
             $before,
-            $importError->fresh()->toArray(),
+            $fresh->toArray(),
             'Baris error import ditandai selesai oleh HR.',
             $request
         );

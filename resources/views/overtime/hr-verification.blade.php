@@ -1,8 +1,13 @@
 @extends('layouts.absensi')
+@section('p1_head')
+<link rel="stylesheet" href="{{ asset('css/p1-design-system.css') }}">
+<link rel="stylesheet" href="{{ asset('css/p1-hr-governance.css') }}">
+@endsection
 
 @section('title', 'Verifikasi Lembur HR - PT. INTI')
 
 @section('content')
+<div class="inti-page p1-hr-governance">
 <div class="flex flex-col gap-space-lg w-full">
 
   <!-- Header Banner -->
@@ -166,4 +171,5 @@
     .catch(err => console.error('Error verify HR:', err));
   }
 </script>
+</div>
 @endsection

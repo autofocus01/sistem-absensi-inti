@@ -1,63 +1,185 @@
-<x-app-layout>
-    <div class="max-w-7xl mx-auto p-6 space-y-6">
+@extends('layouts.absensi')
+
+@section('title', 'Preview Import Karyawan')
+
+@section('content')
+<div class="inti-page">
+@php
+    $errorsPreview = $preview['errors'] ?? [];
+    $rowsPreview = $preview['rows'] ?? [];
+    $headersPreview = $preview['headers'] ?? [];
+    $valid = (int) ($preview['valid'] ?? 0);
+    $totalRows = (int) ($preview['total_rows'] ?? 0);
+@endphp
+
+<div class="max-w-7xl mx-auto space-y-6">
+
+    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-semibold">Preview Import Karyawan</h1>
-            <p class="text-sm opacity-70">Tidak ada perubahan database sampai tombol commit ditekan.</p>
+            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
+                MASTER DATA
+            </span>
+
+            <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight mt-1">
+                Preview Import Karyawan
+            </h1>
+
+            <p class="font-body-md text-body-md text-on-surface-variant mt-1">
+                Periksa hasil validasi sebelum melakukan commit ke master karyawan.
+            </p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="p-4 border rounded">Total: <strong>{{ $preview['total_rows'] }}</strong></div>
-            <div class="p-4 border rounded">Valid: <strong>{{ $preview['valid'] }}</strong></div>
-            <div class="p-4 border rounded">Error: <strong>{{ count($preview['errors']) }}</strong></div>
+        <a
+            href="{{ route('employees.import') }}"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container text-on-surface font-title-sm"
+        >
+            <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+            Upload Ulang
+        </a>
+    </div>
+
+    {{-- Summary --}}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="inti-card inti-card-pad p-5">
+            <div class="font-label-sm text-label-sm text-on-surface-variant uppercase">
+                Total Baris
+            </div>
+            <div class="font-headline-md text-headline-md text-primary mt-1">
+                {{ $totalRows }}
+            </div>
         </div>
 
-        @if(count($preview['errors']))
-            <div class="p-4 border border-red-200 rounded bg-red-50 text-red-800">
-                <h2 class="font-semibold mb-3">Baris yang harus diperbaiki</h2>
-                <div class="space-y-2 text-sm">
-                    @foreach($preview['errors'] as $error)
-                        <div>Baris {{ $error['row'] ?? '-' }}: {{ $error['reason'] }}</div>
-                    @endforeach
-                </div>
+        <div class="inti-card inti-card-pad p-5">
+            <div class="font-label-sm text-label-sm text-on-surface-variant uppercase">
+                Valid
             </div>
-        @endif
-
-        @if(!empty($preview['rows']))
-            <div class="border rounded overflow-x-auto bg-white">
-                <table class="min-w-full text-sm">
-                    <thead>
-                        <tr class="border-b bg-gray-50">
-                            <th class="px-4 py-3 text-left">Baris</th>
-                            <th class="px-4 py-3 text-left">NIPEG</th>
-                            <th class="px-4 py-3 text-left">Nama</th>
-                            <th class="px-4 py-3 text-left">Divisi</th>
-                            <th class="px-4 py-3 text-left">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($preview['rows'] as $row)
-                            <tr class="border-b last:border-0">
-                                <td class="px-4 py-3">{{ $row['row'] }}</td>
-                                <td class="px-4 py-3 font-medium">{{ $row['nipeg'] }}</td>
-                                <td class="px-4 py-3">{{ $row['nama'] }}</td>
-                                <td class="px-4 py-3">{{ $row['divisi'] }}</td>
-                                <td class="px-4 py-3 font-semibold">{{ $row['action'] }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+            <div class="font-headline-md text-headline-md text-secondary mt-1">
+                {{ $valid }}
             </div>
-        @endif
+        </div>
 
-        <div class="flex gap-3">
-            <a href="{{ route('employees.import') }}" class="px-4 py-2 rounded border">Upload ulang</a>
-
-            @if($preview['valid'] > 0 && count($preview['errors']) === 0)
-                <form method="POST" action="{{ route('employees.import.commit') }}">
-                    @csrf
-                    <button class="px-4 py-2 rounded bg-primary text-white">Commit Import</button>
-                </form>
-            @endif
+        <div class="inti-card inti-card-pad p-5">
+            <div class="font-label-sm text-label-sm text-on-surface-variant uppercase">
+                Bermasalah
+            </div>
+            <div class="font-headline-md text-headline-md text-error mt-1">
+                {{ count($errorsPreview) }}
+            </div>
         </div>
     </div>
-</x-app-layout>
+
+    {{-- Errors --}}
+    @if (count($errorsPreview) > 0)
+        <div class="rounded-xl border border-error/20 bg-error/10 p-5">
+            <div class="flex items-start gap-3">
+                <span class="material-symbols-outlined text-error">error</span>
+
+                <div class="w-full">
+                    <h2 class="font-title-sm text-title-sm text-error">
+                        Baris bermasalah
+                    </h2>
+
+                    <div class="mt-3 space-y-2">
+                        @foreach ($errorsPreview as $error)
+                            <div class="rounded-lg bg-surface-container-lowest p-3 font-body-sm text-body-sm">
+                                <strong>Baris {{ $error['row'] ?? '-' }}</strong>
+                                — {{ $error['reason'] ?? 'Data tidak valid.' }}
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Optional normalized preview rows --}}
+    @if (count($rowsPreview) > 0)
+        <div class="inti-card inti-card-pad overflow-x-auto">
+            <div class="p-5 border-b border-surface-container-low">
+                <h2 class="font-headline-sm text-headline-sm text-primary">
+                    Data yang akan diproses
+                </h2>
+            </div>
+
+            <table class="w-full min-w-[900px] text-left">
+                <thead>
+                    <tr class="bg-surface-container-low font-label-sm text-label-sm text-on-surface-variant uppercase">
+                        <th class="px-4 py-3">NIPEG</th>
+                        <th class="px-4 py-3">Nama</th>
+                        <th class="px-4 py-3">Divisi</th>
+                        <th class="px-4 py-3">Aksi</th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-surface-container-low">
+                    @foreach ($rowsPreview as $row)
+                        <tr>
+                            <td class="px-4 py-3 font-title-sm text-primary">
+                                {{ $row['nipeg'] ?? '-' }}
+                            </td>
+                            <td class="px-4 py-3">
+                                {{ $row['nama'] ?? '-' }}
+                            </td>
+                            <td class="px-4 py-3">
+                                {{ $row['divisi'] ?? '-' }}
+                            </td>
+                            <td class="px-4 py-3">
+                                @php($action = strtoupper((string) ($row['action'] ?? 'VALID')))
+
+                                <span class="inline-flex px-2 py-1 rounded-full font-label-sm
+                                    {{ $action === 'CREATE'
+                                        ? 'bg-secondary-container text-secondary'
+                                        : ($action === 'UPDATE'
+                                            ? 'bg-surface-container text-primary'
+                                            : 'bg-surface-container text-on-surface-variant') }}">
+                                    {{ $action }}
+                                </span>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
+
+    {{-- Commit --}}
+    <div class="inti-card inti-card-pad p-5">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+
+            <div>
+                <h2 class="font-title-sm text-title-sm text-primary">
+                    Siap diproses?
+                </h2>
+
+                <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+                    Commit hanya menyimpan data yang lolos validasi.
+                    Relasi <code>user_id</code> yang sudah ada tidak diambil alih oleh import.
+                </p>
+            </div>
+
+            @if ($valid > 0)
+                <form method="POST" action="{{ route('employees.import.commit') }}">
+                    @csrf
+
+                    <button
+                        type="submit"
+                        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg inti-btn inti-btn-primary font-title-sm hover:bg-primary transition-colors"
+                        onclick="return confirm('Commit {{ $valid }} baris valid ke master karyawan?')"
+                    >
+                        <span class="material-symbols-outlined text-[18px]">task_alt</span>
+                        Commit {{ $valid }} Baris Valid
+                    </button>
+                </form>
+            @else
+                <span class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-error/10 text-error font-title-sm">
+                    <span class="material-symbols-outlined text-[18px]">block</span>
+                    Tidak ada baris valid
+                </span>
+            @endif
+
+        </div>
+    </div>
+</div>
+</div>
+
+@endsection

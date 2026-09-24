@@ -22,7 +22,7 @@ function limitTestEmployee(): array
         'lini' => 'Test',
     ]);
 
-    $employee = Employee::create([
+    $employee = testPersistEmployee([
         'nipeg' => 'LIM-' . $user->id,
         'nama' => $user->name,
         'division_id' => $division->id,
@@ -39,7 +39,7 @@ function activeOvertime(
     int $minutes,
     string $category = 'hari_kerja',
 ): OvertimeSubmission {
-    return OvertimeSubmission::create([
+    return testPersistOvertimeSubmission([
         'user_id' => $user->id,
         'division_id' => $division->id,
         'overtime_date' => $date,

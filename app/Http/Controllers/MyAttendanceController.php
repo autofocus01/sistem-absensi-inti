@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\AttendanceLog;
 use App\Services\Audit\AuditLogService;
-use App\Services\Overtime\OvertimeReconciliationService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,7 +17,6 @@ class MyAttendanceController extends Controller
 
     public function __construct(
         private readonly AuditLogService $audit,
-        private readonly OvertimeReconciliationService $reconciliation,
     ) {}
 
     public function index(Request $request): View
@@ -177,11 +175,13 @@ class MyAttendanceController extends Controller
                     'jam_pulang' => $time,
                     'jumlah_scan' => (int) $attendance->jumlah_scan + 1,
                 ])->save();
-                $this->audit->record('CLOCK_OUT', $attendance, $before, $attendance->fresh()->toArray(), 'Clock Out mandiri karyawan.');
-                $submission = $this->reconciliation->reconcileAfterClockOut($attendance);
-                if ($submission) {
-                    $this->audit->record('OT_RECONCILED', $submission, null, $submission->toArray(), 'Rekonsiliasi OT otomatis setelah Clock Out.');
-                }
+                $this->audit->record(
+                    'CLOCK_OUT',
+                    $attendance,
+                    $before,
+                    $attendance->fresh()->toArray(),
+                    'Clock Out mandiri karyawan. Lembur tidak dibuat otomatis; pengajuan dilakukan setelah Clock Out.'
+                );
             });
         } catch (\RuntimeException $e) {
             return back()->withErrors(['attendance' => $e->getMessage()]);

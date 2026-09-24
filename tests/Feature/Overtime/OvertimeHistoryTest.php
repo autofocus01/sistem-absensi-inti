@@ -20,7 +20,7 @@ function historyUser(string $role, string $name): User
 
 function historyEmployee(User $user, Division $division, string $nipeg): Employee
 {
-    return Employee::create([
+    return testPersistEmployee([
         'user_id' => $user->id,
         'nipeg' => $nipeg,
         'nama' => $user->name,
@@ -31,7 +31,7 @@ function historyEmployee(User $user, Division $division, string $nipeg): Employe
 
 function historySubmission(User $user, Division $division, string $status): OvertimeSubmission
 {
-    return OvertimeSubmission::create([
+    return testPersistOvertimeSubmission([
         'user_id' => $user->id,
         'division_id' => $division->id,
         'overtime_date' => '2026-09-22',
@@ -80,17 +80,17 @@ test('vp melihat hanya keputusan yang dibuat oleh dirinya sendiri dalam divisiny
     historyEmployee($employee, $division, 'EMP-H001');
 
     $ownDecision = historySubmission($employee, $division, 'REJECTED_VP');
-    $ownDecision->update([
+    $ownDecision->forceFill([
         'vp_approver_id' => $vp->id,
         'vp_approved_at' => now(),
         'vp_notes' => 'Ditolak untuk pengujian',
-    ]);
+    ])->save();
 
     $otherDecision = historySubmission($employee, $division, 'APPROVED_VP');
-    $otherDecision->update([
+    $otherDecision->forceFill([
         'vp_approver_id' => $otherVp->id,
         'vp_approved_at' => now(),
-    ]);
+    ])->save();
 
     $this->actingAs($vp)
         ->get(route('overtime.vp.history'))

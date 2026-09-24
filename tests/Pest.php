@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Employee;
+use App\Models\OvertimeSubmission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -44,7 +46,53 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+function testPersistEmployee(array $attributes): Employee
 {
-    // ..
+    $userId = $attributes['user_id'] ?? null;
+    unset($attributes['user_id']);
+
+    $employee = new Employee();
+    $employee->fill($attributes);
+
+    if ($userId !== null) {
+        $employee->forceFill(['user_id' => $userId]);
+    }
+
+    $employee->save();
+
+    return $employee;
+}
+
+function testPersistOvertimeSubmission(array $attributes): OvertimeSubmission
+{
+    $serverControlled = [
+        'id',
+        'ticket_number',
+        'user_id',
+        'division_id',
+        'attendance_log_id',
+        'actual_start_time',
+        'actual_end_time',
+        'actual_minutes',
+        'recognized_minutes',
+        'eligibility_status',
+        'estimated_hours',
+        'status',
+        'vp_approver_id',
+        'vp_approved_at',
+        'vp_notes',
+        'hr_verifier_id',
+        'hr_verified_at',
+        'hr_notes',
+    ];
+
+    $business = array_diff_key($attributes, array_flip($serverControlled));
+    $server = array_intersect_key($attributes, array_flip($serverControlled));
+
+    $overtime = new OvertimeSubmission();
+    $overtime->fill($business);
+    $overtime->forceFill($server);
+    $overtime->save();
+
+    return $overtime;
 }

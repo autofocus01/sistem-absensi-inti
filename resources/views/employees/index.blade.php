@@ -1,7 +1,12 @@
 @extends('layouts.absensi')
+@section('p1_head')
+<link rel="stylesheet" href="{{ asset('css/p1-design-system.css') }}">
+<link rel="stylesheet" href="{{ asset('css/p1-hr-governance.css') }}">
+@endsection
 @section('title', 'Data Karyawan')
 
 @section('content')
+<div class="inti-page p1-hr-governance">
 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-base pb-space-lg">
   <div class="flex flex-col gap-1">
     <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">DATA MASTER &bull; SDM PT. INTI</span>
@@ -138,4 +143,5 @@
     },
   });
 </script>
+</div>
 @endsection

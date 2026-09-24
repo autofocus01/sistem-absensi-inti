@@ -11,7 +11,7 @@ function createReportingEmployee(User $user, string $jabatan = 'Karyawan'): Empl
         'lini' => 'Test',
     ]);
 
-    return Employee::create([
+    return testPersistEmployee([
         'user_id' => $user->id,
         'nipeg' => 'UAT-' . $user->id,
         'nama' => 'User Reporting ' . $user->id,

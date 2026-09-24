@@ -1,85 +1,77 @@
 <?php
 
+use App\Models\AuditLog;
 use App\Models\User;
+
+uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 test('profile page is displayed', function () {
     $user = User::factory()->create();
 
-    $response = $this
-        ->actingAs($user)
-        ->get('/profile');
-
-    $response->assertOk();
+    $this->actingAs($user)
+        ->get('/profile')
+        ->assertOk();
 });
 
-test('profile information can be updated', function () {
+test('profile information can be updated and is audited', function () {
     $user = User::factory()->create();
 
-    $response = $this
-        ->actingAs($user)
+    $this->actingAs($user)
         ->patch('/profile', [
             'name' => 'Test User',
             'email' => 'test@example.com',
-        ]);
-
-    $response
+        ])
         ->assertSessionHasNoErrors()
         ->assertRedirect('/profile');
 
     $user->refresh();
 
-    $this->assertSame('Test User', $user->name);
-    $this->assertSame('test@example.com', $user->email);
-    $this->assertNull($user->email_verified_at);
+    expect($user->name)->toBe('Test User')
+        ->and($user->email)->toBe('test@example.com')
+        ->and($user->email_verified_at)->toBeNull();
+
+    expect(AuditLog::where('user_id', $user->id)->where('action', 'PROFILE_UPDATED')->exists())->toBeTrue();
 });
 
 test('email verification status is unchanged when the email address is unchanged', function () {
     $user = User::factory()->create();
 
-    $response = $this
-        ->actingAs($user)
+    $this->actingAs($user)
         ->patch('/profile', [
             'name' => 'Test User',
             'email' => $user->email,
-        ]);
-
-    $response
+        ])
         ->assertSessionHasNoErrors()
         ->assertRedirect('/profile');
 
-    $this->assertNotNull($user->refresh()->email_verified_at);
+    expect($user->refresh()->email_verified_at)->not->toBeNull();
 });
 
-test('user can delete their account', function () {
+test('user can delete their account and deletion is audited', function () {
     $user = User::factory()->create();
 
-    $response = $this
-        ->actingAs($user)
-        ->delete('/profile', [
-            'password' => 'password',
-        ]);
-
-    $response
+    $this->actingAs($user)
+        ->delete('/profile', ['password' => 'password'])
         ->assertSessionHasNoErrors()
         ->assertRedirect('/');
 
     $this->assertGuest();
     $this->assertNull($user->fresh());
+
+    $this->assertDatabaseHas('audit_logs', [
+        'user_id' => $user->id,
+        'action' => 'ACCOUNT_DELETED',
+    ]);
 });
 
 test('correct password must be provided to delete account', function () {
     $user = User::factory()->create();
 
-    $response = $this
-        ->actingAs($user)
+    $this->actingAs($user)
         ->from('/profile')
-        ->delete('/profile', [
-            'password' => 'wrong-password',
-        ]);
-
-    $response
+        ->delete('/profile', ['password' => 'wrong-password'])
         ->assertSessionHasErrorsIn('userDeletion', 'password')
         ->assertRedirect('/profile');
 
-    $this->assertNotNull($user->fresh());
+    expect($user->fresh())->not->toBeNull();
 });

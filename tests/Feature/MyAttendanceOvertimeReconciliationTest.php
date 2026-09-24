@@ -22,11 +22,12 @@ function makeClockOutEmployee(): array
         'lini' => 'Test',
     ]);
 
-    $employee = Employee::create([
+    $employee = testPersistEmployee([
         'nipeg' => 'CLK-' . $user->id,
         'nama' => $user->name,
         'division_id' => $division->id,
         'user_id' => $user->id,
+        'band_code' => 2,
     ]);
 
     LegalOvertimeRule::create([
@@ -47,7 +48,7 @@ function makeClockOutEmployee(): array
 
     $companyRule = CompanyOvertimeRule::create([
         'rule_code' => 'COMP-CLK-' . $user->id,
-        'rule_name' => 'Clock-out Reconciliation',
+        'rule_name' => 'Clock-out Post Submission',
         'day_type' => 'WORKDAY',
         'normal_end' => '16:30:00',
         'minimum_minutes' => 30,
@@ -67,7 +68,18 @@ function makeClockOutEmployee(): array
     return [$user, $employee, $division, $companyRule];
 }
 
-test('employee clock-out automatically reconciles a pre-submitted overtime request', function () {
+/*
+ * Aturan bisnis baru:
+ *
+ * Clock Out hanya mencatat AttendanceLog.
+ * Clock Out TIDAK membuat, mengubah, atau merekonsiliasi
+ * OvertimeSubmission secara otomatis.
+ *
+ * Pengajuan lembur dilakukan SETELAH Clock Out melalui
+ * OvertimeController dengan submission_mode POST_SUBMITTED.
+ */
+
+test('employee clock-out records attendance without automatically reconciling overtime', function () {
     [$user, $employee, $division, $companyRule] = makeClockOutEmployee();
 
     Carbon::setTestNow(Carbon::parse('2026-09-21 18:12:00', 'Asia/Jakarta'));
@@ -83,7 +95,11 @@ test('employee clock-out automatically reconciles a pre-submitted overtime reque
         'jumlah_scan' => 1,
     ]);
 
-    $submission = OvertimeSubmission::create([
+    /*
+     * Simulasikan data pengajuan lama/pre-submitted.
+     * Clock Out tidak boleh mengubah submission ini.
+     */
+    $submission = testPersistOvertimeSubmission([
         'user_id' => $user->id,
         'division_id' => $division->id,
         'overtime_date' => $date,
@@ -91,7 +107,7 @@ test('employee clock-out automatically reconciles a pre-submitted overtime reque
         'end_time' => '19:00:00',
         'estimated_hours' => 2.5,
         'category' => 'hari_kerja',
-        'reason' => 'Integration test',
+        'reason' => 'Regression test: no automatic reconciliation',
         'submission_mode' => 'PRE_SUBMITTED',
         'status' => 'PENDING_VP',
         'actual_start_time' => '16:30:00',
@@ -103,7 +119,9 @@ test('employee clock-out automatically reconciles a pre-submitted overtime reque
 
     DB::table('overtime_policy_snapshots')->insert([
         'overtime_submission_id' => $submission->id,
-        'legal_rule_id' => LegalOvertimeRule::query()->where('rule_code', 'LEGAL-CLK-' . $user->id)->value('id'),
+        'legal_rule_id' => LegalOvertimeRule::query()
+            ->where('rule_code', 'LEGAL-CLK-' . $user->id)
+            ->value('id'),
         'company_rule_id' => $companyRule->id,
         'policy' => json_encode([
             'day_type' => 'WORKDAY',
@@ -128,18 +146,29 @@ test('employee clock-out automatically reconciles a pre-submitted overtime reque
     $attendance->refresh();
     $submission->refresh();
 
-    expect($attendance->jam_pulang)->toBe('18:12:00')
-        ->and($submission->actual_end_time)->toBe('18:12:00')
-        ->and($submission->actual_minutes)->toBe(102)
-        ->and($submission->recognized_minutes)->toBe(90)
-        ->and($submission->eligibility_status)->toBe('ELIGIBLE')
-        ->and($submission->end_time)->toBe('19:00:00')
-        ->and($submission->estimated_hours)->toBe(2.5);
+    /*
+     * Clock Out hanya mengubah AttendanceLog.
+     * OvertimeSubmission harus tetap persis seperti sebelum Clock Out.
+     */
+    expect($attendance->jam_pulang)
+        ->toBe('18:12:00')
+        ->and($submission->actual_end_time)
+        ->toBe('19:00:00')
+        ->and($submission->actual_minutes)
+        ->toBe(150)
+        ->and($submission->recognized_minutes)
+        ->toBe(150)
+        ->and($submission->eligibility_status)
+        ->toBe('ELIGIBLE')
+        ->and($submission->end_time)
+        ->toBe('19:00:00')
+        ->and($submission->estimated_hours)
+        ->toBe(2.5);
 })->afterEach(function () {
     Carbon::setTestNow();
 });
 
-test('employee clock-out before requested overtime start is recorded but recognized overtime stays zero', function () {
+test('early employee clock-out is recorded without changing an existing overtime submission', function () {
     [$user, $employee, $division, $companyRule] = makeClockOutEmployee();
 
     Carbon::setTestNow(Carbon::parse('2026-09-21 10:00:00', 'Asia/Jakarta'));
@@ -155,7 +184,7 @@ test('employee clock-out before requested overtime start is recorded but recogni
         'jumlah_scan' => 1,
     ]);
 
-    $submission = OvertimeSubmission::create([
+    $submission = testPersistOvertimeSubmission([
         'user_id' => $user->id,
         'division_id' => $division->id,
         'overtime_date' => $date,
@@ -163,7 +192,7 @@ test('employee clock-out before requested overtime start is recorded but recogni
         'end_time' => '19:00:00',
         'estimated_hours' => 2.5,
         'category' => 'hari_kerja',
-        'reason' => 'Early clock-out regression test',
+        'reason' => 'Regression test: early clock-out',
         'submission_mode' => 'PRE_SUBMITTED',
         'status' => 'PENDING_VP',
         'actual_start_time' => '16:30:00',
@@ -175,7 +204,9 @@ test('employee clock-out before requested overtime start is recorded but recogni
 
     DB::table('overtime_policy_snapshots')->insert([
         'overtime_submission_id' => $submission->id,
-        'legal_rule_id' => LegalOvertimeRule::query()->where('rule_code', 'LEGAL-CLK-' . $user->id)->value('id'),
+        'legal_rule_id' => LegalOvertimeRule::query()
+            ->where('rule_code', 'LEGAL-CLK-' . $user->id)
+            ->value('id'),
         'company_rule_id' => $companyRule->id,
         'policy' => json_encode([
             'day_type' => 'WORKDAY',
@@ -200,11 +231,21 @@ test('employee clock-out before requested overtime start is recorded but recogni
     $attendance->refresh();
     $submission->refresh();
 
-    expect($attendance->jam_pulang)->toBe('10:00:00')
-        ->and($submission->actual_end_time)->toBe('10:00:00')
-        ->and($submission->actual_minutes)->toBe(0)
-        ->and($submission->recognized_minutes)->toBe(0)
-        ->and($submission->eligibility_status)->toBe('INVALID_INTERVAL');
+    /*
+     * Bahkan ketika Clock Out dilakukan sebelum 16:30,
+     * controller hanya mencatat jam pulang.
+     * Validasi bahwa tidak ada reconciliation otomatis.
+     */
+    expect($attendance->jam_pulang)
+        ->toBe('10:00:00')
+        ->and($submission->actual_end_time)
+        ->toBe('19:00:00')
+        ->and($submission->actual_minutes)
+        ->toBe(150)
+        ->and($submission->recognized_minutes)
+        ->toBe(150)
+        ->and($submission->eligibility_status)
+        ->toBe('ELIGIBLE');
 })->afterEach(function () {
     Carbon::setTestNow();
 });

@@ -1,0 +1,22 @@
+/* PT INTI P1 Batch 4 — presentation-only responsive enhancement. */
+.inti-responsive-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.inti-responsive-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.inti-mobile-stack{display:grid;gap:12px}
+@media (max-width:1024px){
+  .inti-page{padding-inline:18px}
+  .inti-title{font-size:24px;line-height:32px}
+  .inti-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:640px){
+  .inti-page{padding-inline:12px;padding-bottom:32px}
+  .inti-page-header{align-items:flex-start;gap:12px}
+  .inti-title{font-size:22px;line-height:28px}
+  .inti-subtitle{font-size:13px;line-height:18px}
+  .inti-kpi-grid{grid-template-columns:1fr}
+  .inti-card-pad{padding:16px}
+  .inti-btn{width:100%;justify-content:center}
+  .inti-responsive-toolbar > *{width:100%}
+  .inti-table{min-width:720px}
+}
+/* Accessible focus state for keyboard users. */
+.inti-btn:focus-visible,.inti-input:focus-visible,.inti-nav-item:focus-visible{outline:3px solid rgba(0,106,97,.22);outline-offset:2px}

@@ -17,6 +17,8 @@ use RuntimeException;
 
 class ProductionAttendanceImportService
 {
+    private const MAX_ROWS = 5000;
+    private const MAX_COLUMNS = 100;
     public function __construct(
         private readonly AuditLogService $audit
     ) {}
@@ -286,6 +288,14 @@ class ProductionAttendanceImportService
             ->getActiveSheet()
             ->toArray(null, true, true, false);
 
+        if (count($rawRows) > self::MAX_ROWS + 10) {
+            throw new RuntimeException('File import melebihi batas maksimal '.self::MAX_ROWS.' baris data.');
+        }
+        foreach (array_slice($rawRows, 0, 10, true) as $candidateRow) {
+            if (count($candidateRow) > self::MAX_COLUMNS) {
+                throw new RuntimeException('File import melebihi batas maksimal '.self::MAX_COLUMNS.' kolom.');
+            }
+        }
         if (count($rawRows) < 2) {
             throw new RuntimeException(
                 'File kosong atau tidak memiliki data.'

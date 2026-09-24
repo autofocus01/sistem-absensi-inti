@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AttendanceLog;
+use App\Models\Employee;
 use App\Services\Overtime\OvertimeReportingService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -21,23 +22,25 @@ class TimesheetController extends Controller
 
         abort_unless($user, 403);
 
-        $employee = $user->employee;
+        $isHrAdmin = method_exists($user, 'isHrAdmin')
+            ? $user->isHrAdmin()
+            : $user->role === 'hr_admin';
+
+        $isPersonalRole = method_exists($user, 'isKaryawan')
+            ? ($user->isKaryawan() || $user->isVp())
+            : in_array($user->role, ['karyawan', 'vp'], true);
+
+        abort_unless($isHrAdmin || $isPersonalRole, 403);
 
         /*
-         * Timesheet personal:
-         * Karyawan / VP hanya melihat data dirinya sendiri.
-         */
-        abort_unless($employee, 403);
-
-        /*
-         * Terima dua format parameter:
+         * ============================================================
+         * PERIODE
+         * ============================================================
          *
+         * Mendukung:
          * ?month=9&year=2026
-         * atau
+         * atau:
          * ?bulan=9&tahun=2026
-         *
-         * Ini membuat Timesheet kompatibel dengan modul lain
-         * yang menggunakan penamaan bulan/tahun.
          */
         $month = (int) (
             $request->input('month')
@@ -51,32 +54,79 @@ class TimesheetController extends Controller
             ?? now()->year
         );
 
-        /*
-         * Validasi bulan.
-         */
         if ($month < 1 || $month > 12) {
             $month = now()->month;
         }
 
-        /*
-         * Validasi tahun.
-         *
-         * Jangan menerima tahun ekstrem yang tidak masuk akal.
-         */
         if ($year < 2000 || $year > 2100) {
             $year = now()->year;
         }
 
-        $startDate = Carbon::create(
-            $year,
-            $month,
-            1
-        )->startOfDay();
+        $startDate = Carbon::create($year, $month, 1)->startOfDay();
+        $endDate = $startDate->copy()->endOfMonth()->endOfDay();
 
-        $endDate = $startDate
-            ->copy()
-            ->endOfMonth()
-            ->endOfDay();
+        /*
+         * ============================================================
+         * SCOPE DATA
+         * ============================================================
+         *
+         * Karyawan / VP:
+         *   hanya Employee miliknya sendiri.
+         *
+         * HR Admin:
+         *   tidak wajib mempunyai record Employee.
+         *   HR melihat seluruh master karyawan.
+         *
+         * HR dapat memfilter:
+         *   ?employee_id=123
+         *   ?division_id=1
+         *   ?q=nama/nipeg
+         */
+        $employeeId = $request->integer('employee_id');
+        $divisionId = $request->integer('division_id');
+        $search = trim((string) $request->input('q', ''));
+
+        if (! $isHrAdmin) {
+            $employee = $user->employee;
+
+            abort_unless(
+                $employee,
+                403,
+                'Akun belum terhubung ke data karyawan.'
+            );
+
+            // Karyawan/VP tidak boleh menerima employee_id dari request
+            // untuk mengganti scope data personalnya.
+            $employee = Employee::query()
+                ->whereKey($employee->id)
+                ->with('division')
+                ->firstOrFail();
+
+            $employees = collect([$employee]);
+            $employeeId = $employee->id;
+            $divisionId = null;
+            $search = '';
+        } else {
+            $employees = Employee::query()
+                ->with('division')
+                ->when(
+                    $employeeId,
+                    fn ($query) => $query->whereKey($employeeId)
+                )
+                ->when(
+                    $divisionId,
+                    fn ($query) => $query->where('division_id', $divisionId)
+                )
+                ->when(
+                    $search !== '',
+                    fn ($query) => $query->where(function ($q) use ($search) {
+                        $q->where('nama', 'like', "%{$search}%")
+                            ->orWhere('nipeg', 'like', "%{$search}%");
+                    })
+                )
+                ->orderBy('nama')
+                ->get();
+        }
 
         /*
          * ============================================================
@@ -89,129 +139,184 @@ class TimesheetController extends Controller
          * - keterlambatan
          * - durasi kerja
          */
+        $employeeIds = $employees->pluck('id')->filter()->values();
+
         $attendanceLogs = AttendanceLog::query()
-            ->where('employee_id', $employee->id)
+            ->whereIn('employee_id', $employeeIds)
             ->whereBetween('tanggal', [
                 $startDate->toDateString(),
                 $endDate->toDateString(),
             ])
             ->orderBy('tanggal')
             ->get()
-            ->keyBy(
-                fn (AttendanceLog $attendance) =>
-                    $attendance->tanggal->format('Y-m-d')
-            );
+            ->groupBy(function (AttendanceLog $attendance) {
+                return $attendance->employee_id . ':' .
+                    $attendance->tanggal->format('Y-m-d');
+            });
 
         /*
          * ============================================================
          * LEMBUR RESMI
          * ============================================================
          *
-         * Hanya lembur VERIFIED_HR + ELIGIBLE yang masuk timesheet.
+         * Timesheet hanya menghitung:
+         * VERIFIED_HR + ELIGIBLE + recognized_minutes > 0.
+         *
+         * OvertimeReportingService tetap menjadi sumber aturan reporting.
          */
         $officialOvertime = $this->overtimeReportingService
-            ->officialEntries(
-                $employee->id,
-                $startDate->toDateString(),
-                $endDate->toDateString()
-            )
-            ->groupBy(
-                fn ($overtime) =>
-                    Carbon::parse($overtime->tanggal)->format('Y-m-d')
-            );
+            ->periodQuery($year, $month)
+            ->with([
+                'user.employee.division',
+                'division',
+                'attendanceLog',
+            ])
+            ->where('status', 'VERIFIED_HR')
+            ->where('eligibility_status', 'ELIGIBLE')
+            ->where('recognized_minutes', '>', 0)
+            ->get();
 
-        $totalOfficialOvertimeMinutes =
-            $this->overtimeReportingService->monthlyOfficialMinutes(
-                $employee->id,
-                $year,
-                $month
-            );
+        if ($employeeIds->isNotEmpty()) {
+            $officialOvertime = $officialOvertime
+                ->filter(function ($overtime) use ($employeeIds) {
+                    $overtimeEmployeeId = $overtime->user?->employee?->id;
 
-        /*
-         * ============================================================
-         * BENTUK TIMESHEET HARIAN
-         * ============================================================
-         */
-        $timesheet = collect();
-
-        for (
-            $date = $startDate->copy();
-            $date->lte($endDate);
-            $date->addDay()
-        ) {
-            $dateKey = $date->format('Y-m-d');
-
-            $attendance = $attendanceLogs->get($dateKey);
-
-            $overtimeEntries = $officialOvertime->get(
-                $dateKey,
-                collect()
-            );
-
-            $officialOvertimeMinutes = (int) $overtimeEntries->sum(
-                fn ($overtime) => (int) $overtime->recognized_minutes
-            );
-
-            $status = $attendance?->status();
-
-            if ($status === null) {
-                $status = $date->isWeekday()
-                    ? 'Tidak Ada Presensi'
-                    : 'Di Luar Hari Kerja';
-            }
-
-            $timesheet->push([
-                'tanggal' => $date->copy(),
-
-                'attendance' => $attendance,
-
-                'jam_masuk' => $attendance?->jam_masuk,
-
-                'jam_pulang' => $attendance?->jam_pulang,
-
-                'menit_telat' => $attendance?->menitTelat() ?? 0,
-
-                'durasi_kerja_menit' =>
-                    $attendance?->durasiKerjaMenit(),
-
-                'lembur_resmi_menit' =>
-                    $officialOvertimeMinutes,
-
-                'lembur_resmi_format' =>
-                    $this->overtimeReportingService->formatMinutes(
-                        $officialOvertimeMinutes
-                    ),
-
-                'overtime_entries' => $overtimeEntries,
-
-                'status' => $status,
-            ]);
+                    return $overtimeEmployeeId
+                        && $employeeIds->contains((int) $overtimeEmployeeId);
+                })
+                ->values();
+        } else {
+            $officialOvertime = collect();
         }
 
-        /*
-         * Tahun yang tersedia di dropdown.
-         *
-         * 3 tahun ke belakang + tahun sekarang + 1 tahun ke depan.
-         */
-        $currentYear = now()->year;
+        $officialOvertimeByEmployeeDate = $officialOvertime->groupBy(
+            function ($overtime) {
+                $overtimeEmployeeId = $overtime->user?->employee?->id;
 
-        $availableYears = range(
-            $currentYear + 1,
-            $currentYear - 3
+                return $overtimeEmployeeId . ':' .
+                    Carbon::parse($overtime->overtime_date)->format('Y-m-d');
+            }
+        );
+
+        $totalOfficialOvertimeMinutes = (int) $officialOvertime->sum(
+            fn ($overtime) => (int) $overtime->recognized_minutes
         );
 
         /*
-         * range() di atas menghasilkan urutan descending.
-         * Kita balik agar tampil:
-         * 2023, 2024, 2025, 2026, 2027
+         * ============================================================
+         * BENTUK TIMESHEET
+         * ============================================================
+         *
+         * Untuk karyawan/VP: seluruh hari pada bulan tersebut.
+         *
+         * Untuk HR: seluruh hari pada bulan tersebut untuk setiap
+         * karyawan dalam scope. Kolom identitas karyawan ditampilkan
+         * oleh view HR.
          */
-        $availableYears = collect($availableYears)
-            ->sort()
-            ->values()
-            ->all();
+        $timesheet = collect();
+
+        foreach ($employees as $employee) {
+            for (
+                $date = $startDate->copy();
+                $date->lte($endDate);
+                $date->addDay()
+            ) {
+                $dateKey = $date->format('Y-m-d');
+                $attendance = $attendanceLogs
+                    ->get($employee->id . ':' . $dateKey)
+                    ?->first();
+
+                $overtimeEntries = $officialOvertimeByEmployeeDate->get(
+                    $employee->id . ':' . $dateKey,
+                    collect()
+                );
+
+                $officialOvertimeMinutes = (int) $overtimeEntries->sum(
+                    fn ($overtime) => (int) $overtime->recognized_minutes
+                );
+
+                $status = $attendance?->status();
+
+                if ($status === null) {
+                    $status = $date->isWeekday()
+                        ? 'Tidak Ada Presensi'
+                        : 'Di Luar Hari Kerja';
+                }
+
+                if (
+                    $attendance !== null &&
+                    $officialOvertimeMinutes > 0
+                ) {
+                    $status = 'Hadir + Lembur';
+                }
+
+                $timesheet->push([
+                    'employee_id' => $employee->id,
+                    'employee_name' => $employee->nama,
+                    'employee_nipeg' => $employee->nipeg,
+                    'employee_division' => $employee->division?->nama,
+
+                    'tanggal' => $date->copy(),
+
+                    'attendance' => $attendance,
+
+                    'jam_masuk' => $attendance?->jam_masuk,
+
+                    'jam_pulang' => $attendance?->jam_pulang,
+
+                    'menit_telat' => $attendance?->menitTelat() ?? 0,
+
+                    'durasi_kerja_menit' =>
+                        $attendance?->durasiKerjaMenit(),
+
+                    'lembur_resmi_menit' =>
+                        $officialOvertimeMinutes,
+
+                    'lembur_resmi_format' =>
+                        $this->overtimeReportingService->formatMinutes(
+                            $officialOvertimeMinutes
+                        ),
+
+                    'overtime_entries' => $overtimeEntries,
+
+                    'status' => $status,
+                ]);
+            }
+        }
+
+        /*
+         * Total hari hadir / telat dihitung dari baris timesheet.
+         */
+        $totalAttendanceDays = $timesheet
+            ->filter(fn ($row) => ($row['attendance'] ?? null) !== null)
+            ->count();
+
+        $totalLateDays = $timesheet
+            ->filter(fn ($row) => (int) ($row['menit_telat'] ?? 0) > 0)
+            ->count();
+
+        /*
+         * Tahun tersedia untuk filter periode.
+         */
+        $currentYear = now()->year;
+
+        $availableYears = collect(
+            range($currentYear - 3, $currentYear + 1)
+        )->values()->all();
+
+        /*
+         * Daftar divisi untuk HR filter.
+         */
+        $divisions = $isHrAdmin
+            ? \App\Models\Division::query()
+                ->orderBy('nama')
+                ->get()
+            : collect();
 
         return view('timesheet.index', [
-            'employee' => $employee,
+            'employee' => $isHrAdmin ? null : $employees->first(),
+
+            'employees' => $employees,
 
             'timesheet' => $timesheet,
 
@@ -231,7 +336,21 @@ class TimesheetController extends Controller
                     $totalOfficialOvertimeMinutes
                 ),
 
+            'totalAttendanceDays' => $totalAttendanceDays,
+
+            'totalLateDays' => $totalLateDays,
+
             'availableYears' => $availableYears,
+
+            'divisions' => $divisions,
+
+            'selectedEmployeeId' => $employeeId,
+
+            'selectedDivisionId' => $divisionId,
+
+            'search' => $search,
+
+            'isHrAdmin' => $isHrAdmin,
         ]);
     }
 }
