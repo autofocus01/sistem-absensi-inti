@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\AttendanceRecap;
+use App\Models\AttendanceAnomaly;
+use App\Models\AttendanceLog;
 use App\Models\Division;
 use App\Models\Employee;
 use App\Services\Overtime\OvertimeReportingService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
@@ -136,6 +139,117 @@ class DirekturDashboardController extends Controller
 
         $divisions = Division::orderBy('nama')->get();
 
+        // Data keseluruhan karyawan untuk monitoring Direksi.
+        $employeeSearch = trim((string) $request->input('employee_q', ''));
+
+        $employees = Employee::query()
+            ->with('division')
+            ->when($divisionId !== null, fn ($q) => $q->where('division_id', $divisionId))
+            ->when($employeeSearch !== '', fn ($q) => $q->where(function ($query) use ($employeeSearch) {
+                $query->where('nama', 'like', "%{$employeeSearch}%")
+                    ->orWhere('nipeg', 'like', "%{$employeeSearch}%");
+            }))
+            ->orderBy('nama')
+            ->get();
+
+        $today = Carbon::today();
+        $todayLogs = AttendanceLog::query()
+            ->whereDate('tanggal', $today->toDateString())
+            ->whereIn('employee_id', $employees->pluck('id'))
+            ->get()
+            ->keyBy('employee_id');
+
+        $monthAnomalies = AttendanceAnomaly::query()
+            ->with('employee.division')
+            ->whereBetween('tanggal', [
+                Carbon::create($tahun, $bulan, 1)->toDateString(),
+                Carbon::create($tahun, $bulan, 1)->endOfMonth()->toDateString(),
+            ])
+            ->when($divisionId !== null, fn ($q) => $q->whereHas('employee', fn ($e) => $e->where('division_id', $divisionId)))
+            ->get();
+
+        $anomalyByDivision = $divisions
+            ->when($divisionId !== null, fn ($collection) => $collection->where('id', $divisionId))
+            ->map(function (Division $division) use ($monthAnomalies) {
+                $items = $monthAnomalies->filter(fn ($a) => (int) $a->employee?->division_id === (int) $division->id);
+                return [
+                    'divisi' => $division->nama,
+                    'total' => $items->count(),
+                    'open' => $items->where('status', 'OPEN')->count(),
+                    'reviewed' => $items->where('status', 'REVIEWED')->count(),
+                    'resolved' => $items->where('status', 'RESOLVED')->count(),
+                ];
+            })->values();
+
+        $employeeOverview = $employees->map(function (Employee $employee) use ($todayLogs, $tahun, $bulan) {
+            $attendance = $todayLogs->get($employee->id);
+            $recap = AttendanceRecap::query()
+                ->where('employee_id', $employee->id)
+                ->where('tahun', $tahun)
+                ->where('bulan', $bulan)
+                ->first();
+            $anomalyCount = AttendanceAnomaly::query()
+                ->where('employee_id', $employee->id)
+                ->whereBetween('tanggal', [
+                    Carbon::create($tahun, $bulan, 1)->toDateString(),
+                    Carbon::create($tahun, $bulan, 1)->endOfMonth()->toDateString(),
+                ])->count();
+            return [
+                'id' => $employee->id,
+                'nama' => $employee->nama,
+                'nipeg' => $employee->nipeg,
+                'divisi' => $employee->division?->nama ?? '-',
+                'band' => $employee->band_code,
+                'jam_masuk' => $attendance?->jam_masuk,
+                'jam_pulang' => $attendance?->jam_pulang,
+                'status_hari_ini' => $attendance ? ($attendance->jam_pulang ? 'Selesai' : 'Sedang Bekerja') : 'Belum Presensi',
+                'persen_kehadiran' => round((float) ($recap?->persen_kehadiran ?? 0), 1),
+                'telat_hari' => (int) ($recap?->telat_hari ?? 0),
+                'anomaly_count' => $anomalyCount,
+            ];
+        })->values();
+
+        $realtimeRows = $employeeOverview->sortBy(function ($row) {
+            return $row['jam_pulang'] ? 3 : ($row['jam_masuk'] ? 1 : 2);
+        })->values()->take(50);
+
+        $employeePerPage = 25;
+        $employeePageNumber = LengthAwarePaginator::resolveCurrentPage('employee_page');
+        $employeePageRows = $employeeOverview->forPage($employeePageNumber, $employeePerPage)->values();
+        $employeePaginator = new LengthAwarePaginator(
+            $employeePageRows,
+            $employeeOverview->count(),
+            $employeePerPage,
+            $employeePageNumber,
+            [
+                'path' => $request->url(),
+                'pageName' => 'employee_page',
+                'query' => $request->query(),
+            ]
+        );
+
+        $historyRows = AttendanceLog::query()
+            ->with('employee.division')
+            ->whereBetween('tanggal', [
+                Carbon::create($tahun, $bulan, 1)->toDateString(),
+                Carbon::create($tahun, $bulan, 1)->endOfMonth()->toDateString(),
+            ])
+            ->whereIn('employee_id', $employees->pluck('id'))
+            ->orderByDesc('tanggal')
+            ->orderBy('employee_id')
+            ->get()
+            ->map(fn (AttendanceLog $log) => [
+                'tanggal' => $log->tanggal,
+                'nama' => $log->employee?->nama ?? '-',
+                'nipeg' => $log->employee?->nipeg ?? '-',
+                'divisi' => $log->employee?->division?->nama ?? '-',
+                'jam_masuk' => $log->jam_masuk,
+                'jam_pulang' => $log->jam_pulang,
+                'status' => $log->status(),
+                'telat' => (int) $log->menitTelat(),
+                'durasi' => $log->durasiKerjaFormat(),
+            ]);
+
         $matriksDivisi = $divisions
             ->when($divisionId, fn ($collection) => $collection->where('id', $divisionId))
             ->map(function (Division $division) use ($tahun, $bulan) {
@@ -180,6 +294,12 @@ class DirekturDashboardController extends Controller
             'gradientCss'       => $gradientCss,
             'matriksDivisi'     => $matriksDivisi,
             'trenBulanan'       => $trenBulanan,
+            'employeeOverview'  => $employeeOverview,
+            'employeePaginator'  => $employeePaginator,
+            'employeeSearch'    => $employeeSearch,
+            'realtimeRows'      => $realtimeRows,
+            'historyRows'       => $historyRows,
+            'anomalyByDivision' => $anomalyByDivision,
         ];
     }
 

@@ -16,71 +16,85 @@ class DummyEmployeeSeeder extends Seeder
         );
 
         $employees = [
-            ['90010001', 'Ahmad Fauzan'],
-            ['90010002', 'Budi Santoso'],
-            ['90010003', 'Citra Lestari'],
-            ['90010004', 'Dimas Pratama'],
-            ['90010005', 'Eka Putri Maharani'],
-            ['90010006', 'Fajar Hidayat'],
-            ['90010007', 'Galih Ramadhan'],
-            ['90010008', 'Hana Safitri'],
-            ['90010009', 'Indra Kurniawan'],
-            ['90010010', 'Joko Susanto'],
-            ['90010011', 'Kartika Sari'],
-            ['90010012', 'Lukman Hakim'],
-            ['90010013', 'Maya Anggraini'],
-            ['90010014', 'Nugroho Setiawan'],
-            ['90010015', 'Olivia Permata'],
-            ['90010016', 'Putra Wijaya'],
-            ['90010017', 'Rani Wulandari'],
-            ['90010018', 'Satria Nugraha'],
-            ['90010019', 'Tania Amelia'],
-            ['90010020', 'Ujang Firmansyah'],
-            ['90010021', 'Vina Oktaviani'],
-            ['90010022', 'Wahyu Ramadhan'],
-            ['90010023', 'Yuni Kartikasari'],
-            ['90010024', 'Zaki Maulana'],
-            ['90010025', 'Aditya Saputra'],
-            ['90010026', 'Bella Novitasari'],
-            ['90010027', 'Chandra Wijaya'],
-            ['90010028', 'Dewi Maharani'],
-            ['90010029', 'Eko Prasetyo'],
-            ['90010030', 'Fitri Handayani'],
-            ['90010031', 'Gilang Permadi'],
-            ['90010032', 'Intan Puspitasari'],
-            ['90010033', 'Reza Kurniawan'],
-            ['90010034', 'Siska Amelia'],
-            ['90010035', 'Teguh Setiawan'],
-            ['90010036', 'Anisa Rahmawati'],
-            ['90010037', 'Bayu Pangestu'],
-            ['90010038', 'Deni Firmansyah'],
-            ['90010039', 'Farah Nabila'],
-            ['90010040', 'Hendra Gunawan'],
-            ['90010041', 'Laila Nuraini'],
-            ['90010042', 'M Rizky Maulana'],
-            ['90010043', 'Nanda Permatasari'],
-            ['90010044', 'Oki Setiawan'],
-            ['90010045', 'Raka Adiputra'],
-            ['90010046', 'Sari Indah Sari'],
-            ['90010047', 'Taufik Hidayat'],
-            ['90010048', 'Wulan Sari'],
-            ['90010049', 'Yudha Pranata'],
-            ['90010050', 'Zahra Aulia'],
+            // Band 2 - eligible lembur
+            ['90010001', 'Ahmad Fauzan', 2],
+            ['90010002', 'Budi Santoso', 2],
+            ['90010003', 'Citra Lestari', 2],
+            ['90010004', 'Dimas Pratama', 2],
+            ['90010005', 'Eka Putri Maharani', 2],
+            ['90010006', 'Fajar Hidayat', 2],
+            ['90010007', 'Galih Ramadhan', 2],
+            ['90010008', 'Hana Safitri', 2],
+            ['90010009', 'Indra Kurniawan', 2],
+            ['90010010', 'Joko Susanto', 2],
+
+            // Band 3 - eligible lembur
+            ['90010011', 'Kartika Sari', 3],
+            ['90010012', 'Lukman Hakim', 3],
+            ['90010013', 'Maya Anggraini', 3],
+            ['90010014', 'Nugroho Setiawan', 3],
+            ['90010015', 'Olivia Permata', 3],
+            ['90010016', 'Putra Wijaya', 3],
+            ['90010017', 'Rani Wulandari', 3],
+            ['90010018', 'Satria Nugraha', 3],
+            ['90010019', 'Tania Amelia', 3],
+            ['90010020', 'Ujang Firmansyah', 3],
+
+            // Band 4 - non-eligible lembur
+            ['90010021', 'Vina Oktaviani', 4],
+            ['90010022', 'Wahyu Ramadhan', 4],
+            ['90010023', 'Yuni Kartikasari', 4],
+            ['90010024', 'Zaki Maulana', 4],
+            ['90010025', 'Aditya Saputra', 4],
+            ['90010026', 'Bella Novitasari', 4],
+            ['90010027', 'Chandra Wijaya', 4],
+            ['90010028', 'Dewi Maharani', 4],
+            ['90010029', 'Eko Prasetyo', 4],
+            ['90010030', 'Fitri Handayani', 4],
+
+            // Band 1 - non-eligible lembur
+            ['90010031', 'Gilang Permadi', 1],
+            ['90010032', 'Intan Puspitasari', 1],
+            ['90010033', 'Reza Kurniawan', 1],
+            ['90010034', 'Siska Amelia', 1],
+            ['90010035', 'Teguh Setiawan', 1],
+            ['90010036', 'Anisa Rahmawati', 1],
+            ['90010037', 'Bayu Pangestu', 1],
+            ['90010038', 'Deni Firmansyah', 1],
+            ['90010039', 'Farah Nabila', 1],
+            ['90010040', 'Hendra Gunawan', 1],
+
+            // Band 5 - non-eligible lembur
+            ['90010041', 'Laila Nuraini', 5],
+            ['90010042', 'M Rizky Maulana', 5],
+            ['90010043', 'Nanda Permatasari', 5],
+            ['90010044', 'Oki Setiawan', 5],
+            ['90010045', 'Raka Adiputra', 5],
+            ['90010046', 'Sari Indah Sari', 5],
+            ['90010047', 'Taufik Hidayat', 5],
+            ['90010048', 'Wulan Sari', 5],
+            ['90010049', 'Yudha Pranata', 5],
+            ['90010050', 'Zahra Aulia', 5],
         ];
 
-        foreach ($employees as [$nipeg, $nama]) {
-            Employee::updateOrCreate(
+        foreach ($employees as [$nipeg, $nama, $bandCode]) {
+            $employee = Employee::updateOrCreate(
                 ['nipeg' => $nipeg],
                 [
                     'nama' => $nama,
                     'jenis_kelamin' => null,
                     'jabatan' => 'Karyawan UAT',
+                    'band_code' => $bandCode,
                     'no_hp' => null,
                     'alamat' => null,
                     'division_id' => $division->id,
-                    'user_id' => null,
                 ]
             );
+
+            // Akun UAT dikelola oleh UatAccountSeeder.
+            // Jangan mengosongkan user_id di sini karena seeder ini
+            // juga dapat dijalankan ulang setelah akun UAT dibuat.
+            $employee->save();
         }
 
         $this->command?->info(

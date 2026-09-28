@@ -18,6 +18,7 @@
         $totalOfficialOvertimeFormat ?? '0j 00m';
 
     $hrMode = (bool) ($isHrAdmin ?? false);
+    $vpMode = (bool) ($isVp ?? false);
 
     $displayAttendanceDays = $totalAttendanceDays
         ?? $timesheetRows
@@ -43,12 +44,14 @@
             </span>
 
             <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">
-                {{ $hrMode ? 'Timesheet Administrasi' : 'Riwayat Presensi & Lembur' }}
+                {{ ($hrMode || $vpMode) ? 'Timesheet ' . ($hrMode ? 'Administrasi' : 'Divisi') : 'Riwayat Presensi & Lembur' }}
             </h1>
 
             <p class="font-body-md text-body-md text-on-surface-variant">
                 @if ($hrMode)
                     Rekap presensi dan lembur resmi seluruh karyawan sesuai periode yang dipilih.
+                @elseif ($vpMode)
+                    Rekap presensi dan lembur resmi karyawan dalam divisi VP sesuai periode yang dipilih.
                 @elseif ($displayEmployee)
                     {{ $displayEmployee->nama ?? 'Karyawan' }}
                     @if (!empty($displayEmployee->nipeg))
@@ -62,16 +65,16 @@
         </div>
 
         @if ($hrMode)
-            <div class="px-3 py-2 rounded-lg bg-primary-container/30 text-primary font-label-sm">
-                Mode HR Administrasi
-            </div>
+            <div class="px-3 py-2 rounded-lg bg-primary-container/30 text-primary font-label-sm">Mode HR Administrasi</div>
+        @elseif ($vpMode)
+            <div class="px-3 py-2 rounded-lg bg-primary-container/30 text-primary font-label-sm">Scope: Divisi VP</div>
         @endif
     </div>
 
     {{-- ============================================================
          FILTER HR
          ============================================================ --}}
-    @if ($hrMode)
+    @if ($hrMode || $vpMode)
         <form method="GET"
               action="{{ route('timesheet.index') }}"
               class="bg-surface-container-lowest rounded-xl shadow-sm p-space-base">
@@ -105,7 +108,7 @@
                         name="division_id"
                         class="w-full rounded-lg border border-outline bg-surface px-3 py-2 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
                     >
-                        <option value="">Semua Divisi</option>
+                        @if ($hrMode)<option value="">Semua Divisi</option>@endif
 
                         @foreach (($divisions ?? collect()) as $division)
                             <option
@@ -160,6 +163,8 @@
                 </div>
             </div>
 
+            <input type="hidden" name="per_page" value="20">
+
             <div class="flex flex-wrap items-center gap-2 mt-space-base">
                 <button
                     type="submit"
@@ -178,6 +183,9 @@
                 </a>
             </div>
         </form>
+        <div class="mt-2 text-xs text-on-surface-variant">
+            Menampilkan {{ $timesheetRows->count() }} dari {{ number_format($totalTimesheetRows ?? $timesheetRows->count()) }} baris timesheet pada halaman ini.
+        </div>
     @endif
 
     {{-- ============================================================
@@ -254,7 +262,7 @@
             <thead>
                 <tr class="bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
 
-                    @if ($hrMode)
+                    @if ($hrMode || $vpMode)
                         <th class="py-3 px-space-base rounded-l-lg">
                             Karyawan
                         </th>
@@ -268,7 +276,7 @@
                         </th>
                     @endif
 
-                    @if ($hrMode)
+                    @if ($hrMode || $vpMode)
                         <th class="py-3 px-space-base">
                             Tanggal
                         </th>
@@ -319,7 +327,7 @@
 
                     <tr class="hover:bg-surface-container-low/40 transition-colors">
 
-                        @if ($hrMode)
+                        @if ($hrMode || $vpMode)
                             <td class="py-space-base px-space-base">
                                 <div class="font-title-sm text-title-sm text-primary">
                                     {{ $row['employee_name'] ?? '-' }}
@@ -449,10 +457,10 @@
 
                     <tr>
                         <td
-                            colspan="{{ $hrMode ? 9 : 7 }}"
+                            colspan="{{ ($hrMode || $vpMode) ? 9 : 7 }}"
                             class="py-10 px-4 text-center text-on-surface-variant"
                         >
-                            @if ($hrMode)
+                            @if ($hrMode || $vpMode)
                                 Tidak ada data karyawan atau presensi untuk filter yang dipilih.
                             @else
                                 Belum ada data timesheet untuk periode ini.
@@ -469,6 +477,10 @@
     {{-- ============================================================
          FOOTER INFO
          ============================================================ --}}
+    @if ($timesheetRows instanceof \Illuminate\Pagination\LengthAwarePaginator)
+        <div class="mt-4">{{ $timesheetRows->links() }}</div>
+    @endif
+
     <div class="flex flex-wrap gap-2 text-body-sm text-on-surface-variant">
         <span>
             Periode: {{ $displayStartDate->translatedFormat('F Y') }}
@@ -476,7 +488,7 @@
 
         <span>•</span>
 
-        @if ($hrMode)
+        @if ($hrMode || $vpMode)
             <span>
                 Scope:
                 {{ $employees->count() }} karyawan

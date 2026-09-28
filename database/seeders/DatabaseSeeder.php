@@ -11,6 +11,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             OvertimePolicySeeder::class,
             DivisionSeeder::class,
+            DummyEmployeeSeeder::class,
+            UatAccountSeeder::class,
         ]);
     }
 }

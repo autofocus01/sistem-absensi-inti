@@ -321,11 +321,19 @@
 
         <nav class="flex flex-col gap-space-xs">
 
-            <a href="{{ route('direktur.dashboard') }}"
+            <a href="{{ route('direktur.dashboard') }}#ringkasan"
                class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
-               {{ request()->routeIs('direktur.dashboard') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
+               {{ request()->routeIs('direktur.dashboard') && !request()->get('tab') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}">
                 <span class="material-symbols-outlined text-[20px]">dashboard</span>
                 Dashboard
+            </a>
+            <a href="{{ route('direktur.dashboard') }}#realtime" class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm text-on-surface hover:bg-surface-container-low">
+                <span class="material-symbols-outlined text-[20px]">sensors</span>
+                Realtime
+            </a>
+            <a href="{{ route('direktur.dashboard') }}#history" class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm text-on-surface hover:bg-surface-container-low">
+                <span class="material-symbols-outlined text-[20px]">history</span>
+                History
             </a>
 
         </nav>

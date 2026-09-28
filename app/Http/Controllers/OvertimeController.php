@@ -28,6 +28,90 @@ class OvertimeController extends Controller
     ) {
     }
 
+    public function create(Request $request)
+    {
+        $user = $request->user();
+        abort_unless($user?->isKaryawan(), 403);
+
+        $employee = $user->employee;
+        abort_unless($employee, 403, 'Akun belum terhubung ke data karyawan.');
+
+        $bandCode = $employee->band_code;
+        $eligible = $this->eligibilityService->isEligible($bandCode);
+        $draft = session('overtime.draft');
+
+        // Band 2 dan 3 adalah satu-satunya band yang memiliki hak
+        // mengajukan lembur. Direct access ke halaman pengajuan oleh
+        // band lain harus ditolak, sedangkan Band 2/3 tetap dapat membuka
+        // halaman walaupun presensi hari ini belum lengkap.
+        abort_unless(
+            $eligible,
+            403,
+            'Pengajuan lembur hanya tersedia untuk Band Code 2 atau 3.'
+        );
+
+        $date = isset($draft['date'])
+            ? Carbon::parse($draft['date'])
+            : Carbon::now('Asia/Jakarta');
+
+        $attendance = AttendanceLog::query()
+            ->where('employee_id', $employee->id)
+            ->whereDate('tanggal', $date->toDateString())
+            ->first();
+
+        if (! $attendance?->jam_masuk || ! $attendance?->jam_pulang) {
+            session()->forget('overtime.draft');
+
+            return view('overtime.index', [
+                'employee' => $employee->loadMissing('division'),
+                'bandCode' => $bandCode,
+                'overtimeEligible' => true,
+                'overtimeAvailable' => false,
+                'overtimeDraft' => null,
+                'availabilityMessage' => 'Pengajuan lembur hanya tersedia setelah Clock-in dan Clock-out tercatat.',
+            ]);
+        }
+
+        $policy = $this->policyResolver->resolve($date);
+        $clockIn = Carbon::parse($date->toDateString() . ' ' . $attendance->jam_masuk);
+        $clockOut = Carbon::parse($date->toDateString() . ' ' . $attendance->jam_pulang);
+        $normalEnd = Carbon::parse($date->toDateString() . ' ' . ($policy['normal_end'] ?? '16:30:00'));
+        $actualWorkMinutes = max(0, $clockIn->diffInMinutes($clockOut));
+
+        $available = $policy['day_type'] === 'WORKDAY'
+            ? $clockOut->greaterThan($normalEnd) && $actualWorkMinutes >= 480
+            : $actualWorkMinutes >= (int) ($policy['minimum_minutes'] ?? 30);
+
+        if (! $available) {
+            session()->forget('overtime.draft');
+        }
+
+        $startTime = $policy['day_type'] === 'WORKDAY'
+            ? $normalEnd->format('H:i')
+            : $clockIn->format('H:i');
+
+        $draft = $draft ?: [
+            'date' => $date->toDateString(),
+            'clock_in' => $attendance->jam_masuk,
+            'clock_out' => $attendance->jam_pulang,
+            'band_code' => (int) $bandCode,
+            'day_type' => $policy['day_type'],
+            'start_time' => $startTime,
+            'end_time' => $clockOut->format('H:i'),
+            'actual_work_minutes' => $actualWorkMinutes,
+            'minimum_minutes' => (int) ($policy['minimum_minutes'] ?? 30),
+        ];
+
+        return view('overtime.index', [
+            'employee' => $employee->loadMissing('division'),
+            'bandCode' => $bandCode,
+            'overtimeEligible' => true,
+            'overtimeAvailable' => $available,
+            'overtimeDraft' => $available ? $draft : null,
+            'availabilityMessage' => $available ? null : 'Tidak terdapat waktu lembur yang memenuhi prasyarat pengajuan pada hari ini.',
+        ]);
+    }
+
     public function store(StoreOvertimeRequest $request)
     {
         $user = $request->user();
@@ -147,14 +231,20 @@ class OvertimeController extends Controller
 
                 $durasiKerjaMenit = $attendance->durasiKerjaMenit();
 
-                if ($durasiKerjaMenit === null || $durasiKerjaMenit < 480) {
+                // Minimum 8 jam hanya berlaku pada hari kerja. Weekend/libur
+                // tidak memakai gate 8 jam; durasi aktual menjadi evidence utama.
+                if (
+                    ($policy['day_type'] ?? 'WORKDAY') === 'WORKDAY'
+                    && ($durasiKerjaMenit === null || $durasiKerjaMenit < 480)
+                ) {
                     return response()->json([
-                        'message' => 'Pengajuan lembur ditolak. Presensi hari tersebut belum memenuhi minimal 8 jam kerja.',
+                        'message' => 'Pengajuan lembur ditolak. Presensi hari kerja belum memenuhi minimal 8 jam kerja.',
                         'attendance' => [
                             'jam_masuk' => $attendance->jam_masuk,
                             'jam_pulang' => $attendance->jam_pulang,
                             'durasi_kerja_menit' => $durasiKerjaMenit,
                             'minimum_menit' => 480,
+                            'day_type' => $policy['day_type'] ?? 'WORKDAY',
                         ],
                     ], 422);
                 }
@@ -219,15 +309,18 @@ class OvertimeController extends Controller
                  */
                 $normalEndTime = $policy['normal_end'] ?? '16:30:00';
 
-                $actualStart = Carbon::parse(
-                    $date->format('Y-m-d') . ' ' . $normalEndTime
-                );
+                $actualStart = ($policy['day_type'] ?? 'WORKDAY') === 'WORKDAY'
+                    ? Carbon::parse($date->format('Y-m-d') . ' ' . $normalEndTime)
+                    : Carbon::parse($date->format('Y-m-d') . ' ' . $attendance->jam_masuk);
 
                 $actualEnd = Carbon::parse(
                     $date->format('Y-m-d') . ' ' . $attendance->jam_pulang
                 );
 
-                if ($actualEnd->lessThanOrEqualTo($actualStart)) {
+                if (
+                    ($policy['day_type'] ?? 'WORKDAY') === 'WORKDAY'
+                    && $actualEnd->lessThanOrEqualTo($actualStart)
+                ) {
                     return response()->json([
                         'message' => 'Clock-out tidak melewati jam kerja normal. Tidak terdapat waktu lembur yang dapat diajukan.',
                     ], 422);
@@ -241,7 +334,7 @@ class OvertimeController extends Controller
                     ], 422);
                 }
 
-                // Awal lembur reguler tidak boleh lebih awal dari jam kerja normal.
+                // Hari kerja dimulai dari 16:30; weekend/libur dimulai dari Clock-in aktual.
                 if ($start->lessThan($actualStart)) {
                     return response()->json([
                         'message' => 'Jam mulai lembur tidak boleh lebih awal dari jam kerja normal (' .

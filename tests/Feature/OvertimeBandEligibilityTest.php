@@ -18,8 +18,9 @@ function makeBandEmployee(int $band): array
         'lini' => 'Test',
     ]);
 
+    // user_id sengaja tidak termasuk $fillable pada Employee untuk mencegah
+    // mass-assignment/IDOR. Hubungkan relasi secara eksplisit di test.
     $employee = Employee::create([
-        'user_id' => $user->id,
         'nipeg' => 'BAND-' . $user->id,
         'nama' => 'Employee Band ' . $band,
         'jabatan' => 'Staff',
@@ -27,7 +28,10 @@ function makeBandEmployee(int $band): array
         'division_id' => $division->id,
     ]);
 
-    return [$user, $employee];
+    $employee->user()->associate($user);
+    $employee->save();
+
+    return [$user->fresh(), $employee->fresh()];
 }
 
 test('band 2 dapat mengajukan lembur', function () {

@@ -8,6 +8,7 @@ use App\Services\Overtime\OvertimeReportingService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class TimesheetController extends Controller
 {
@@ -86,7 +87,26 @@ class TimesheetController extends Controller
         $divisionId = $request->integer('division_id');
         $search = trim((string) $request->input('q', ''));
 
-        if (! $isHrAdmin) {
+        if ($isPersonalRole && ! $isHrAdmin && $user->isVp()) {
+            $vpEmployee = $user->employee;
+            abort_unless($vpEmployee && $vpEmployee->division_id, 403, 'Akun VP belum terhubung ke divisi.');
+
+            // VP hanya boleh melihat karyawan dalam divisinya sendiri.
+            $divisionId = (int) $vpEmployee->division_id;
+            $employeeId = $request->integer('employee_id');
+            $search = trim((string) $request->input('q', ''));
+
+            $employees = Employee::query()
+                ->with('division')
+                ->where('division_id', $divisionId)
+                ->when($employeeId, fn ($query) => $query->whereKey($employeeId))
+                ->when($search !== '', fn ($query) => $query->where(function ($q) use ($search) {
+                    $q->where('nama', 'like', "%{$search}%")
+                        ->orWhere('nipeg', 'like', "%{$search}%");
+                }))
+                ->orderBy('nama')
+                ->get();
+        } elseif (! $isHrAdmin) {
             $employee = $user->employee;
 
             abort_unless(
@@ -95,8 +115,6 @@ class TimesheetController extends Controller
                 'Akun belum terhubung ke data karyawan.'
             );
 
-            // Karyawan/VP tidak boleh menerima employee_id dari request
-            // untuk mengganti scope data personalnya.
             $employee = Employee::query()
                 ->whereKey($employee->id)
                 ->with('division')
@@ -307,18 +325,34 @@ class TimesheetController extends Controller
         /*
          * Daftar divisi untuk HR filter.
          */
-        $divisions = $isHrAdmin
+        $divisions = ($isHrAdmin || ($isPersonalRole && $user->isVp()))
             ? \App\Models\Division::query()
+                ->when($user->isVp(), fn ($q) => $q->whereKey($divisionId))
                 ->orderBy('nama')
                 ->get()
             : collect();
 
+        // Batasi panjang tabel agar HR/VP tidak mendapat ratusan baris dalam satu scroll.
+        $perPage = max(10, min(25, (int) $request->input('per_page', 20)));
+        $currentPage = LengthAwarePaginator::resolveCurrentPage('page');
+        $timesheetPage = $timesheet->forPage($currentPage, $perPage)->values();
+        $timesheetPaginator = new LengthAwarePaginator(
+            $timesheetPage,
+            $timesheet->count(),
+            $perPage,
+            $currentPage,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
         return view('timesheet.index', [
-            'employee' => $isHrAdmin ? null : $employees->first(),
+            'employee' => ($isHrAdmin || ($isPersonalRole && $user->isVp())) ? null : $employees->first(),
 
             'employees' => $employees,
 
-            'timesheet' => $timesheet,
+            'timesheet' => $timesheetPaginator,
+
+            'totalTimesheetRows' => $timesheet->count(),
+            'perPage' => $perPage,
 
             'month' => $month,
 
@@ -351,6 +385,8 @@ class TimesheetController extends Controller
             'search' => $search,
 
             'isHrAdmin' => $isHrAdmin,
+
+            'isVp' => $isPersonalRole && $user->isVp(),
         ]);
     }
 }

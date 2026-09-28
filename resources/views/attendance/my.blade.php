@@ -170,5 +170,33 @@
     </div>
     <div style="margin-top:1rem">{{ $history->links() }}</div>
   </div>
+
+
+@if (session('overtime.prompt'))
+    @php($prompt = session('overtime.prompt'))
+    <div id="overtime-decision-modal" style="position:fixed;inset:0;background:rgba(0,20,40,.45);display:grid;place-items:center;padding:1rem;z-index:1000">
+        <div class="inti-card inti-card-pad" style="width:min(560px,100%);box-shadow:0 20px 60px rgba(0,0,0,.18)">
+            <div class="inti-page-header" style="margin-bottom:1rem">
+                <div>
+                    <div class="inti-eyebrow">CLOCK OUT BERHASIL</div>
+                    <h2 class="inti-title" style="font-size:24px">Apakah waktu setelah jam kerja akan diajukan sebagai lembur?</h2>
+                </div>
+                <span class="inti-badge inti-badge-warning">Band {{ $prompt['band_code'] }}</span>
+            </div>
+            <div class="inti-alert inti-alert-info">
+                Clock In <strong>{{ substr($prompt['clock_in'],0,5) }}</strong> · Clock Out <strong>{{ substr($prompt['clock_out'],0,5) }}</strong> ·
+                Jam lembur <strong>{{ $prompt['start_time'] }}–{{ $prompt['end_time'] }}</strong>.
+            </div>
+            <p class="inti-subtitle" style="margin-top:1rem">Jika <strong>Ya</strong>, sistem membuka halaman pengajuan lembur. Jika <strong>Tidak</strong>, presensi tetap tercatat sebagai hadir dan tidak ada pengajuan lembur dibuat.</p>
+            <div style="display:flex;justify-content:flex-end;gap:.6rem;margin-top:1.25rem">
+                <form method="POST" action="{{ route('attendance.my.overtime-dismiss') }}">
+                    @csrf
+                    <button type="submit" class="inti-btn inti-btn-ghost">Tidak, tetap Hadir</button>
+                </form>
+                <a href="{{ route('overtime.index') }}" class="inti-btn inti-btn-primary">Ya, Ajukan Lembur</a>
+            </div>
+        </div>
+    </div>
+@endif
 </div>
 @endsection

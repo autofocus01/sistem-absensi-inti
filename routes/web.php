@@ -137,10 +137,14 @@ Route::middleware('auth')->group(function () {
                 return redirect()->route('overtime.hr.verification');
             }
 
-            return view('overtime.index');
+            return app(OvertimeController::class)->create($request);
 
         })
         ->name('overtime.index');
+
+    Route::middleware('role:karyawan')
+        ->post('/attendance/my/overtime-dismiss', [MyAttendanceController::class, 'dismissOvertimePrompt'])
+        ->name('attendance.my.overtime-dismiss');
 
 
     /*

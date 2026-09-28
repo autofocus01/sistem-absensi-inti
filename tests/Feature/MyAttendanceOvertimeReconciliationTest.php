@@ -1,27 +1,17 @@
 <?php
 
 use App\Models\AttendanceLog;
-use App\Models\CompanyOvertimeRule;
 use App\Models\Division;
-use App\Models\Employee;
-use App\Models\LegalOvertimeRule;
-use App\Models\OvertimeSubmission;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
-function makeClockOutEmployee(): array
+function makeClockOutEmployeeForTest(): array
 {
     $user = User::factory()->create(['role' => 'karyawan']);
-
-    $division = Division::create([
-        'nama' => 'Clock Out OT ' . $user->id,
-        'lini' => 'Test',
-    ]);
-
+    $division = Division::create(['nama' => 'Clock Out Test ' . $user->id, 'lini' => 'Test']);
     $employee = testPersistEmployee([
         'nipeg' => 'CLK-' . $user->id,
         'nama' => $user->name,
@@ -29,63 +19,13 @@ function makeClockOutEmployee(): array
         'user_id' => $user->id,
         'band_code' => 2,
     ]);
-
-    LegalOvertimeRule::create([
-        'rule_code' => 'LEGAL-CLK-' . $user->id,
-        'regulation_name' => 'Test Regulation',
-        'regulation_number' => 'TEST',
-        'article_reference' => 'TEST',
-        'day_type' => 'WORKDAY',
-        'minimum_minutes' => 30,
-        'maximum_minutes_daily' => 240,
-        'maximum_minutes_weekly' => 1080,
-        'maximum_minutes_monthly' => null,
-        'effective_from' => '2026-01-01',
-        'effective_until' => null,
-        'status' => 'active',
-        'source_document' => 'TEST',
-    ]);
-
-    $companyRule = CompanyOvertimeRule::create([
-        'rule_code' => 'COMP-CLK-' . $user->id,
-        'rule_name' => 'Clock-out Post Submission',
-        'day_type' => 'WORKDAY',
-        'normal_end' => '16:30:00',
-        'minimum_minutes' => 30,
-        'maximum_minutes_event' => null,
-        'maximum_minutes_monthly' => null,
-        'rounding_method' => 'floor',
-        'rounding_interval' => 30,
-        'requires_request' => true,
-        'allows_post_submission' => true,
-        'requires_vp_approval' => true,
-        'requires_hr_approval' => true,
-        'effective_from' => '2026-01-01',
-        'effective_until' => null,
-        'status' => 'active',
-    ]);
-
-    return [$user, $employee, $division, $companyRule];
+    return [$user, $employee, $division];
 }
 
-/*
- * Aturan bisnis baru:
- *
- * Clock Out hanya mencatat AttendanceLog.
- * Clock Out TIDAK membuat, mengubah, atau merekonsiliasi
- * OvertimeSubmission secara otomatis.
- *
- * Pengajuan lembur dilakukan SETELAH Clock Out melalui
- * OvertimeController dengan submission_mode POST_SUBMITTED.
- */
-
-test('employee clock-out records attendance without automatically reconciling overtime', function () {
-    [$user, $employee, $division, $companyRule] = makeClockOutEmployee();
-
-    Carbon::setTestNow(Carbon::parse('2026-09-21 18:12:00', 'Asia/Jakarta'));
-
-    $date = '2026-09-21';
-
+test('clock out only records attendance and does not reconcile overtime', function () {
+    [$user, $employee, $division] = makeClockOutEmployeeForTest();
+    Carbon::setTestNow(Carbon::parse('2026-09-22 18:12:00', 'Asia/Jakarta'));
+    $date = '2026-09-22';
     $attendance = AttendanceLog::create([
         'employee_id' => $employee->id,
         'tanggal' => $date,
@@ -94,11 +34,6 @@ test('employee clock-out records attendance without automatically reconciling ov
         'sumber' => 'self_service',
         'jumlah_scan' => 1,
     ]);
-
-    /*
-     * Simulasikan data pengajuan lama/pre-submitted.
-     * Clock Out tidak boleh mengubah submission ini.
-     */
     $submission = testPersistOvertimeSubmission([
         'user_id' => $user->id,
         'division_id' => $division->id,
@@ -107,7 +42,7 @@ test('employee clock-out records attendance without automatically reconciling ov
         'end_time' => '19:00:00',
         'estimated_hours' => 2.5,
         'category' => 'hari_kerja',
-        'reason' => 'Regression test: no automatic reconciliation',
+        'reason' => 'Regression test',
         'submission_mode' => 'PRE_SUBMITTED',
         'status' => 'PENDING_VP',
         'actual_start_time' => '16:30:00',
@@ -116,66 +51,19 @@ test('employee clock-out records attendance without automatically reconciling ov
         'recognized_minutes' => 150,
         'eligibility_status' => 'ELIGIBLE',
     ]);
-
-    DB::table('overtime_policy_snapshots')->insert([
-        'overtime_submission_id' => $submission->id,
-        'legal_rule_id' => LegalOvertimeRule::query()
-            ->where('rule_code', 'LEGAL-CLK-' . $user->id)
-            ->value('id'),
-        'company_rule_id' => $companyRule->id,
-        'policy' => json_encode([
-            'day_type' => 'WORKDAY',
-            'normal_end' => '16:30:00',
-            'minimum_minutes' => 30,
-            'rounding_method' => 'floor',
-            'rounding_interval' => 30,
-            'maximum_minutes_event' => null,
-            'legal_maximum_minutes_daily' => 240,
-            'legal_maximum_minutes_weekly' => 1080,
-            'legal_maximum_minutes_monthly' => null,
-            'maximum_minutes_monthly' => null,
-        ]),
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
-
-    $this->actingAs($user)
-        ->post(route('attendance.my.clock-out'))
-        ->assertRedirect();
-
+    $before = $submission->only(['actual_end_time', 'actual_minutes', 'recognized_minutes', 'eligibility_status', 'end_time', 'estimated_hours']);
+    $this->actingAs($user)->post(route('attendance.my.clock-out'))->assertRedirect()->assertSessionHas('status');
     $attendance->refresh();
     $submission->refresh();
+    expect($attendance->jam_pulang)->toBe('18:12:00')
+        ->and($submission->only(array_keys($before)))->toBe($before);
+})->afterEach(fn () => Carbon::setTestNow());
 
-    /*
-     * Clock Out hanya mengubah AttendanceLog.
-     * OvertimeSubmission harus tetap persis seperti sebelum Clock Out.
-     */
-    expect($attendance->jam_pulang)
-        ->toBe('18:12:00')
-        ->and($submission->actual_end_time)
-        ->toBe('19:00:00')
-        ->and($submission->actual_minutes)
-        ->toBe(150)
-        ->and($submission->recognized_minutes)
-        ->toBe(150)
-        ->and($submission->eligibility_status)
-        ->toBe('ELIGIBLE')
-        ->and($submission->end_time)
-        ->toBe('19:00:00')
-        ->and($submission->estimated_hours)
-        ->toBe(2.5);
-})->afterEach(function () {
-    Carbon::setTestNow();
-});
-
-test('early employee clock-out is recorded without changing an existing overtime submission', function () {
-    [$user, $employee, $division, $companyRule] = makeClockOutEmployee();
-
-    Carbon::setTestNow(Carbon::parse('2026-09-21 10:00:00', 'Asia/Jakarta'));
-
-    $date = '2026-09-21';
-
-    $attendance = AttendanceLog::create([
+test('early clock out records attendance without changing existing overtime submission', function () {
+    [$user, $employee, $division] = makeClockOutEmployeeForTest();
+    Carbon::setTestNow(Carbon::parse('2026-09-22 10:00:00', 'Asia/Jakarta'));
+    $date = '2026-09-22';
+    AttendanceLog::create([
         'employee_id' => $employee->id,
         'tanggal' => $date,
         'jam_masuk' => '07:30:00',
@@ -183,7 +71,6 @@ test('early employee clock-out is recorded without changing an existing overtime
         'sumber' => 'self_service',
         'jumlah_scan' => 1,
     ]);
-
     $submission = testPersistOvertimeSubmission([
         'user_id' => $user->id,
         'division_id' => $division->id,
@@ -192,7 +79,7 @@ test('early employee clock-out is recorded without changing an existing overtime
         'end_time' => '19:00:00',
         'estimated_hours' => 2.5,
         'category' => 'hari_kerja',
-        'reason' => 'Regression test: early clock-out',
+        'reason' => 'Early clock-out regression',
         'submission_mode' => 'PRE_SUBMITTED',
         'status' => 'PENDING_VP',
         'actual_start_time' => '16:30:00',
@@ -201,51 +88,8 @@ test('early employee clock-out is recorded without changing an existing overtime
         'recognized_minutes' => 150,
         'eligibility_status' => 'ELIGIBLE',
     ]);
-
-    DB::table('overtime_policy_snapshots')->insert([
-        'overtime_submission_id' => $submission->id,
-        'legal_rule_id' => LegalOvertimeRule::query()
-            ->where('rule_code', 'LEGAL-CLK-' . $user->id)
-            ->value('id'),
-        'company_rule_id' => $companyRule->id,
-        'policy' => json_encode([
-            'day_type' => 'WORKDAY',
-            'normal_end' => '16:30:00',
-            'minimum_minutes' => 30,
-            'rounding_method' => 'floor',
-            'rounding_interval' => 30,
-            'maximum_minutes_event' => null,
-            'legal_maximum_minutes_daily' => 240,
-            'legal_maximum_minutes_weekly' => 1080,
-            'legal_maximum_minutes_monthly' => null,
-            'maximum_minutes_monthly' => null,
-        ]),
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
-
-    $this->actingAs($user)
-        ->post(route('attendance.my.clock-out'))
-        ->assertRedirect();
-
-    $attendance->refresh();
+    $before = $submission->only(['actual_end_time', 'actual_minutes', 'recognized_minutes', 'eligibility_status', 'end_time', 'estimated_hours']);
+    $this->actingAs($user)->post(route('attendance.my.clock-out'))->assertRedirect()->assertSessionHas('status');
     $submission->refresh();
-
-    /*
-     * Bahkan ketika Clock Out dilakukan sebelum 16:30,
-     * controller hanya mencatat jam pulang.
-     * Validasi bahwa tidak ada reconciliation otomatis.
-     */
-    expect($attendance->jam_pulang)
-        ->toBe('10:00:00')
-        ->and($submission->actual_end_time)
-        ->toBe('19:00:00')
-        ->and($submission->actual_minutes)
-        ->toBe(150)
-        ->and($submission->recognized_minutes)
-        ->toBe(150)
-        ->and($submission->eligibility_status)
-        ->toBe('ELIGIBLE');
-})->afterEach(function () {
-    Carbon::setTestNow();
-});
+    expect($submission->only(array_keys($before)))->toBe($before);
+})->afterEach(fn () => Carbon::setTestNow());

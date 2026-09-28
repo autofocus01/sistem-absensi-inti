@@ -79,7 +79,15 @@
       <nav class="flex flex-col gap-space-xs">
         <button type="button" onclick="showTab('ringkasan')" id="nav-ringkasan"
                 class="flex items-center px-space-md py-space-sm rounded-lg font-title-sm text-left bg-primary-container text-on-primary">
-          Dashboard Direktur Utama
+          <span class="material-symbols-outlined text-[18px] mr-2">dashboard</span> Dashboard
+        </button>
+        <button type="button" onclick="showTab('realtime')" id="nav-realtime"
+                class="flex items-center px-space-md py-space-sm rounded-lg font-title-sm text-left text-on-surface hover:bg-surface-container-low">
+          <span class="material-symbols-outlined text-[18px] mr-2">sensors</span> Realtime
+        </button>
+        <button type="button" onclick="showTab('history')" id="nav-history"
+                class="flex items-center px-space-md py-space-sm rounded-lg font-title-sm text-left text-on-surface hover:bg-surface-container-low">
+          <span class="material-symbols-outlined text-[18px] mr-2">history</span> History
         </button>
       </nav>
     </div>
@@ -477,6 +485,82 @@
       </div>
     </div>
 
+
+      {{-- DATA KESELURUHAN KARYAWAN --}}
+      <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg mt-space-xl border border-surface-container-low">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pb-space-base border-b border-surface-container-low">
+          <div>
+            <h2 class="font-headline-md text-headline-md text-primary">Data Keseluruhan Karyawan</h2>
+            <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Scope Direksi mencakup seluruh karyawan dalam periode yang dipilih; filter divisi tetap tersedia.</p>
+          </div>
+          <form method="GET" action="{{ route('direktur.dashboard') }}" class="flex flex-wrap gap-2">
+            <input type="text" name="employee_q" value="{{ $employeeSearch ?? '' }}" placeholder="Nama atau NIPEG"
+                   class="rounded-lg border border-outline bg-surface px-3 py-2 text-sm min-w-[220px]">
+            <select name="division_id" class="rounded-lg border border-outline bg-surface px-3 py-2 text-sm">
+              <option value="">Semua Divisi</option>
+              @foreach($divisions as $division)
+                <option value="{{ $division->id }}" @selected((int)($divisionId ?? 0) === (int)$division->id)>{{ $division->nama }}</option>
+              @endforeach
+            </select>
+            <select name="bulan" class="rounded-lg border border-outline bg-surface px-3 py-2 text-sm">
+              @for($m=1;$m<=12;$m++)<option value="{{ $m }}" @selected($bulan===$m)>{{ \Carbon\Carbon::create()->month($m)->translatedFormat('F') }}</option>@endfor
+            </select>
+            <select name="tahun" class="rounded-lg border border-outline bg-surface px-3 py-2 text-sm">
+              @foreach(range(now()->year-2, now()->year+1) as $y)<option value="{{ $y }}" @selected($tahun===$y)>{{ $y }}</option>@endforeach
+            </select>
+            <button class="px-4 py-2 rounded-lg bg-primary text-on-primary text-sm font-semibold" type="submit">Tampilkan</button>
+          </form>
+        </div>
+        <div class="overflow-x-auto mt-4">
+          <table class="w-full text-left min-w-[1050px]">
+            <thead><tr class="bg-surface-container-low text-xs uppercase tracking-wider text-on-surface-variant">
+              <th class="py-3 px-4">Karyawan</th><th class="py-3 px-4">NIPEG</th><th class="py-3 px-4">Divisi</th><th class="py-3 px-4">Hari Ini</th><th class="py-3 px-4">Kehadiran Bulanan</th><th class="py-3 px-4">Telat</th><th class="py-3 px-4">Anomaly</th>
+            </tr></thead>
+            <tbody class="divide-y divide-surface-container-low">
+              @forelse(($employeePaginator ?? $employeeOverview->take(25)) as $row)
+                <tr class="hover:bg-surface-container-low/40">
+                  <td class="py-3 px-4 font-semibold text-primary">{{ $row['nama'] }}</td><td class="py-3 px-4">{{ $row['nipeg'] }}</td><td class="py-3 px-4">{{ $row['divisi'] }}</td>
+                  <td class="py-3 px-4"><div>{{ $row['status_hari_ini'] }}</div><div class="text-xs text-on-surface-variant">{{ $row['jam_masuk'] ? substr($row['jam_masuk'],0,5) : '--:--' }} → {{ $row['jam_pulang'] ? substr($row['jam_pulang'],0,5) : '--:--' }}</div></td>
+                  <td class="py-3 px-4">{{ $row['persen_kehadiran'] }}%</td><td class="py-3 px-4">{{ $row['telat_hari'] }} hari</td><td class="py-3 px-4">{{ $row['anomaly_count'] }}</td>
+                </tr>
+              @empty
+                <tr><td colspan="7" class="py-8 text-center text-on-surface-variant">Belum ada data karyawan pada scope periode ini.</td></tr>
+              @endforelse
+            </tbody>
+          </table>
+        </div>
+        <div class="mt-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3 text-xs text-on-surface-variant"><span>Menampilkan {{ ($employeePaginator ?? $employeeOverview)->count() }} dari {{ $employeeOverview->count() }} karyawan pada halaman ini.</span>@if(($employeePaginator ?? null) instanceof \Illuminate\Pagination\LengthAwarePaginator)<span>{{ $employeePaginator->links() }}</span>@endif</div>
+      </div>
+
+      <div id="tab-realtime" class="hidden mt-space-xl scroll-mt-24">
+        <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg border border-surface-container-low">
+          <div class="flex items-center justify-between pb-space-base border-b border-surface-container-low">
+            <div><h2 class="font-headline-md text-headline-md text-primary">Realtime Attendance</h2><p class="text-sm text-on-surface-variant">Snapshot presensi seluruh karyawan pada hari ini.</p></div>
+            <span class="px-3 py-1 rounded-full bg-secondary-container text-on-surface text-xs font-semibold">Live · <span id="director-live-date">-- -- ----</span> · <span id="director-live-time">--:--:--</span> WIB</span>
+          </div>
+          <div class="overflow-x-auto mt-4"><table class="w-full text-left min-w-[900px]"><thead><tr class="bg-surface-container-low text-xs uppercase tracking-wider text-on-surface-variant"><th class="py-3 px-4">Karyawan</th><th class="py-3 px-4">Divisi</th><th class="py-3 px-4">Clock In</th><th class="py-3 px-4">Clock Out</th><th class="py-3 px-4">Status</th></tr></thead><tbody class="divide-y divide-surface-container-low">
+          @forelse($realtimeRows as $row)<tr><td class="py-3 px-4 font-semibold">{{ $row['nama'] }}<div class="text-xs text-on-surface-variant">{{ $row['nipeg'] }}</div></td><td class="py-3 px-4">{{ $row['divisi'] }}</td><td class="py-3 px-4">{{ $row['jam_masuk'] ? substr($row['jam_masuk'],0,5) : '--:--' }}</td><td class="py-3 px-4">{{ $row['jam_pulang'] ? substr($row['jam_pulang'],0,5) : '--:--' }}</td><td class="py-3 px-4">{{ $row['status_hari_ini'] }}</td></tr>@empty<tr><td colspan="5" class="py-8 text-center text-on-surface-variant">Belum ada presensi hari ini.</td></tr>@endforelse
+          </tbody></table></div>
+        </div>
+      </div>
+
+      <div id="tab-history" class="hidden mt-space-xl scroll-mt-24">
+        <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg border border-surface-container-low">
+          <div class="pb-space-base border-b border-surface-container-low"><h2 class="font-headline-md text-headline-md text-primary">History Presensi</h2><p class="text-sm text-on-surface-variant">Riwayat presensi seluruh karyawan untuk periode terpilih.</p></div>
+          <div class="overflow-x-auto mt-4"><table class="w-full text-left min-w-[1100px]"><thead><tr class="bg-surface-container-low text-xs uppercase tracking-wider text-on-surface-variant"><th class="py-3 px-4">Tanggal</th><th class="py-3 px-4">Karyawan</th><th class="py-3 px-4">NIPEG</th><th class="py-3 px-4">Divisi</th><th class="py-3 px-4">Masuk</th><th class="py-3 px-4">Pulang</th><th class="py-3 px-4">Durasi</th><th class="py-3 px-4">Status</th></tr></thead><tbody class="divide-y divide-surface-container-low">
+          @forelse($historyRows->take(50) as $row)<tr><td class="py-3 px-4">{{ $row['tanggal']->translatedFormat('d M Y') }}</td><td class="py-3 px-4 font-semibold">{{ $row['nama'] }}</td><td class="py-3 px-4">{{ $row['nipeg'] }}</td><td class="py-3 px-4">{{ $row['divisi'] }}</td><td class="py-3 px-4">{{ $row['jam_masuk'] ? substr($row['jam_masuk'],0,5) : '--:--' }}</td><td class="py-3 px-4">{{ $row['jam_pulang'] ? substr($row['jam_pulang'],0,5) : '--:--' }}</td><td class="py-3 px-4">{{ $row['durasi'] }}</td><td class="py-3 px-4">{{ $row['status'] }}</td></tr>@empty<tr><td colspan="8" class="py-8 text-center text-on-surface-variant">Belum ada riwayat pada periode terpilih.</td></tr>@endforelse
+          </tbody></table></div>
+          @if($historyRows->count() > 50)<div class="mt-3 text-xs text-on-surface-variant">Menampilkan 50 dari {{ $historyRows->count() }} baris. Gunakan filter periode/divisi untuk mempersempit data.</div>@endif
+        </div>
+
+        <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg border border-surface-container-low mt-4">
+          <h2 class="font-headline-md text-headline-md text-primary mb-4">Frekuensi Anomaly per Divisi</h2>
+          <div class="overflow-x-auto"><table class="w-full text-left min-w-[720px]"><thead><tr class="bg-surface-container-low text-xs uppercase tracking-wider text-on-surface-variant"><th class="py-3 px-4">Divisi</th><th class="py-3 px-4">Total</th><th class="py-3 px-4">Open</th><th class="py-3 px-4">Reviewed</th><th class="py-3 px-4">Resolved</th></tr></thead><tbody class="divide-y divide-surface-container-low">
+          @forelse($anomalyByDivision as $row)<tr><td class="py-3 px-4 font-semibold">{{ $row['divisi'] }}</td><td class="py-3 px-4">{{ $row['total'] }}</td><td class="py-3 px-4">{{ $row['open'] }}</td><td class="py-3 px-4">{{ $row['reviewed'] }}</td><td class="py-3 px-4">{{ $row['resolved'] }}</td></tr>@empty<tr><td colspan="5" class="py-6 text-center text-on-surface-variant">Belum ada anomaly pada periode ini.</td></tr>@endforelse
+          </tbody></table></div>
+        </div>
+      </div>
+
     {{-- ============ TAB 2: OTORISASI KHUSUS ============ --}}</main>
 </div>
 
@@ -485,7 +569,13 @@
     const el = document.getElementById('jam-realtime');
     if (!el) return;
     const now = new Date();
-    el.textContent = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const value = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const dateValue = now.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+    el.textContent = value;
+    const liveDate = document.getElementById('director-live-date');
+    if (liveDate) liveDate.textContent = dateValue;
+    const live = document.getElementById('director-live-time');
+    if (live) live.textContent = value;
   }
   tickJamRealtime();
   setInterval(tickJamRealtime, 1000);
@@ -508,13 +598,16 @@
 
   // Ganti tab TANPA pindah halaman/URL.
   function showTab(tab) {
-    const tabs = ['ringkasan'];
+    const tabs = ['ringkasan', 'realtime', 'history'];
     tabs.forEach(function (t) {
       document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
-      document.getElementById('tabbtn-' + t).classList.toggle('border-primary', t === tab);
-      document.getElementById('tabbtn-' + t).classList.toggle('text-primary', t === tab);
-      document.getElementById('tabbtn-' + t).classList.toggle('border-transparent', t !== tab);
-      document.getElementById('tabbtn-' + t).classList.toggle('text-on-surface-variant', t !== tab);
+      const tabButton = document.getElementById('tabbtn-' + t);
+      if (tabButton) {
+        tabButton.classList.toggle('border-primary', t === tab);
+        tabButton.classList.toggle('text-primary', t === tab);
+        tabButton.classList.toggle('border-transparent', t !== tab);
+        tabButton.classList.toggle('text-on-surface-variant', t !== tab);
+      }
       document.getElementById('nav-' + t).classList.toggle('bg-primary-container', t === tab);
       document.getElementById('nav-' + t).classList.toggle('text-on-primary', t === tab);
       document.getElementById('nav-' + t).classList.toggle('text-on-surface', t !== tab);
@@ -531,7 +624,9 @@
 
   // Buka tab sesuai hash URL (dipakai waktu redirect balik dari approve/reject lembur).
   document.addEventListener('DOMContentLoaded', function () {
-    const initial = 'ringkasan';
+    const initial = ['ringkasan', 'realtime', 'history'].includes(window.location.hash.replace('#', ''))
+      ? window.location.hash.replace('#', '')
+      : 'ringkasan';
     showTab(initial);
   });
 </script>
