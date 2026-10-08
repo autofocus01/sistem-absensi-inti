@@ -14,6 +14,7 @@ class OvertimeReportingService
     public const STATUS_VERIFIED_HR = 'VERIFIED_HR';
     public const STATUS_REJECTED_VP = 'REJECTED_VP';
     public const STATUS_REJECTED_HR = 'REJECTED_HR';
+    public const STATUS_RETURNED_TO_VP = 'RETURNED_TO_VP';
 
     public function periodQuery(
         int $year,
@@ -78,7 +79,7 @@ class OvertimeReportingService
         ?int $employeeId = null,
     ): int {
         return (int) $this->periodQuery($year, $month, $divisionId, $employeeId)
-            ->where('status', self::STATUS_PENDING_VP)
+            ->whereIn('status', [self::STATUS_PENDING_VP, self::STATUS_RETURNED_TO_VP])
             ->where('eligibility_status', 'ELIGIBLE')
             ->where('recognized_minutes', '>', 0)
             ->sum('recognized_minutes');
@@ -108,6 +109,7 @@ class OvertimeReportingService
 
         return [
             'Pending VP' => $rows->where('status', self::STATUS_PENDING_VP)->count(),
+            'Perlu Verifikasi Ulang VP' => $rows->where('status', self::STATUS_RETURNED_TO_VP)->count(),
             'Disetujui VP' => $rows->where('status', self::STATUS_APPROVED_VP)->count(),
             'Verified HR' => $rows->where('status', self::STATUS_VERIFIED_HR)->count(),
             'Ditolak' => $rows->whereIn('status', [self::STATUS_REJECTED_VP, self::STATUS_REJECTED_HR])->count(),

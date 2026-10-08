@@ -178,7 +178,7 @@
         <tbody class="divide-y divide-surface-container-low font-body-md text-body-md">
           @forelse ($logs as $log)
           <tr class="hover:bg-surface-container-low/40 transition-colors">
-            <td class="py-space-base px-space-base">{{ $log->tanggal->translatedFormat('d M Y') }}</td>
+            <td class="py-space-base px-space-base">{{ $log->tanggal->format('d') }} {{ [1=>'Jan',2=>'Feb',3=>'Mar',4=>'Apr',5=>'Mei',6=>'Jun',7=>'Jul',8=>'Agu',9=>'Sep',10=>'Okt',11=>'Nov',12=>'Des'][(int) $log->tanggal->format('n')] }} {{ $log->tanggal->format('Y') }}</td>
             <td class="py-space-base px-space-base font-title-sm text-title-sm text-primary">{{ $log->employee->nama }}</td>
             <td class="py-space-base px-space-base"><span class="px-2 py-0.5 rounded bg-surface-container text-primary font-label-sm text-xs font-semibold">{{ $log->employee->division->nama }}</span></td>
             <td class="py-space-base px-space-base tabular-nums">{{ \Carbon\Carbon::parse($log->jam_pulang)->format('H:i') }}</td>

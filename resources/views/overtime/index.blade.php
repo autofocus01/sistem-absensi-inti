@@ -19,6 +19,12 @@
       </div>
     </div>
   @else
+    @php($actualOt = (int) ($draft['actual_overtime_minutes'] ?? 0))
+    @php($roundedOt = (int) ($draft['rounded_overtime_minutes'] ?? $actualOt))
+    @php($recognizedOt = (int) ($draft['recognized_overtime_minutes'] ?? $draft['recognized_minutes'] ?? $roundedOt))
+    @php($excessOt = (int) ($draft['excess_minutes'] ?? max(0, $roundedOt - $recognizedOt)))
+    @php($maximumOt = (int) ($draft['maximum_minutes_event'] ?? 0))
+
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
       <div class="lg:col-span-8 inti-card inti-card-pad">
         <div class="inti-section-title">Konfirmasi Pengajuan Lembur</div>
@@ -49,6 +55,32 @@
             <div><div class="inti-label">Selesai OT</div><strong>{{ $draft['end_time'] }}</strong></div>
           </div>
 
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3" style="margin-top:1rem">
+            <div class="inti-card" style="padding:1rem;background:#f8f9ff">
+              <div class="inti-kpi-label">OT aktual</div>
+              <strong>{{ intdiv($actualOt,60) }}j {{ $actualOt % 60 }}m</strong>
+            </div>
+            <div class="inti-card" style="padding:1rem;background:#f8f9ff">
+              <div class="inti-kpi-label">Pembulatan</div>
+              <strong>{{ intdiv($roundedOt,60) }}j {{ $roundedOt % 60 }}m</strong>
+            </div>
+            <div class="inti-card" style="padding:1rem;background:#f8f9ff">
+              <div class="inti-kpi-label">OT diakui</div>
+              <strong>{{ intdiv($recognizedOt,60) }}j {{ $recognizedOt % 60 }}m</strong>
+            </div>
+            <div class="inti-card" style="padding:1rem;background:#fff7ed">
+              <div class="inti-kpi-label">Excess</div>
+              <strong>{{ intdiv($excessOt,60) }}j {{ $excessOt % 60 }}m</strong>
+            </div>
+          </div>
+
+          @if($excessOt > 0)
+            <div class="inti-alert" style="margin-top:1rem;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412">
+              <strong>OT melebihi batas maksimum.</strong><br>
+              Sistem tetap mengajukan <strong>{{ intdiv($recognizedOt,60) }}j {{ $recognizedOt % 60 }}m</strong> ke VP. Excess <strong>{{ intdiv($excessOt,60) }}j {{ $excessOt % 60 }}m</strong> dicatat dan <strong>tidak mempengaruhi quota lembur</strong>.
+            </div>
+          @endif
+
           <div style="margin-top:1rem">
             <label class="inti-label" for="reason">Uraian Tugas / Pekerjaan *</label>
             <textarea class="inti-input" id="reason" name="reason" rows="4" required placeholder="Jelaskan kebutuhan dan tugas pekerjaan selama lembur..."></textarea>
@@ -61,11 +93,8 @@
 
           <div id="form-message" style="margin-top:1rem"></div>
           <div style="display:flex;justify-content:flex-end;gap:.6rem;margin-top:1rem">
-            <form method="POST" action="{{ route('attendance.my.overtime-dismiss') }}" style="display:inline">
-              @csrf
-              <button class="inti-btn inti-btn-ghost" type="submit">Tidak, Tetap Hadir</button>
-            </form>
-            <button class="inti-btn inti-btn-primary" id="btn-submit" type="button"><span class="material-symbols-outlined">send</span>Ajukan ke VP</button>
+            <button class="inti-btn inti-btn-ghost" id="btn-dismiss-overtime" type="button">Tidak, Tetap Hadir</button>
+            <button class="inti-btn inti-btn-primary" id="btn-submit" type="button"><span class="material-symbols-outlined">send</span>Ajukan {{ intdiv($recognizedOt,60) }}j {{ $recognizedOt % 60 }}m ke VP</button>
           </div>
         </form>
       </div>
@@ -75,40 +104,89 @@
         <div style="margin-top:1rem;display:grid;gap:.75rem">
           <div><div class="inti-kpi-label">Band</div><strong>Band {{ $draft['band_code'] }}</strong></div>
           <div><div class="inti-kpi-label">Durasi kerja aktual</div><strong>{{ intdiv((int)$draft['actual_work_minutes'],60) }}j {{ ((int)$draft['actual_work_minutes']) % 60 }}m</strong></div>
+          <div><div class="inti-kpi-label">Batas OT</div><strong>{{ intdiv($maximumOt,60) }}j {{ $maximumOt % 60 }}m</strong></div>
           <div><div class="inti-kpi-label">Minimum lembur</div><strong>{{ $draft['minimum_minutes'] }} menit</strong></div>
         </div>
-        <div class="inti-alert inti-alert-info" style="margin-top:1.25rem">Clock Out 16:30 tepat waktu dan tidak membuka halaman lembur. Validasi akhir tetap dilakukan server saat pengajuan.</div>
+        <div class="inti-alert inti-alert-info" style="margin-top:1.25rem">Clock Out menjadi evidence server. Jam OT tidak dapat diubah dari browser. Validasi akhir tetap dilakukan server saat pengajuan.</div>
       </div>
     </div>
   @endif
 </div>
 @endsection
+
 @section('scripts')
 @if($draft)
 <script>
-const btn=document.getElementById('btn-submit');
-btn.addEventListener('click',async()=>{
-  const f=document.getElementById('form-message');
-  const consent=document.getElementById('employee_consent');
-  const reason=document.getElementById('reason').value.trim();
-  if(!consent.checked){f.innerHTML='<div class="inti-alert inti-alert-danger">Centang persetujuan karyawan sebelum mengirim pengajuan.</div>';return;}
-  if(!reason){f.innerHTML='<div class="inti-alert inti-alert-danger">Uraian tugas wajib diisi.</div>';return;}
-  const payload={
-    overtime_date:document.getElementById('overtime_date').value,
-    category:'{{ $draft['day_type'] === 'NATIONAL_HOLIDAY' ? 'hari_libur_nasional' : ($draft['day_type'] === 'WEEKEND' ? 'akhir_pekan' : 'hari_kerja') }}',
-    start_time:document.getElementById('start_time').value,
-    end_time:document.getElementById('end_time').value,
+const btn = document.getElementById('btn-submit');
+const dismissBtn = document.getElementById('btn-dismiss-overtime');
+
+dismissBtn?.addEventListener('click', () => {
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = "{{ route('attendance.my.overtime-dismiss') }}";
+  const token = document.createElement('input');
+  token.type = 'hidden';
+  token.name = '_token';
+  token.value = "{{ csrf_token() }}";
+  form.appendChild(token);
+  document.body.appendChild(form);
+  form.submit();
+});
+
+btn?.addEventListener('click', async () => {
+  const f = document.getElementById('form-message');
+  const consent = document.getElementById('employee_consent');
+  const reason = document.getElementById('reason').value.trim();
+
+  if (!consent.checked) {
+    f.innerHTML = '<div class="inti-alert inti-alert-danger">Centang persetujuan karyawan sebelum mengirim pengajuan.</div>';
+    return;
+  }
+  if (!reason) {
+    f.innerHTML = '<div class="inti-alert inti-alert-danger">Uraian tugas wajib diisi.</div>';
+    return;
+  }
+
+  btn.disabled = true;
+
+  const payload = {
+    overtime_date: document.getElementById('overtime_date').value,
+    category: '{{ $draft['day_type'] === 'NATIONAL_HOLIDAY' ? 'hari_libur_nasional' : ($draft['day_type'] === 'WEEKEND' ? 'akhir_pekan' : 'hari_kerja') }}',
+    start_time: document.getElementById('start_time').value,
+    end_time: document.getElementById('end_time').value,
     reason,
-    submission_mode:'POST_SUBMITTED',
-    employee_consent:true
+    submission_mode: 'POST_SUBMITTED',
+    employee_consent: true
   };
-  try{
-    const r=await fetch("{{ route('overtime.store') }}",{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':'{{ csrf_token() }}'},body:JSON.stringify(payload)});
-    const d=await r.json().catch(()=>({}));
-    if(!r.ok)throw new Error(d.message||Object.values(d.errors||{}).flat().join('\n')||'Pengajuan gagal.');
-    f.innerHTML='<div class="inti-alert inti-alert-success">'+(d.message||'Pengajuan berhasil dikirim ke VP Divisi.')+'</div>';
-    btn.disabled=true;
-  }catch(err){f.innerHTML='<div class="inti-alert inti-alert-danger">'+err.message+'</div>';}
+
+  try {
+    const r = await fetch("{{ route('overtime.store') }}", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      throw new Error(d.message || Object.values(d.errors || {}).flat().join('\n') || 'Pengajuan gagal.');
+    }
+
+    const calc = d.calculation || {};
+    const excess = Number(calc.excess_minutes || 0);
+    const recognized = Number(calc.recognized_minutes || {{ $recognizedOt }});
+    const extra = excess > 0
+      ? ' Excess ' + Math.floor(excess / 60) + 'j ' + (excess % 60) + 'm tidak diperhitungkan ke quota.'
+      : '';
+
+    f.innerHTML = '<div class="inti-alert inti-alert-success">Pengajuan ' + Math.floor(recognized / 60) + 'j ' + (recognized % 60) + 'm berhasil dikirim ke VP Divisi.' + extra + '</div>';
+  } catch (err) {
+    btn.disabled = false;
+    f.innerHTML = '<div class="inti-alert inti-alert-danger">' + err.message + '</div>';
+  }
 });
 </script>
 @endif

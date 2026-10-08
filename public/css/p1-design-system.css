@@ -115,3 +115,53 @@ body { background: var(--inti-background); color: var(--inti-text); }
 
 /* Utility to avoid horizontal overflow from long NIPEG/ticket values */
 .inti-mono { font-variant-numeric:tabular-nums; font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace; }
+
+/* Dark theme tokens: softened contrast for long sessions; avoids near-black UI while preserving hierarchy. */
+html.dark {
+  --inti-primary: #dbe8f7;
+  --inti-primary-container: #274563;
+  --inti-secondary: #68d8cb;
+  --inti-error: #ff8b84;
+  --inti-warning: #f0b35a;
+  --inti-background: #141c29;
+  --inti-surface: #1b2636;
+  --inti-surface-low: #202d40;
+  --inti-surface-high: #2a3a50;
+  --inti-text: #edf3fa;
+  --inti-muted: #b7c3d2;
+  --inti-outline: #52657d;
+  --inti-shadow: 0 1px 10px rgba(0,0,0,.20);
+  --inti-shadow-hover: 0 8px 24px rgba(0,0,0,.28);
+}
+html.dark .inti-title,
+html.dark .inti-section-title,
+html.dark .inti-kpi-value,
+html.dark .inti-label,
+html.dark .inti-btn-ghost { color: var(--inti-primary); }
+html.dark .inti-card,
+html.dark .inti-table-wrap { background: var(--inti-surface); border-color: rgba(82,101,125,.65); }
+html.dark .inti-table th { background: var(--inti-surface-low); color: var(--inti-muted); }
+html.dark .inti-table td { border-top-color: rgba(82,101,125,.45); color: var(--inti-text); }
+html.dark .inti-table tbody tr:hover { background: var(--inti-surface-low); }
+html.dark .inti-input { background: var(--inti-surface); color: var(--inti-text); border-color: var(--inti-outline); }
+
+
+/* Dark theme completeness: shared primitives, sidebar, badges, alerts and controls. */
+html.dark .inti-btn-secondary { background: var(--inti-surface-low); color: var(--inti-text); border-color: var(--inti-outline); }
+html.dark .inti-btn-secondary:hover { background: var(--inti-surface-high); }
+html.dark .inti-btn-primary { background: #355b7f; color: #f8fbff; }
+html.dark .inti-btn-ghost:hover { background: var(--inti-surface-low); }
+html.dark .inti-badge-success { color:#8af0df; background:#123a36; }
+html.dark .inti-badge-warning { color:#ffd38a; background:#493518; }
+html.dark .inti-badge-danger { color:#ffb0a9; background:#4a2426; }
+html.dark .inti-badge-info { color:#a9d7ff; background:#18344b; }
+html.dark .inti-badge-neutral { color:#d5deea; background:#2a3647; }
+html.dark .inti-alert-success { color:#9cefe3; background:#123832; border-color:#285d56; }
+html.dark .inti-alert-warning { color:#ffd995; background:#3d2e17; border-color:#6e5526; }
+html.dark .inti-alert-danger { color:#ffb5ae; background:#422225; border-color:#6b3538; }
+html.dark .inti-alert-info { color:#b7ddff; background:#172f45; border-color:#315572; }
+html.dark .inti-empty-icon { background:var(--inti-surface-low); color:var(--inti-primary); }
+html.dark .inti-nav-item:hover { background:var(--inti-surface-low); color:var(--inti-text); }
+html.dark .inti-nav-item.is-active { background:#355b7f; color:#f8fbff; }
+html.dark .inti-input:focus { border-color:#7dd3fc; box-shadow:0 0 0 3px rgba(125,211,252,.14); }
+html.dark select option { background:#1b2636; color:#edf3fa; }

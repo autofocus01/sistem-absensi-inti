@@ -6,6 +6,7 @@ use App\Models\AttendanceLog;
 use App\Models\AttendanceRecap;
 use App\Models\Division;
 use App\Models\Employee;
+use App\Models\HolidayCalendar;
 use App\Services\Overtime\OvertimeReportingService;
 use Carbon\Carbon;
 
@@ -18,49 +19,105 @@ class ProductionReportService
         $start = Carbon::create($year, $month, 1)->startOfMonth();
         $end = $start->copy()->endOfMonth();
 
-        $employees = Employee::query()->with('division')
-            ->when($divisionId, fn ($q) => $q->where('division_id', $divisionId))
-            ->orderBy('nama')->get();
-        $recaps = AttendanceRecap::query()->with('employee.division')
-            ->where('tahun', $year)->where('bulan', $month)
-            ->when($divisionId, fn ($q) => $q->whereHas('employee', fn ($e) => $e->where('division_id', $divisionId)))
-            ->get()->keyBy('employee_id');
-        $logs = AttendanceLog::query()->with('employee.division')
+        $employees = Employee::query()
+            ->with('division')
+            ->when($divisionId !== null, fn ($q) => $q->where('division_id', $divisionId))
+            ->orderBy('nama')
+            ->get();
+
+        // AttendanceLog adalah sumber fakta presensi. Jangan menjadikan AttendanceRecap
+        // sebagai sumber utama laporan karena recap bisa belum diregenerasi setelah import.
+        $logsByEmployee = AttendanceLog::query()
+            ->with('employee.division')
             ->whereBetween('tanggal', [$start->toDateString(), $end->toDateString()])
-            ->when($divisionId, fn ($q) => $q->whereHas('employee', fn ($e) => $e->where('division_id', $divisionId)))
-            ->orderBy('tanggal')->get();
+            ->when(
+                $divisionId !== null,
+                fn ($q) => $q->whereHas(
+                    'employee',
+                    fn ($e) => $e->where('division_id', $divisionId)
+                )
+            )
+            ->orderBy('tanggal')
+            ->get()
+            ->groupBy('employee_id');
+
+        // Hari kerja laporan = Senin-Jumat, dikurangi kalender libur nasional aktif.
+        $holidayDates = HolidayCalendar::query()
+            ->whereBetween('tanggal', [$start->toDateString(), $end->toDateString()])
+            ->where('is_active', true)
+            ->where('jenis', 'NATIONAL_HOLIDAY')
+            ->pluck('tanggal')
+            ->map(fn ($date) => Carbon::parse($date)->toDateString())
+            ->flip();
+
+        $workingDays = $this->workingDays($start, $end, $holidayDates);
 
         $officialOt = $this->overtime->officialMinutes($year, $month, $divisionId);
         $pendingVp = $this->overtime->pendingVpMinutes($year, $month, $divisionId);
         $pendingHr = $this->overtime->pendingHrMinutes($year, $month, $divisionId);
 
-        $rows = $employees->map(function (Employee $employee) use ($recaps, $year, $month) {
-            $recap = $recaps->get($employee->id);
+        $rows = $employees->map(function (Employee $employee) use ($logsByEmployee, $workingDays, $year, $month) {
+            $logs = $logsByEmployee->get($employee->id, collect());
+
+            $hadir = $logs
+                ->filter(fn (AttendanceLog $log) => (bool) $log->jam_masuk)
+                ->count();
+
+            $telatHari = $logs
+                ->filter(fn (AttendanceLog $log) => $log->menitTelat() > 0)
+                ->count();
+
+            $menitTelat = $logs->sum(fn (AttendanceLog $log) => $log->menitTelat());
+
+            // Laporan produksi tidak boleh bergantung pada AttendanceRecap yang mungkin
+            // belum diregenerasi setelah import. AttendanceLog menjadi sumber fakta utama.
+            $alpha = max(0, $workingDays - $hadir);
+            $persenKehadiran = $workingDays > 0
+                ? round(min(100, ($hadir / $workingDays) * 100), 1)
+                : 0.0;
+
             return [
                 'employee_id' => $employee->id,
                 'nipeg' => $employee->nipeg,
                 'nama' => $employee->nama,
                 'divisi' => $employee->division?->nama ?? '-',
-                'hadir' => (int) ($recap?->hadir ?? 0),
-                'telat_hari' => (int) ($recap?->telat_hari ?? 0),
-                'menit_telat' => (int) ($recap?->menit_telat ?? 0),
-                'alpha' => (int) ($recap?->alpha ?? 0),
-                'persen_kehadiran' => (float) ($recap?->persen_kehadiran ?? 0),
+                'hadir' => $hadir,
+                'telat_hari' => $telatHari,
+                'menit_telat' => $menitTelat,
+                'alpha' => $alpha,
+                'persen_kehadiran' => $persenKehadiran,
                 'official_ot_minutes' => $this->overtime->monthlyOfficialMinutes($employee->id, $year, $month),
             ];
         });
 
         return [
-            'year' => $year, 'month' => $month, 'start' => $start, 'end' => $end,
-            'employees' => $employees, 'divisions' => Division::orderBy('nama')->get(),
-            'rows' => $rows, 'logs' => $logs, 'recaps' => $recaps,
+            'year' => $year,
+            'month' => $month,
+            'start' => $start,
+            'end' => $end,
+            'employees' => $employees,
+            'divisions' => Division::query()->orderBy('nama')->get(),
+            'rows' => $rows,
+            'logs' => $logsByEmployee->flatten(),
+            'recaps' => AttendanceRecap::query()
+                ->where('tahun', $year)
+                ->where('bulan', $month)
+                ->when(
+                    $divisionId !== null,
+                    fn ($q) => $q->whereHas(
+                        'employee',
+                        fn ($e) => $e->where('division_id', $divisionId)
+                    )
+                )
+                ->get()
+                ->keyBy('employee_id'),
             'summary' => [
                 'employee_count' => $employees->count(),
-                'attendance_avg' => round((float) ($recaps->avg('persen_kehadiran') ?? 0), 1),
-                'present_days' => (int) $recaps->sum('hadir'),
-                'late_days' => (int) $recaps->sum('telat_hari'),
-                'late_minutes' => (int) $recaps->sum('menit_telat'),
-                'alpha_days' => (int) $recaps->sum('alpha'),
+                'attendance_avg' => round((float) ($rows->avg('persen_kehadiran') ?? 0), 1),
+                'present_days' => (int) $rows->sum('hadir'),
+                'late_days' => (int) $rows->sum('telat_hari'),
+                'late_minutes' => (int) $rows->sum('menit_telat'),
+                'alpha_days' => (int) $rows->sum('alpha'),
                 'official_ot_minutes' => $officialOt,
                 'pending_vp_minutes' => $pendingVp,
                 'pending_hr_minutes' => $pendingHr,
@@ -68,9 +125,29 @@ class ProductionReportService
         ];
     }
 
+    /**
+     * Hitung hari kerja Senin-Jumat dikurangi hari libur nasional aktif.
+     */
+    private function workingDays(Carbon $start, Carbon $end, $holidayDates): int
+    {
+        $days = 0;
+
+        for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
+            if ($date->isWeekday() && ! $holidayDates->has($date->toDateString())) {
+                $days++;
+            }
+        }
+
+        return $days;
+    }
+
     public function formatMinutes(int $minutes): string
     {
         $minutes = max(0, $minutes);
-        return intdiv($minutes, 60) . 'j ' . str_pad((string) ($minutes % 60), 2, '0', STR_PAD_LEFT) . 'm';
+
+        return intdiv($minutes, 60)
+            . 'j '
+            . str_pad((string) ($minutes % 60), 2, '0', STR_PAD_LEFT)
+            . 'm';
     }
 }

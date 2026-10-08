@@ -89,3 +89,27 @@ it('does not silently overwrite a non-import attendance source when values diffe
     expect($attendance->jam_pulang)->toBe('16:30:00');
     expect($attendance->sumber)->toBe('face_id');
 });
+
+
+it('normalizes Excel-like numeric NIP and preserves real Excel row number after a title row', function () {
+    Storage::fake('local');
+    $user = makeHrImportUser();
+    $employee = makeImportEmployee();
+    $employee->update(['nipeg' => '90010001']);
+
+    $csv = "LAPORAN ABSENSI,,,,\n"
+        . "NIP,Tanggal,Jam Masuk,Jam Pulang\n"
+        . "90010001.0,2026-09-23,07:30,16:30\n"
+        . "UNKNOWN.0,2026-09-23,07:30,16:30\n";
+
+    $file = UploadedFile::fake()->createWithContent('absensi-title.csv', $csv);
+
+    $response = $this->actingAs($user)
+        ->post(route('attendance.import.production.preview'), ['file' => $file]);
+
+    $response->assertOk()
+        ->assertSee('Baris 4')
+        ->assertSee('NIP tidak ditemukan');
+
+    expect(session('attendance_import_path'))->not->toBeNull();
+});

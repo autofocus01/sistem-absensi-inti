@@ -137,63 +137,79 @@ class OvertimeCalculationServiceTest extends TestCase
         $this->assertSame('ELIGIBLE', $result['eligibility']);
     }
 
-    public function test_weekend_59_minutes_is_not_eligible(): void
+    public function test_workday_five_hours_is_four_hours_recognized_and_one_hour_excess(): void
     {
         $result = $this->service->calculate(
-            Carbon::parse('2026-09-19'),
-            Carbon::parse('2026-09-19 08:00:00'),
-            Carbon::parse('2026-09-19 08:59:00'),
-            $this->weekendPolicy(),
+            Carbon::parse('2026-09-14'),
+            Carbon::parse('2026-09-14 16:30:00'),
+            Carbon::parse('2026-09-14 21:30:00'),
+            $this->workdayPolicy(['maximum_minutes_event' => 240]),
         );
 
-        $this->assertSame('WEEKEND', $result['day_type']);
-        $this->assertSame(59, $result['actual_minutes']);
-        $this->assertSame(0, $result['recognized_minutes']);
-        $this->assertSame('NOT_ELIGIBLE', $result['eligibility']);
-    }
-
-    public function test_weekend_60_minutes_is_eligible(): void
-    {
-        $result = $this->service->calculate(
-            Carbon::parse('2026-09-19'),
-            Carbon::parse('2026-09-19 08:00:00'),
-            Carbon::parse('2026-09-19 09:00:00'),
-            $this->weekendPolicy(),
-        );
-
-        $this->assertSame('WEEKEND', $result['day_type']);
-        $this->assertSame(60, $result['actual_minutes']);
-        $this->assertSame(60, $result['recognized_minutes']);
+        $this->assertSame(300, $result['actual_minutes']);
+        $this->assertSame(300, $result['rounded_minutes']);
+        $this->assertSame(240, $result['recognized_minutes']);
+        $this->assertSame(60, $result['excess_minutes']);
         $this->assertSame('ELIGIBLE', $result['eligibility']);
     }
 
-    public function test_national_holiday_59_minutes_is_not_eligible(): void
+    public function test_weekend_29_minutes_is_not_eligible(): void
     {
         $result = $this->service->calculate(
-            Carbon::parse('2026-08-17'),
-            Carbon::parse('2026-08-17 08:00:00'),
-            Carbon::parse('2026-08-17 08:59:00'),
-            $this->holidayPolicy(),
+            Carbon::parse('2026-09-19'),
+            Carbon::parse('2026-09-19 08:00:00'),
+            Carbon::parse('2026-09-19 08:29:00'),
+            $this->weekendPolicy(),
         );
 
-        $this->assertSame('NATIONAL_HOLIDAY', $result['day_type']);
-        $this->assertSame(59, $result['actual_minutes']);
+        $this->assertSame('WEEKEND', $result['day_type']);
+        $this->assertSame(29, $result['actual_minutes']);
         $this->assertSame(0, $result['recognized_minutes']);
         $this->assertSame('NOT_ELIGIBLE', $result['eligibility']);
     }
 
-    public function test_national_holiday_60_minutes_is_eligible(): void
+    public function test_weekend_30_minutes_is_eligible(): void
+    {
+        $result = $this->service->calculate(
+            Carbon::parse('2026-09-19'),
+            Carbon::parse('2026-09-19 08:00:00'),
+            Carbon::parse('2026-09-19 08:30:00'),
+            $this->weekendPolicy(),
+        );
+
+        $this->assertSame('WEEKEND', $result['day_type']);
+        $this->assertSame(30, $result['actual_minutes']);
+        $this->assertSame(30, $result['recognized_minutes']);
+        $this->assertSame('ELIGIBLE', $result['eligibility']);
+    }
+
+    public function test_national_holiday_29_minutes_is_not_eligible(): void
     {
         $result = $this->service->calculate(
             Carbon::parse('2026-08-17'),
             Carbon::parse('2026-08-17 08:00:00'),
-            Carbon::parse('2026-08-17 09:00:00'),
+            Carbon::parse('2026-08-17 08:29:00'),
             $this->holidayPolicy(),
         );
 
         $this->assertSame('NATIONAL_HOLIDAY', $result['day_type']);
-        $this->assertSame(60, $result['actual_minutes']);
-        $this->assertSame(60, $result['recognized_minutes']);
+        $this->assertSame(29, $result['actual_minutes']);
+        $this->assertSame(0, $result['recognized_minutes']);
+        $this->assertSame('NOT_ELIGIBLE', $result['eligibility']);
+    }
+
+    public function test_national_holiday_30_minutes_is_eligible(): void
+    {
+        $result = $this->service->calculate(
+            Carbon::parse('2026-08-17'),
+            Carbon::parse('2026-08-17 08:00:00'),
+            Carbon::parse('2026-08-17 08:30:00'),
+            $this->holidayPolicy(),
+        );
+
+        $this->assertSame('NATIONAL_HOLIDAY', $result['day_type']);
+        $this->assertSame(30, $result['actual_minutes']);
+        $this->assertSame(30, $result['recognized_minutes']);
         $this->assertSame('ELIGIBLE', $result['eligibility']);
     }
 
@@ -212,7 +228,7 @@ class OvertimeCalculationServiceTest extends TestCase
         $this->assertSame('INVALID_INTERVAL', $result['eligibility']);
     }
 
-    public function test_maximum_minutes_event_is_applied(): void
+    public function test_maximum_minutes_event_caps_recognized_and_records_excess(): void
     {
         $policy = $this->workdayPolicy([
             'maximum_minutes_event' => 120,
@@ -228,6 +244,55 @@ class OvertimeCalculationServiceTest extends TestCase
         $this->assertSame('WORKDAY', $result['day_type']);
         $this->assertSame(210, $result['actual_minutes']);
         $this->assertSame(120, $result['recognized_minutes']);
+        $this->assertSame(210, $result['rounded_minutes']);
+        $this->assertSame(90, $result['excess_minutes']);
+        $this->assertSame(120, $result['maximum_minutes_event']);
+        $this->assertSame('ELIGIBLE', $result['eligibility']);
+    }
+
+    public function test_weekend_exactly_six_hours_is_eligible(): void
+    {
+        $result = $this->service->calculate(
+            Carbon::parse('2026-10-03'),
+            Carbon::parse('2026-10-03 08:00:00'),
+            Carbon::parse('2026-10-03 14:00:00'),
+            $this->weekendPolicy(['maximum_minutes_event' => 360]),
+        );
+
+        $this->assertSame(360, $result['actual_minutes']);
+        $this->assertSame(360, $result['recognized_minutes']);
+        $this->assertSame('ELIGIBLE', $result['eligibility']);
+    }
+
+    public function test_weekend_more_than_six_hours_is_capped_with_excess(): void
+    {
+        $result = $this->service->calculate(
+            Carbon::parse('2026-10-03'),
+            Carbon::parse('2026-10-03 08:00:00'),
+            Carbon::parse('2026-10-03 15:00:00'),
+            $this->weekendPolicy(['maximum_minutes_event' => 360]),
+        );
+
+        $this->assertSame(420, $result['actual_minutes']);
+        $this->assertSame(420, $result['rounded_minutes']);
+        $this->assertSame(360, $result['recognized_minutes']);
+        $this->assertSame(60, $result['excess_minutes']);
+        $this->assertSame('ELIGIBLE', $result['eligibility']);
+    }
+
+    public function test_national_holiday_more_than_six_hours_is_capped_with_excess(): void
+    {
+        $result = $this->service->calculate(
+            Carbon::parse('2026-08-17'),
+            Carbon::parse('2026-08-17 08:00:00'),
+            Carbon::parse('2026-08-17 15:00:00'),
+            $this->holidayPolicy(['maximum_minutes_event' => 360]),
+        );
+
+        $this->assertSame(420, $result['actual_minutes']);
+        $this->assertSame(420, $result['rounded_minutes']);
+        $this->assertSame(360, $result['recognized_minutes']);
+        $this->assertSame(60, $result['excess_minutes']);
         $this->assertSame('ELIGIBLE', $result['eligibility']);
     }
 
@@ -248,9 +313,9 @@ class OvertimeCalculationServiceTest extends TestCase
         return array_merge([
             'day_type' => 'WEEKEND',
             'normal_end' => '16:30:00',
-            'minimum_minutes' => 60,
+            'minimum_minutes' => 30,
             'rounding_method' => 'floor',
-            'rounding_interval' => 60,
+            'rounding_interval' => 30,
             'maximum_minutes_event' => null,
         ], $overrides);
     }
@@ -260,9 +325,9 @@ class OvertimeCalculationServiceTest extends TestCase
         return array_merge([
             'day_type' => 'NATIONAL_HOLIDAY',
             'normal_end' => '16:30:00',
-            'minimum_minutes' => 60,
+            'minimum_minutes' => 30,
             'rounding_method' => 'floor',
-            'rounding_interval' => 60,
+            'rounding_interval' => 30,
             'maximum_minutes_event' => null,
         ], $overrides);
     }

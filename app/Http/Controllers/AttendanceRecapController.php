@@ -8,43 +8,240 @@ use App\Models\AttendanceRecap;
 use App\Models\Division;
 use App\Models\Employee;
 use App\Services\Audit\AuditLogService;
+use App\Services\Attendance\AttendanceRecapSyncService;
+use App\Services\Period\PeriodOptionsService;
 use Illuminate\Http\Request;
 
 class AttendanceRecapController extends Controller
 {
     public function __construct(
         private readonly AuditLogService $audit,
+        private readonly AttendanceRecapSyncService $recapSync,
+        private readonly PeriodOptionsService $periodOptions,
     ) {
     }
 
     public function index(Request $request)
-    {
-        $recaps = AttendanceRecap::with('employee.division')
-            ->when($request->filled('q'), fn ($query) => $query->whereHas('employee', fn ($q) => $q->where('nama', 'like', '%' . $request->input('q') . '%')->orWhere('nipeg', 'like', '%' . $request->input('q') . '%')))
-            ->when($request->filled('division_id'), fn ($query) => $query->whereHas('employee', fn ($q) => $q->where('division_id', $request->input('division_id'))))
-            ->when($request->filled('tahun'), fn ($query) => $query->where('tahun', $request->input('tahun')))
-            ->when($request->filled('bulan'), fn ($query) => $query->where('bulan', $request->input('bulan')))
-            ->when($request->input('lokasi') === 'bandung', fn ($query) => $query->where('lokasi_bandung', '>', 0))
-            ->when($request->input('lokasi') === 'jakarta', fn ($query) => $query->where('lokasi_jakarta', '>', 0))
-            ->orderByDesc('tahun')->orderByDesc('bulan')->paginate(20)->withQueryString();
+{
+    $divisionId = $request->filled('division_id')
+        ? (int) $request->input('division_id')
+        : null;
 
-        $tahunTersedia = AttendanceRecap::select('tahun')->distinct()->orderByDesc('tahun')->pluck('tahun');
-        $divisions = Division::orderBy('nama')->get();
-        $divisionId = $request->input('division_id');
-        $tahunChart = $request->input('tahun') ?: now()->year;
-        $bulanChart = $request->input('bulan');
-        $scopeChart = AttendanceRecap::where('tahun', $tahunChart)->when($bulanChart, fn ($q) => $q->where('bulan', $bulanChart))->when($divisionId, fn ($q) => $q->whereHas('employee', fn ($e) => $e->where('division_id', $divisionId)));
-        $totalRekapChart = (clone $scopeChart)->count();
-        $rataKehadiranChart = round((clone $scopeChart)->avg('persen_kehadiran') ?? 0, 1);
-        $totalAlphaChart = (clone $scopeChart)->sum('alpha');
-        $totalMenitTelatChart = (clone $scopeChart)->sum('menit_telat');
-        $totalBandungChart = (clone $scopeChart)->sum('lokasi_bandung');
-        $totalJakartaChart = (clone $scopeChart)->sum('lokasi_jakarta');
-        $kehadiranPerDivisi = $divisions->map(function (Division $division) use ($tahunChart, $bulanChart) { $r = AttendanceRecap::whereHas('employee', fn ($q) => $q->where('division_id', $division->id))->where('tahun', $tahunChart)->when($bulanChart, fn ($q) => $q->where('bulan', $bulanChart))->get(); return ['nama' => $division->nama, 'rata_kehadiran' => round($r->avg('persen_kehadiran') ?? 0, 1)]; })->values();
-        $trenBulananTahunIni = collect(range(1, 12))->map(function (int $m) use ($tahunChart, $divisionId) { $r = AttendanceRecap::where('tahun', $tahunChart)->where('bulan', $m)->when($divisionId, fn ($q) => $q->whereHas('employee', fn ($e) => $e->where('division_id', $divisionId))); return ['label' => \Carbon\Carbon::create()->month($m)->translatedFormat('M'), 'rata_kehadiran' => round((clone $r)->avg('persen_kehadiran') ?? 0, 1), 'ada_data' => (clone $r)->exists()]; })->values();
+    /*
+     * Jika tahun kosong, gunakan tahun berjalan.
+     * Ini membuat tabel dan chart memakai periode yang sama.
+     */
+    // Filter tabel: kosong berarti benar-benar 'Semua Tahun/Bulan'.
+    $tahunFilter = $request->filled('tahun')
+        ? (int) $request->input('tahun')
+        : null;
 
-        return view('attendance.index', compact('recaps', 'tahunTersedia', 'divisions', 'totalRekapChart', 'rataKehadiranChart', 'totalAlphaChart', 'totalMenitTelatChart', 'totalBandungChart', 'totalJakartaChart', 'kehadiranPerDivisi', 'trenBulananTahunIni', 'tahunChart'));
-    }
+    $bulanFilter = $request->filled('bulan')
+        ? (int) $request->input('bulan')
+        : null;
+
+    // Grafik tetap punya periode default agar tidak kosong saat halaman pertama dibuka.
+    $tahunChart = $tahunFilter ?? now()->year;
+    $bulanChart = $bulanFilter;
+
+    // Sinkronisasi rekap TIDAK dilakukan pada setiap GET/filter.
+    // Rekap diperbarui saat Clock In/Out dan saat import produksi.
+    // Menjalankan sinkronisasi di sini membuat request filter rentan gagal
+    // karena masalah database/transaksi dan memperlambat halaman.
+
+    $recaps = AttendanceRecap::with('employee.division')
+        ->when(
+            $request->filled('q'),
+            fn ($query) => $query->whereHas(
+                'employee',
+                fn ($q) => $q
+                    ->where(
+                        'nama',
+                        'like',
+                        '%' . $request->input('q') . '%'
+                    )
+                    ->orWhere(
+                        'nipeg',
+                        'like',
+                        '%' . $request->input('q') . '%'
+                    )
+            )
+        )
+        ->when(
+            $divisionId !== null,
+            fn ($query) => $query->whereHas(
+                'employee',
+                fn ($q) => $q->where(
+                    'division_id',
+                    $divisionId
+                )
+            )
+        )
+        ->when(
+            $tahunFilter !== null,
+            fn ($query) => $query->where('tahun', $tahunFilter)
+        )
+        ->when(
+            $bulanFilter !== null,
+            fn ($query) => $query->where('bulan', $bulanFilter)
+        )
+        ->when(
+            $request->input('lokasi') === 'bandung',
+            fn ($query) => $query->where(
+                'lokasi_bandung',
+                '>',
+                0
+            )
+        )
+        ->when(
+            $request->input('lokasi') === 'jakarta',
+            fn ($query) => $query->where(
+                'lokasi_jakarta',
+                '>',
+                0
+            )
+        )
+        ->orderByDesc('tahun')
+        ->orderByDesc('bulan')
+        ->paginate(20)
+        ->withQueryString();
+
+    // Tahun filter dipusatkan agar Rekap Absensi, Timesheet, dan Rekap Tim
+    // menampilkan periode yang sama berdasarkan data yang benar-benar tersedia.
+    $tahunTersedia = $this->periodOptions->availableYears();
+
+    $divisions = Division::orderBy('nama')->get();
+
+    $scopeChart = AttendanceRecap::query()
+        ->when(
+            $tahunFilter !== null,
+            fn ($q) => $q->where('tahun', $tahunFilter),
+            fn ($q) => $q->where('tahun', $tahunChart)
+        )
+        ->when(
+            $bulanFilter !== null,
+            fn ($q) => $q->where('bulan', $bulanFilter)
+        )
+        ->when(
+            $divisionId !== null,
+            fn ($q) => $q->whereHas(
+                'employee',
+                fn ($e) => $e->where(
+                    'division_id',
+                    $divisionId
+                )
+            )
+        );
+
+    $totalRekapChart = (clone $scopeChart)->count();
+
+    $rataKehadiranChart = round(
+        (clone $scopeChart)->avg('persen_kehadiran') ?? 0,
+        1
+    );
+
+    $totalAlphaChart = (clone $scopeChart)->sum('alpha');
+
+    $totalMenitTelatChart = (clone $scopeChart)->sum(
+        'menit_telat'
+    );
+
+    $totalBandungChart = (clone $scopeChart)->sum(
+        'lokasi_bandung'
+    );
+
+    $totalJakartaChart = (clone $scopeChart)->sum(
+        'lokasi_jakarta'
+    );
+
+    $kehadiranPerDivisi = $divisions
+        ->map(function (Division $division) use (
+            $tahunChart,
+            $bulanChart
+        ) {
+            $query = AttendanceRecap::query()
+                ->whereHas(
+                    'employee',
+                    fn ($q) => $q->where(
+                        'division_id',
+                        $division->id
+                    )
+                )
+                ->where(
+                    'tahun',
+                    $tahunChart
+                )
+                ->when(
+                    $bulanChart !== null,
+                    fn ($q) => $q->where(
+                        'bulan',
+                        $bulanChart
+                    )
+                );
+
+            return [
+                'nama' => $division->nama,
+                'rata_kehadiran' => round(
+                    (clone $query)->avg(
+                        'persen_kehadiran'
+                    ) ?? 0,
+                    1
+                ),
+            ];
+        })
+        ->values();
+
+    $trenBulananTahunIni = collect(range(1, 12))
+        ->map(function (int $m) use (
+            $tahunChart,
+            $divisionId
+        ) {
+            $query = AttendanceRecap::query()
+                ->where('tahun', $tahunChart)
+                ->where('bulan', $m)
+                ->when(
+                    $divisionId !== null,
+                    fn ($q) => $q->whereHas(
+                        'employee',
+                        fn ($e) => $e->where(
+                            'division_id',
+                            $divisionId
+                        )
+                    )
+                );
+
+            return [
+                'label' => \Carbon\Carbon::create()
+                    ->month($m)
+                    ->translatedFormat('M'),
+
+                'rata_kehadiran' => round(
+                    (clone $query)->avg(
+                        'persen_kehadiran'
+                    ) ?? 0,
+                    1
+                ),
+
+                'ada_data' => (clone $query)->exists(),
+            ];
+        })
+        ->values();
+
+    return view('attendance.index', compact(
+        'recaps',
+        'tahunTersedia',
+        'divisions',
+        'totalRekapChart',
+        'rataKehadiranChart',
+        'totalAlphaChart',
+        'totalMenitTelatChart',
+        'totalBandungChart',
+        'totalJakartaChart',
+        'kehadiranPerDivisi',
+        'trenBulananTahunIni',
+        'tahunChart'
+    ));
+}
 
     public function create(Request $request)
     {

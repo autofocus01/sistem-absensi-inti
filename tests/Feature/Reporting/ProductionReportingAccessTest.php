@@ -3,6 +3,9 @@
 use App\Models\Division;
 use App\Models\Employee;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+uses(RefreshDatabase::class);
 
 function createReportingEmployee(User $user, string $jabatan = 'Karyawan'): Employee
 {
@@ -11,8 +14,7 @@ function createReportingEmployee(User $user, string $jabatan = 'Karyawan'): Empl
         'lini' => 'Test',
     ]);
 
-    return testPersistEmployee([
-        'user_id' => $user->id,
+    $employee = Employee::create([
         'nipeg' => 'UAT-' . $user->id,
         'nama' => 'User Reporting ' . $user->id,
         'jenis_kelamin' => 'L',
@@ -21,6 +23,11 @@ function createReportingEmployee(User $user, string $jabatan = 'Karyawan'): Empl
         'alamat' => 'Data UAT',
         'division_id' => $division->id,
     ]);
+
+    $employee->user()->associate($user);
+    $employee->save();
+
+    return $employee->fresh();
 }
 
 it('allows HR admin to open attendance anomalies', function () {

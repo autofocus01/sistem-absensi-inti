@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\AttendanceLog;
-use App\Models\HolidayCalendar;
+use App\Services\Calendar\HolidayCalendarService;
 use App\Services\Audit\AuditLogService;
+use App\Services\Demo\DemoClock;
+use App\Services\Attendance\AttendanceRecapSyncService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,7 +21,12 @@ class MyAttendanceController extends Controller
     private const WEEKDAY_MIN_WORK_MINUTES = 480;
     private const OVERTIME_MINUTES = 30;
 
-    public function __construct(private readonly AuditLogService $audit) {}
+    public function __construct(
+        private readonly AuditLogService $audit,
+        private readonly AttendanceRecapSyncService $recapSync,
+        private readonly DemoClock $clock,
+        private readonly HolidayCalendarService $holidayCalendar,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -27,9 +34,12 @@ class MyAttendanceController extends Controller
         abort_unless(in_array((string) ($user?->role ?? ''), ['karyawan', 'vp'], true), 403);
         $employee = $user->employee;
         abort_unless($employee, 403, 'Akun karyawan belum terhubung ke data karyawan.');
-        $now = Carbon::now(self::TIMEZONE);
-        $month = (int) $request->input('month', $now->month);
-        $year = (int) $request->input('year', $now->year);
+        $now = $this->clock->now();
+        // Parameter resmi aplikasi adalah bulan/tahun. month/year tetap diterima
+        // sebagai alias kompatibilitas agar tautan lama dan test/regresi tidak
+        // tiba-tiba kembali ke bulan berjalan.
+        $month = (int) $request->input('bulan', $request->input('month', $now->month));
+        $year = (int) $request->input('tahun', $request->input('year', $now->year));
         if ($month < 1 || $month > 12) $month = $now->month;
         if ($year < 2000 || $year > 2100) $year = $now->year;
         $today = $now->copy()->startOfDay();
@@ -45,7 +55,7 @@ class MyAttendanceController extends Controller
         abort_unless(in_array((string) ($user?->role ?? ''), ['karyawan', 'vp'], true), 403);
         $employee = $user->employee;
         abort_unless($employee, 403, 'Akun karyawan belum terhubung ke data karyawan.');
-        $now = Carbon::now(self::TIMEZONE);
+        $now = $this->clock->now();
         $date = $now->toDateString();
         $time = $now->format('H:i:s');
         try {
@@ -67,6 +77,16 @@ class MyAttendanceController extends Controller
             report($e);
             return back()->withErrors(['attendance' => 'Clock In gagal disimpan. Silakan coba lagi.']);
         }
+
+        // AttendanceLog adalah sumber fakta; sinkronkan ringkasan bulan berjalan
+        // setelah transaksi clock-in sukses. Kegagalan sinkronisasi tidak boleh
+        // membatalkan presensi yang sudah tersimpan.
+        try {
+            $this->recapSync->syncPeriod((int) $now->year, (int) $now->month, [$employee->id]);
+        } catch (Throwable $e) {
+            report($e);
+        }
+
         return back()->with('status', 'Clock In berhasil dicatat pada ' . Carbon::parse($time)->format('H:i') . '.');
     }
 
@@ -76,7 +96,7 @@ class MyAttendanceController extends Controller
         abort_unless(in_array((string) ($user?->role ?? ''), ['karyawan', 'vp'], true), 403);
         $employee = $user->employee;
         abort_unless($employee, 403, 'Akun karyawan belum terhubung ke data karyawan.');
-        $now = Carbon::now(self::TIMEZONE);
+        $now = $this->clock->now();
         $date = $now->toDateString();
         $time = $now->format('H:i:s');
         $overtimePrompt = null;
@@ -95,8 +115,7 @@ class MyAttendanceController extends Controller
                 $clockIn = Carbon::parse($date . ' ' . $fresh->jam_masuk, self::TIMEZONE);
                 $clockOut = Carbon::parse($date . ' ' . $fresh->jam_pulang, self::TIMEZONE);
                 $actualWorkMinutes = max(0, $clockIn->diffInMinutes($clockOut));
-                $holiday = HolidayCalendar::query()->whereDate('tanggal', $date)->where('is_active', true)->exists();
-                $dayType = $holiday ? 'NATIONAL_HOLIDAY' : ($clockOut->isWeekend() ? 'WEEKEND' : 'WORKDAY');
+                $dayType = $this->holidayCalendar->dayType($clockOut);
 
                 if ($dayType === 'WORKDAY') {
                     $normalEnd = Carbon::parse($date . ' ' . self::NORMAL_END, self::TIMEZONE);
@@ -125,6 +144,15 @@ class MyAttendanceController extends Controller
             report($e);
             return back()->withErrors(['attendance' => 'Clock Out gagal disimpan. Silakan coba lagi.']);
         }
+
+        // Perbarui rekap setelah clock-out sukses agar data presensi pribadi
+        // langsung tercermin pada halaman Rekap Absensi HR.
+        try {
+            $this->recapSync->syncPeriod((int) $now->year, (int) $now->month, [$employee->id]);
+        } catch (Throwable $e) {
+            report($e);
+        }
+
         $response = back()->with('status', 'Clock Out berhasil dicatat pada ' . Carbon::parse($time)->format('H:i') . '.');
         if ($overtimePrompt !== null) {
             session()->put('overtime.draft', $overtimePrompt);

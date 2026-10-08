@@ -3,6 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+  (function () {
+    const theme = localStorage.getItem('inti-theme') || 'system';
+    const dark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.classList.toggle('dark', dark);
+    document.documentElement.dataset.theme = theme;
+  })();
+</script>
 <title>Dashboard Direktur Utama - PT. INTI</title>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
 <link href="https://fonts.googleapis.com" rel="preconnect">
@@ -43,7 +51,7 @@
 </script>
 <style>
   @layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}
-  ::-webkit-scrollbar{display:none;}
+  html { scrollbar-gutter: stable; }
   .material-symbols-outlined{
     font-family:'Material Symbols Outlined';
     font-weight:normal;
@@ -60,13 +68,106 @@
     font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
   }
 </style>
+<style>
+  html.dark { color-scheme: dark; --dir-bg:#141c29; --dir-surface:#1b2636; --dir-low:#202d40; --dir-high:#2a3a50; --dir-text:#edf3fa; --dir-muted:#b7c3d2; --dir-primary:#dbe8f7; --dir-outline:#52657d; }
+  html.dark body { background:var(--dir-bg) !important; color:var(--dir-text) !important; }
+  html.dark .bg-background, html.dark .bg-surface, html.dark .bg-surface-bright { background-color:var(--dir-bg) !important; }
+  html.dark .bg-surface-container-lowest, html.dark .bg-surface-container-lowest\/90 { background-color:var(--dir-surface) !important; }
+  html.dark .bg-surface-container-low { background-color:var(--dir-low) !important; }
+  html.dark .bg-surface-container { background-color:#26364a !important; }
+  html.dark .bg-surface-container-high { background-color:var(--dir-high) !important; }
+  html.dark .bg-surface-container-highest { background-color:#344961 !important; }
+  html.dark .text-primary, html.dark .text-on-surface { color:var(--dir-text) !important; }
+  html.dark .text-on-primary { color:#f8fbff !important; }
+  html.dark .text-on-surface-variant { color:var(--dir-muted) !important; }
+  html.dark .text-secondary { color:#68d8cb !important; }
+  html.dark .text-error { color:#ff8b84 !important; }
+  html.dark .border-surface-container-low, html.dark .border-outline, html.dark .border-outline-variant { border-color:var(--dir-outline) !important; }
+  html.dark .divide-surface-container-low > :not([hidden]) ~ :not([hidden]) { border-color:#40516a !important; }
+  html.dark .bg-primary-container { background-color:#355b7f !important; }
+  html.dark .bg-primary { background-color:#355b7f !important; }
+  html.dark .bg-secondary-container { background-color:#16463f !important; color:#d7fff9 !important; }
+  html.dark .bg-error\/10 { background-color:rgba(255,110,110,.12) !important; }
+  html.dark .bg-white, html.dark .bg-gray-50 { background-color:var(--dir-surface) !important; }
+  html.dark input, html.dark select, html.dark textarea { background-color:#111b2b !important; color:var(--dir-text) !important; border-color:var(--dir-outline) !important; }
+  html.dark input::placeholder { color:#8291a8 !important; }
+  html.dark table thead tr { background-color:var(--dir-low) !important; }
+  html.dark table tbody tr:hover { background-color:#24344a !important; }
+  html.dark canvas { color-scheme:dark; }
+  html.dark #sidebar { box-shadow:2px 0 18px rgba(0,0,0,.24) !important; }
+</style>
+
+<style>
+  :root {
+    --direktur-topbar-bg: rgba(255,255,255,.94);
+    --direktur-topbar-border: rgba(116,119,126,.18);
+    --direktur-topbar-text: #0d1c2e;
+    --direktur-topbar-muted: #5e6875;
+    --direktur-topbar-surface: #ffffff;
+    --direktur-topbar-low: #eff4ff;
+    --direktur-topbar-primary: #17466f;
+  }
+  html.dark {
+    --direktur-topbar-bg: rgba(25,36,52,.96);
+    --direktur-topbar-border: rgba(130,153,181,.24);
+    --direktur-topbar-text: #edf3fa;
+    --direktur-topbar-muted: #b7c3d2;
+    --direktur-topbar-surface: #1b2636;
+    --direktur-topbar-low: #202d40;
+    --direktur-topbar-primary: #a9d7ff;
+  }
+  .direktur-topbar {
+    background: var(--direktur-topbar-bg);
+    border-bottom: 1px solid var(--direktur-topbar-border);
+    box-shadow: 0 1px 10px rgba(0,0,0,.08);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+  .direktur-topbar__title, .direktur-topbar__user-name { color: var(--direktur-topbar-text) !important; }
+  .direktur-topbar__subtitle, .direktur-topbar__user-role { color: var(--direktur-topbar-muted) !important; }
+  .direktur-topbar__shield { color: #0f766e; }
+  html.dark .direktur-topbar__shield { color: #68d8cb; }
+  .direktur-topbar__menu, .direktur-topbar__icon-btn { color: var(--direktur-topbar-muted); transition: background .15s, color .15s; }
+  .direktur-topbar__menu:hover, .direktur-topbar__icon-btn:hover, .direktur-topbar__user:hover { background: var(--direktur-topbar-low); color: var(--direktur-topbar-text); }
+  .direktur-topbar__clock { background: var(--direktur-topbar-low); color: var(--direktur-topbar-text); border: 1px solid var(--direktur-topbar-border); }
+  .direktur-topbar__divider { background: var(--direktur-topbar-border); }
+  .direktur-topbar__avatar { background: var(--direktur-topbar-primary); color: #fff; }
+  html.dark .direktur-topbar__avatar { background: #355b7f; color: #f8fbff; }
+  .direktur-topbar__settings { background: var(--direktur-topbar-low); color: var(--direktur-topbar-text); border: 1px solid var(--direktur-topbar-border); transition: background .15s, border-color .15s; }
+  .direktur-topbar__settings:hover { background: var(--direktur-topbar-surface); border-color: var(--direktur-topbar-primary); }
+  .direktur-user-menu, .direktur-theme-panel { background: var(--direktur-topbar-surface); color: var(--direktur-topbar-text); border: 1px solid var(--direktur-topbar-border); box-shadow: 0 14px 32px rgba(0,0,0,.16); }
+  .direktur-user-menu > div { border-color: var(--direktur-topbar-border); }
+  .direktur-user-menu__item { color: var(--direktur-topbar-text); }
+  .direktur-user-menu__item:hover { background: var(--direktur-topbar-low); }
+  .direktur-user-menu__logout { color: #d95c55; }
+  html.dark .direktur-user-menu__logout { color: #ffb0a9; }
+  .direktur-theme-select { background: var(--direktur-topbar-low); color: var(--direktur-topbar-text); border: 1px solid var(--direktur-topbar-border); outline: none; }
+  .direktur-theme-select:focus { border-color: var(--direktur-topbar-primary); box-shadow: 0 0 0 3px rgba(104,216,203,.12); }
+  .direktur-theme-select option { background: var(--direktur-topbar-surface); color: var(--direktur-topbar-text); }
+  @media (max-width: 640px) {
+    .direktur-topbar { padding-inline: 12px; }
+    .direktur-topbar__actions { gap: 4px; }
+    .direktur-topbar__settings { padding-inline: 9px; }
+  }
+</style>
+<style>
+  .direktur-responsive-table { scrollbar-width: thin; }
+  .direktur-filter-form select, .direktur-filter-form input { min-height: 42px; }
+  @media (max-width: 767px) {
+    .direktur-topbar { height: 68px; }
+    .direktur-topbar__clock { display:none !important; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { scroll-behavior:auto !important; transition-duration:0.01ms !important; animation-duration:0.01ms !important; }
+  }
+</style>
 </head>
 <body class="bg-background font-body-md text-body-md text-on-surface antialiased">
 
-<div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black/40 z-40 hidden md:hidden"></div>
+<div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black/40 z-40 hidden lg:hidden"></div>
 
 <aside id="sidebar" class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col justify-between select-none
-                            transform -translate-x-full transition-transform duration-200 ease-in-out md:translate-x-0">
+                            transform -translate-x-full transition-transform duration-200 ease-in-out lg:translate-x-0">
   <div class="flex flex-col">
     <div class="h-20 px-space-lg flex items-center gap-space-md border-b border-surface-container-low/60">
       <img src="{{ asset('images/logo-inti.png') }}" alt="PT. INTI" class="h-8 w-auto object-contain">
@@ -83,7 +184,7 @@
         </button>
         <button type="button" onclick="showTab('realtime')" id="nav-realtime"
                 class="flex items-center px-space-md py-space-sm rounded-lg font-title-sm text-left text-on-surface hover:bg-surface-container-low">
-          <span class="material-symbols-outlined text-[18px] mr-2">sensors</span> Realtime
+          <span class="material-symbols-outlined text-[18px] mr-2">today</span> Presensi Hari Ini
         </button>
         <button type="button" onclick="showTab('history')" id="nav-history"
                 class="flex items-center px-space-md py-space-sm rounded-lg font-title-sm text-left text-on-surface hover:bg-surface-container-low">
@@ -101,58 +202,82 @@
       </span>
     </div>
     <span class="font-title-sm text-title-sm text-on-surface">Rekap Absensi Terverifikasi</span>
-    <p class="font-body-sm text-body-sm text-on-surface-variant">Periode {{ \Carbon\Carbon::create()->month($bulan)->translatedFormat('F') }} {{ $tahun }}</p>
+    <p class="font-body-sm text-body-sm text-on-surface-variant">Periode {{ $namaBulan }} {{ $tahun }}</p>
   </div>
 </aside>
 
-<div class="md:pl-72 flex flex-col min-h-screen">
-  <header class="fixed top-0 left-0 md:left-72 right-0 h-20 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-30 flex items-center justify-between px-4 md:px-space-xl">
-    <div class="flex items-center gap-3">
-      <button onclick="toggleSidebar()" class="md:hidden p-2 -ml-2 text-primary" aria-label="Buka menu">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
+<div class="lg:pl-72 flex flex-col min-h-screen">
+  <header class="direktur-topbar fixed top-0 left-0 lg:left-72 right-0 h-20 z-30 flex items-center justify-between px-4 md:px-space-xl">
+    <div class="direktur-topbar__brand flex items-center gap-3 min-w-0">
+      <button onclick="toggleSidebar()" class="direktur-topbar__menu lg:hidden p-2 -ml-2 rounded-lg" aria-label="Buka menu">
+        <span class="material-symbols-outlined text-[22px]">menu</span>
       </button>
-      <span class="font-title-sm text-title-sm text-primary">Portal Eksekutif</span>
-    </div>
-    <div class="flex items-center gap-space-md">
-      <div class="hidden xl:flex items-center gap-space-xs px-space-md py-1.5 rounded-full bg-surface-container-low">
-        <span class="material-symbols-outlined text-[16px] text-on-surface-variant">schedule</span>
-        <span id="jam-realtime" class="font-label-sm text-label-sm text-on-surface font-semibold tabular-nums">--:--:--</span>
-        <span class="text-outline text-xs">&bull;</span>
-        <span class="font-body-sm text-body-sm text-on-surface-variant">WIB</span>
+      <span class="material-symbols-outlined direktur-topbar__shield hidden sm:inline text-[19px]">shield</span>
+      <div class="min-w-0">
+        <div class="direktur-topbar__title font-title-sm text-title-sm truncate">Portal Direktur Utama</div>
+        <div class="direktur-topbar__subtitle hidden sm:block font-body-sm text-body-sm truncate">Portal Eksekutif &bull; PT. INTI</div>
       </div>
+    </div>
+
+    <div class="direktur-topbar__actions flex items-center gap-2 sm:gap-space-md">
+      <div class="direktur-topbar__clock hidden lg:flex items-center gap-space-xs px-space-md py-1.5 rounded-full">
+        <span class="material-symbols-outlined text-[16px]">schedule</span>
+        <span id="jam-realtime" class="font-label-sm text-label-sm font-semibold tabular-nums">--:--:--</span>
+        <span class="text-xs opacity-70">&bull;</span>
+        <span class="font-body-sm text-body-sm">WIB</span>
+      </div>
+
       @php($divisiPerluDitinjau = $matriksDivisi->where('perlu_ditinjau', true)->count())
       <button type="button" onclick="showTab('ringkasan'); document.getElementById('matriks-divisi').scrollIntoView({behavior:'smooth'})"
-              class="relative p-2 rounded-lg hover:bg-surface-container-low text-on-surface-variant hover:text-primary transition-colors" title="Divisi yang perlu ditinjau">
+              class="direktur-topbar__icon-btn relative p-2 rounded-lg" title="Divisi yang perlu ditinjau" aria-label="Divisi yang perlu ditinjau">
         <span class="material-symbols-outlined text-[20px]">notifications</span>
         @if ($divisiPerluDitinjau > 0)
-          <span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-error ring-2 ring-surface-container-lowest"></span>
+          <span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-error ring-2 ring-[var(--direktur-topbar-bg)]"></span>
         @endif
       </button>
-      <div class="h-8 w-[1px] bg-surface-container-low hidden sm:block"></div>
+
+      <div class="direktur-topbar__divider h-8 w-px hidden sm:block"></div>
+
       <div class="relative">
-        <button onclick="toggleUserMenu()" class="flex items-center gap-space-sm">
-          <div class="hidden sm:flex flex-col text-right">
-            <span class="font-title-sm text-title-sm text-on-surface">{{ auth()->user()->name }}</span>
-            <span class="font-body-sm text-body-sm text-on-surface-variant">Direktur Utama &bull; PT. INTI</span>
+        <button onclick="toggleUserMenu()" class="direktur-topbar__user flex items-center gap-space-sm rounded-lg px-1.5 py-1" aria-label="Menu pengguna">
+          <div class="hidden md:flex flex-col text-right leading-tight">
+            <span class="direktur-topbar__user-name font-title-sm text-title-sm truncate max-w-[180px]">{{ auth()->user()->name }}</span>
+            <span class="direktur-topbar__user-role font-body-sm text-body-sm">Direktur Utama &bull; PT. INTI</span>
           </div>
-          <div class="w-10 h-10 rounded-full flex items-center justify-center bg-primary-container text-on-primary font-title-sm">
+          <div class="direktur-topbar__avatar w-10 h-10 rounded-full flex items-center justify-center font-title-sm shrink-0">
             {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
           </div>
         </button>
-        <div id="user-menu" class="hidden absolute right-0 top-14 w-52 bg-surface-container-lowest rounded-lg shadow-lg border border-surface-container-low py-1 z-50">
-          <div class="px-4 py-2 border-b border-surface-container-low sm:hidden">
-            <div class="font-title-sm text-title-sm text-on-surface truncate">{{ auth()->user()->name }}</div>
-            <div class="font-body-sm text-body-sm text-on-surface-variant truncate">{{ auth()->user()->email }}</div>
+        <div id="user-menu" class="direktur-user-menu hidden absolute right-0 top-14 w-56 rounded-xl py-1 z-50">
+          <div class="px-4 py-3 border-b sm:hidden">
+            <div class="font-title-sm text-title-sm truncate">{{ auth()->user()->name }}</div>
+            <div class="font-body-sm text-body-sm truncate">{{ auth()->user()->email }}</div>
           </div>
-          <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-on-surface hover:bg-surface-container-low">Profil Saya</a>
+          <a href="{{ route('profile.edit') }}" class="direktur-user-menu__item block px-4 py-2.5 text-sm">Profil Saya</a>
           <form method="POST" action="{{ route('logout') }}">
             @csrf
-            <button type="submit" class="w-full text-left px-4 py-2 text-sm text-error hover:bg-surface-container-low">Logout</button>
+            <button type="submit" class="direktur-user-menu__logout w-full text-left px-4 py-2.5 text-sm">Logout</button>
           </form>
         </div>
       </div>
+
+      <details class="relative">
+        <summary class="direktur-topbar__settings list-none cursor-pointer select-none inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold" aria-label="Pengaturan tampilan">
+          <span class="material-symbols-outlined text-[18px]">tune</span>
+          <span class="hidden sm:inline">Pengaturan</span>
+        </summary>
+        <div class="direktur-theme-panel absolute right-0 top-12 z-50 w-56 rounded-xl p-4 space-y-3">
+          <div>
+            <label for="direktur-theme" class="block text-xs font-semibold mb-1">Tema</label>
+            <select id="direktur-theme" class="direktur-theme-select w-full rounded-lg px-3 py-2 text-sm">
+              <option value="light">Terang</option>
+              <option value="dark">Gelap</option>
+              <option value="system">Sesuai sistem</option>
+            </select>
+          </div>
+          <p class="text-xs leading-4 opacity-75">Preferensi tema tersimpan di perangkat ini.</p>
+        </div>
+      </details>
     </div>
   </header>
 
@@ -170,9 +295,9 @@
     @endif
 
     {{-- Tab bar - satu halaman, ganti konten tanpa pindah URL --}}
-    <div class="flex items-center gap-2 mb-space-lg border-b border-surface-container-low">
+    <div class="flex items-center gap-1 sm:gap-2 mb-space-lg border-b overflow-x-auto border-surface-container-low">
       <button type="button" onclick="showTab('ringkasan')" id="tabbtn-ringkasan"
-              class="px-4 py-2.5 font-title-sm text-title-sm border-b-2 border-primary text-primary -mb-px">
+              class="px-3 sm:px-4 py-2.5 font-title-sm whitespace-nowrap text-title-sm border-b-2 border-primary text-primary -mb-px">
         Ringkasan Eksekutif
       </button>
     </div>
@@ -197,7 +322,7 @@
             <span class="material-symbols-outlined text-[18px] text-on-surface-variant ml-2">calendar_today</span>
             <select name="bulan" onchange="this.form.submit()" class="border-0 bg-transparent font-title-sm text-title-sm text-primary focus:ring-0">
               @foreach (range(1, 12) as $m)
-                <option value="{{ $m }}" @selected($bulan == $m)>{{ \Carbon\Carbon::create()->month($m)->translatedFormat('F') }}</option>
+                <option value="{{ $m }}" @selected($bulan == $m)>{{ $namaBulanMap[$m] }}</option>
               @endforeach
             </select>
             <select name="tahun" onchange="this.form.submit()" class="border-0 bg-transparent font-title-sm text-title-sm text-primary focus:ring-0">
@@ -221,7 +346,7 @@
       </div>
 
       {{-- KPI Cards - warna diseragamkan, cuma dipakai buat status yang beneran perlu perhatian --}}
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-md mb-space-xl">
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-space-md mb-space-xl">
         <div class="p-space-base rounded-xl bg-surface-container-lowest shadow-sm hover:shadow-md transition-shadow">
           <div class="flex items-center justify-between pb-space-xs">
             <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Tenaga Kerja Aktif</span>
@@ -293,7 +418,7 @@
           </div>
           <span class="font-label-sm text-label-sm text-on-surface-variant">{{ $divisionId ? $divisions->firstWhere('id', (int) $divisionId)?->nama : 'Semua Divisi' }}</span>
         </div>
-        <div class="py-space-base h-72">
+        <div class="py-space-base h-[240px] sm:h-72 lg:h-80">
           <canvas id="chart-tren"></canvas>
         </div>
       </div>
@@ -305,7 +430,7 @@
             <span class="material-symbols-outlined text-primary text-[22px]">bar_chart</span>
             <h2 class="font-headline-md text-headline-md text-primary">Rata-rata Kehadiran per Divisi</h2>
           </div>
-          <div class="py-space-base h-80">
+          <div class="py-space-base h-[250px] sm:h-80">
             <canvas id="chart-divisi-kehadiran"></canvas>
           </div>
         </div>
@@ -315,7 +440,7 @@
             <span class="material-symbols-outlined text-primary text-[22px]">error</span>
             <h2 class="font-headline-md text-headline-md text-primary">Alpha &amp; Hari Telat per Divisi</h2>
           </div>
-          <div class="py-space-base h-80">
+          <div class="py-space-base h-[250px] sm:h-80">
             <canvas id="chart-divisi-alpha"></canvas>
           </div>
         </div>
@@ -331,7 +456,7 @@
         <div class="py-space-base overflow-x-auto">
           <div class="min-w-[900px] flex flex-col items-center">
             <div class="relative flex flex-col items-center">
-              <div class="w-72 bg-surface-container-high text-primary p-3 rounded-xl shadow-md border-2 border-outline-variant flex flex-col items-center text-center">
+              <div class="w-full max-w-72 bg-surface-container-high text-primary p-3 rounded-xl shadow-md border-2 border-outline-variant flex flex-col items-center text-center">
                 <span class="font-label-sm text-[10px] tracking-wider uppercase font-bold text-on-surface-variant">Puncak Pimpinan Perseroan</span>
                 <span class="font-title-md text-[17px] font-bold text-primary">Direktur Utama</span>
                 <span class="font-semibold text-primary text-xs mt-1">Rata-rata Perusahaan: {{ $rataKehadiran }}%</span>
@@ -426,7 +551,7 @@
         </div>
 
         <div class="flex flex-col md:flex-row items-center gap-space-xl py-space-base">
-          <div class="w-48 h-48 shrink-0 relative">
+          <div class="w-40 h-40 sm:w-48 sm:h-48 shrink-0 relative">
             <canvas id="chart-komposisi"></canvas>
             <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               <span class="font-headline-md text-headline-md text-primary tabular-nums">{{ number_format($totalKomposisi) }}</span>
@@ -503,7 +628,7 @@
               @endforeach
             </select>
             <select name="bulan" class="rounded-lg border border-outline bg-surface px-3 py-2 text-sm">
-              @for($m=1;$m<=12;$m++)<option value="{{ $m }}" @selected($bulan===$m)>{{ \Carbon\Carbon::create()->month($m)->translatedFormat('F') }}</option>@endfor
+              @for($m=1;$m<=12;$m++)<option value="{{ $m }}" @selected($bulan===$m)>{{ $namaBulanMap[$m] }}</option>@endfor
             </select>
             <select name="tahun" class="rounded-lg border border-outline bg-surface px-3 py-2 text-sm">
               @foreach(range(now()->year-2, now()->year+1) as $y)<option value="{{ $y }}" @selected($tahun===$y)>{{ $y }}</option>@endforeach
@@ -511,20 +636,20 @@
             <button class="px-4 py-2 rounded-lg bg-primary text-on-primary text-sm font-semibold" type="submit">Tampilkan</button>
           </form>
         </div>
-        <div class="overflow-x-auto mt-4">
+        <div class="overflow-x-auto mt-4 direktur-responsive-table">
           <table class="w-full text-left min-w-[1050px]">
             <thead><tr class="bg-surface-container-low text-xs uppercase tracking-wider text-on-surface-variant">
-              <th class="py-3 px-4">Karyawan</th><th class="py-3 px-4">NIPEG</th><th class="py-3 px-4">Divisi</th><th class="py-3 px-4">Hari Ini</th><th class="py-3 px-4">Kehadiran Bulanan</th><th class="py-3 px-4">Telat</th><th class="py-3 px-4">Anomaly</th>
+              <th class="py-3 px-4">Karyawan</th><th class="py-3 px-4">NIPEG</th><th class="py-3 px-4">Band</th><th class="py-3 px-4">Divisi</th><th class="py-3 px-4">Hari Ini</th><th class="py-3 px-4">Kehadiran Bulanan</th><th class="py-3 px-4">Telat</th><th class="py-3 px-4">Anomaly</th>
             </tr></thead>
             <tbody class="divide-y divide-surface-container-low">
               @forelse(($employeePaginator ?? $employeeOverview->take(25)) as $row)
                 <tr class="hover:bg-surface-container-low/40">
-                  <td class="py-3 px-4 font-semibold text-primary">{{ $row['nama'] }}</td><td class="py-3 px-4">{{ $row['nipeg'] }}</td><td class="py-3 px-4">{{ $row['divisi'] }}</td>
+                  <td class="py-3 px-4 font-semibold text-primary">{{ $row['nama'] }}</td><td class="py-3 px-4">{{ $row['nipeg'] }}</td><td class="py-3 px-4"><span class="inline-flex px-2 py-0.5 rounded-full bg-primary-container/30 text-primary text-xs font-semibold">{{ $row['band'] !== null ? 'Band ' . $row['band'] : '-' }}</span></td><td class="py-3 px-4">{{ $row['divisi'] }}</td>
                   <td class="py-3 px-4"><div>{{ $row['status_hari_ini'] }}</div><div class="text-xs text-on-surface-variant">{{ $row['jam_masuk'] ? substr($row['jam_masuk'],0,5) : '--:--' }} → {{ $row['jam_pulang'] ? substr($row['jam_pulang'],0,5) : '--:--' }}</div></td>
                   <td class="py-3 px-4">{{ $row['persen_kehadiran'] }}%</td><td class="py-3 px-4">{{ $row['telat_hari'] }} hari</td><td class="py-3 px-4">{{ $row['anomaly_count'] }}</td>
                 </tr>
               @empty
-                <tr><td colspan="7" class="py-8 text-center text-on-surface-variant">Belum ada data karyawan pada scope periode ini.</td></tr>
+                <tr><td colspan="8" class="py-8 text-center text-on-surface-variant">Belum ada data karyawan pada scope periode ini.</td></tr>
               @endforelse
             </tbody>
           </table>
@@ -535,33 +660,33 @@
       <div id="tab-realtime" class="hidden mt-space-xl scroll-mt-24">
         <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg border border-surface-container-low">
           <div class="flex items-center justify-between pb-space-base border-b border-surface-container-low">
-            <div><h2 class="font-headline-md text-headline-md text-primary">Realtime Attendance</h2><p class="text-sm text-on-surface-variant">Snapshot presensi seluruh karyawan pada hari ini.</p></div>
-            <span class="px-3 py-1 rounded-full bg-secondary-container text-on-surface text-xs font-semibold">Live · <span id="director-live-date">-- -- ----</span> · <span id="director-live-time">--:--:--</span> WIB</span>
+            <div><h2 class="font-headline-md text-headline-md text-primary">Presensi Hari Ini</h2><p class="text-sm text-on-surface-variant">Snapshot presensi seluruh karyawan pada hari ini.</p></div>
+            <span class="px-3 py-1 rounded-full bg-secondary-container text-on-surface text-xs font-semibold">Snapshot · <span id="director-live-date">-- -- ----</span> · <span id="director-live-time">--:--:--</span> WIB</span>
           </div>
-          <div class="overflow-x-auto mt-4"><table class="w-full text-left min-w-[900px]"><thead><tr class="bg-surface-container-low text-xs uppercase tracking-wider text-on-surface-variant"><th class="py-3 px-4">Karyawan</th><th class="py-3 px-4">Divisi</th><th class="py-3 px-4">Clock In</th><th class="py-3 px-4">Clock Out</th><th class="py-3 px-4">Status</th></tr></thead><tbody class="divide-y divide-surface-container-low">
-          @forelse($realtimeRows as $row)<tr><td class="py-3 px-4 font-semibold">{{ $row['nama'] }}<div class="text-xs text-on-surface-variant">{{ $row['nipeg'] }}</div></td><td class="py-3 px-4">{{ $row['divisi'] }}</td><td class="py-3 px-4">{{ $row['jam_masuk'] ? substr($row['jam_masuk'],0,5) : '--:--' }}</td><td class="py-3 px-4">{{ $row['jam_pulang'] ? substr($row['jam_pulang'],0,5) : '--:--' }}</td><td class="py-3 px-4">{{ $row['status_hari_ini'] }}</td></tr>@empty<tr><td colspan="5" class="py-8 text-center text-on-surface-variant">Belum ada presensi hari ini.</td></tr>@endforelse
+          <div class="overflow-x-auto mt-4 direktur-responsive-table"><table class="w-full text-left min-w-[900px]"><thead><tr class="bg-surface-container-low text-xs uppercase tracking-wider text-on-surface-variant"><th class="py-3 px-4">Karyawan</th><th class="py-3 px-4">Band</th><th class="py-3 px-4">Divisi</th><th class="py-3 px-4">Clock In</th><th class="py-3 px-4">Clock Out</th><th class="py-3 px-4">Status</th></tr></thead><tbody class="divide-y divide-surface-container-low">
+          @forelse($realtimeRows as $row)<tr><td class="py-3 px-4 font-semibold">{{ $row['nama'] }}<div class="text-xs text-on-surface-variant">{{ $row['nipeg'] }}</div></td><td class="py-3 px-4"><span class="inline-flex px-2 py-0.5 rounded-full bg-primary-container/30 text-primary text-xs font-semibold">{{ $row['band'] !== null ? 'Band ' . $row['band'] : '-' }}</span></td><td class="py-3 px-4">{{ $row['divisi'] }}</td><td class="py-3 px-4">{{ $row['jam_masuk'] ? substr($row['jam_masuk'],0,5) : '--:--' }}</td><td class="py-3 px-4">{{ $row['jam_pulang'] ? substr($row['jam_pulang'],0,5) : '--:--' }}</td><td class="py-3 px-4">{{ $row['status_hari_ini'] }}</td></tr>@empty<tr><td colspan="6" class="py-8 text-center text-on-surface-variant">Belum ada presensi hari ini.</td></tr>@endforelse
           </tbody></table></div>
         </div>
       </div>
 
       <div id="tab-history" class="hidden mt-space-xl scroll-mt-24">
         <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg border border-surface-container-low">
-          <div class="pb-space-base border-b border-surface-container-low"><h2 class="font-headline-md text-headline-md text-primary">History Presensi</h2><p class="text-sm text-on-surface-variant">Riwayat presensi seluruh karyawan untuk periode terpilih.</p></div>
-          <div class="overflow-x-auto mt-4"><table class="w-full text-left min-w-[1100px]"><thead><tr class="bg-surface-container-low text-xs uppercase tracking-wider text-on-surface-variant"><th class="py-3 px-4">Tanggal</th><th class="py-3 px-4">Karyawan</th><th class="py-3 px-4">NIPEG</th><th class="py-3 px-4">Divisi</th><th class="py-3 px-4">Masuk</th><th class="py-3 px-4">Pulang</th><th class="py-3 px-4">Durasi</th><th class="py-3 px-4">Status</th></tr></thead><tbody class="divide-y divide-surface-container-low">
-          @forelse($historyRows->take(50) as $row)<tr><td class="py-3 px-4">{{ $row['tanggal']->translatedFormat('d M Y') }}</td><td class="py-3 px-4 font-semibold">{{ $row['nama'] }}</td><td class="py-3 px-4">{{ $row['nipeg'] }}</td><td class="py-3 px-4">{{ $row['divisi'] }}</td><td class="py-3 px-4">{{ $row['jam_masuk'] ? substr($row['jam_masuk'],0,5) : '--:--' }}</td><td class="py-3 px-4">{{ $row['jam_pulang'] ? substr($row['jam_pulang'],0,5) : '--:--' }}</td><td class="py-3 px-4">{{ $row['durasi'] }}</td><td class="py-3 px-4">{{ $row['status'] }}</td></tr>@empty<tr><td colspan="8" class="py-8 text-center text-on-surface-variant">Belum ada riwayat pada periode terpilih.</td></tr>@endforelse
+          <div class="pb-space-base border-b border-surface-container-low"><h2 class="font-headline-md text-headline-md text-primary">Riwayat Presensi</h2><p class="text-sm text-on-surface-variant">Riwayat presensi seluruh karyawan untuk periode terpilih.</p></div>
+          <div class="overflow-x-auto mt-4 direktur-responsive-table"><table class="w-full text-left min-w-[1100px]"><thead><tr class="bg-surface-container-low text-xs uppercase tracking-wider text-on-surface-variant"><th class="py-3 px-4">Tanggal</th><th class="py-3 px-4">Karyawan</th><th class="py-3 px-4">NIPEG</th><th class="py-3 px-4">Band</th><th class="py-3 px-4">Divisi</th><th class="py-3 px-4">Masuk</th><th class="py-3 px-4">Pulang</th><th class="py-3 px-4">Durasi</th><th class="py-3 px-4">Status</th></tr></thead><tbody class="divide-y divide-surface-container-low">
+          @forelse($historyRows->take(50) as $row)<tr><td class="py-3 px-4">{{ $row['tanggal']->format('d') }} {{ $namaBulanMap[(int) $row['tanggal']->format('n')] }} {{ $row['tanggal']->format('Y') }}</td><td class="py-3 px-4 font-semibold">{{ $row['nama'] }}</td><td class="py-3 px-4">{{ $row['nipeg'] }}</td><td class="py-3 px-4"><span class="inline-flex px-2 py-0.5 rounded-full bg-primary-container/30 text-primary text-xs font-semibold">{{ $row['band'] !== null ? 'Band ' . $row['band'] : '-' }}</span></td><td class="py-3 px-4">{{ $row['divisi'] }}</td><td class="py-3 px-4">{{ $row['jam_masuk'] ? substr($row['jam_masuk'],0,5) : '--:--' }}</td><td class="py-3 px-4">{{ $row['jam_pulang'] ? substr($row['jam_pulang'],0,5) : '--:--' }}</td><td class="py-3 px-4">{{ $row['durasi'] }}</td><td class="py-3 px-4">{{ $row['status'] }}</td></tr>@empty<tr><td colspan="9" class="py-8 text-center text-on-surface-variant">Belum ada riwayat pada periode terpilih.</td></tr>@endforelse
           </tbody></table></div>
           @if($historyRows->count() > 50)<div class="mt-3 text-xs text-on-surface-variant">Menampilkan 50 dari {{ $historyRows->count() }} baris. Gunakan filter periode/divisi untuk mempersempit data.</div>@endif
         </div>
 
         <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg border border-surface-container-low mt-4">
           <h2 class="font-headline-md text-headline-md text-primary mb-4">Frekuensi Anomaly per Divisi</h2>
-          <div class="overflow-x-auto"><table class="w-full text-left min-w-[720px]"><thead><tr class="bg-surface-container-low text-xs uppercase tracking-wider text-on-surface-variant"><th class="py-3 px-4">Divisi</th><th class="py-3 px-4">Total</th><th class="py-3 px-4">Open</th><th class="py-3 px-4">Reviewed</th><th class="py-3 px-4">Resolved</th></tr></thead><tbody class="divide-y divide-surface-container-low">
+          <div class="overflow-x-auto direktur-responsive-table"><table class="w-full text-left min-w-[720px]"><thead><tr class="bg-surface-container-low text-xs uppercase tracking-wider text-on-surface-variant"><th class="py-3 px-4">Divisi</th><th class="py-3 px-4">Total</th><th class="py-3 px-4">Open</th><th class="py-3 px-4">Reviewed</th><th class="py-3 px-4">Resolved</th></tr></thead><tbody class="divide-y divide-surface-container-low">
           @forelse($anomalyByDivision as $row)<tr><td class="py-3 px-4 font-semibold">{{ $row['divisi'] }}</td><td class="py-3 px-4">{{ $row['total'] }}</td><td class="py-3 px-4">{{ $row['open'] }}</td><td class="py-3 px-4">{{ $row['reviewed'] }}</td><td class="py-3 px-4">{{ $row['resolved'] }}</td></tr>@empty<tr><td colspan="5" class="py-6 text-center text-on-surface-variant">Belum ada anomaly pada periode ini.</td></tr>@endforelse
           </tbody></table></div>
         </div>
       </div>
 
-    {{-- ============ TAB 2: OTORISASI KHUSUS ============ --}}</main>
+    </main>
 </div>
 
 <script>
@@ -638,14 +763,11 @@
   const matriksDivisi   = @json($matriksDivisi);
   const lokasiData      = { bandung: {{ $totalHariBandung }}, jakarta: {{ $totalHariJakarta }} };
 
-  const palet = {
-    primary: '#0f2942',
-    secondary: '#006a61',
-    error: '#ba1a1a',
-    outline: '#74777e',
-    grid: 'rgba(67,71,77,0.08)',
-    text: '#43474d',
-  };
+  const palet = window.intiGetChartPalette ? window.intiGetChartPalette() : (document.documentElement.classList.contains('dark') ? {
+    primary:'#7dd3fc', secondary:'#5eead4', error:'#fb7185', outline:'#94a3b8', grid:'rgba(148,163,184,0.20)', text:'#dbe7f3', surface:'#1b2636'
+  } : {
+    primary:'#0f2942', secondary:'#006a61', error:'#ba1a1a', outline:'#74777e', grid:'rgba(67,71,77,0.10)', text:'#43474d', surface:'#ffffff'
+  });
 
   Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
   Chart.defaults.color = palet.text;
@@ -659,7 +781,7 @@
         data: Object.values(komposisiData).map(v => v.jumlah),
         backgroundColor: Object.values(komposisiData).map(v => v.warna),
         borderWidth: 2,
-        borderColor: '#ffffff',
+        borderColor: palet.surface,
       }],
     },
     options: {
@@ -781,7 +903,7 @@
         data: [lokasiData.bandung, lokasiData.jakarta],
         backgroundColor: [palet.primary, palet.secondary],
         borderWidth: 2,
-        borderColor: '#ffffff',
+        borderColor: palet.surface,
       }],
     },
     options: {
@@ -791,6 +913,80 @@
       plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12 } } },
     },
   });
+</script>
+<script>
+  function directorChartPalette() {
+    return document.documentElement.classList.contains('dark') ? {
+      primary:'#7dd3fc', secondary:'#5eead4', error:'#fb7185', outline:'#94a3b8',
+      grid:'rgba(148,163,184,0.20)', text:'#dbe7f3', surface:'#1b2636'
+    } : {
+      primary:'#0f2942', secondary:'#006a61', error:'#ba1a1a', outline:'#74777e',
+      grid:'rgba(67,71,77,0.10)', text:'#43474d', surface:'#ffffff'
+    };
+  }
+
+  function applyDirectorChartTheme() {
+    if (!window.Chart) return;
+    const palette = directorChartPalette();
+    Chart.defaults.color = palette.text;
+    Object.values(Chart.instances || {}).forEach(chart => {
+      if (chart.options?.scales) {
+        Object.values(chart.options.scales).forEach(scale => {
+          scale.ticks = scale.ticks || {};
+          scale.ticks.color = palette.text;
+          scale.grid = scale.grid || {};
+          if (scale.grid.display !== false) scale.grid.color = palette.grid;
+          if (scale.title?.display) scale.title.color = palette.text;
+        });
+      }
+      if (chart.options?.plugins?.legend) {
+        chart.options.plugins.legend.labels = chart.options.plugins.legend.labels || {};
+        chart.options.plugins.legend.labels.color = palette.text;
+      }
+      if (chart.options?.plugins?.tooltip) {
+        chart.options.plugins.tooltip.titleColor = palette.text;
+        chart.options.plugins.tooltip.bodyColor = palette.text;
+        chart.options.plugins.tooltip.backgroundColor = palette.surface;
+        chart.options.plugins.tooltip.borderColor = palette.outline;
+        chart.options.plugins.tooltip.borderWidth = 1;
+      }
+      chart.data.datasets.forEach(dataset => {
+        const swap = value => ({
+          '#0f2942':palette.primary, '#7dd3fc':palette.primary,
+          '#006a61':palette.secondary, '#5eead4':palette.secondary,
+          '#ba1a1a':palette.error, '#fb7185':palette.error,
+          '#74777e':palette.outline, '#94a3b8':palette.outline,
+        }[value] || value);
+        if (typeof dataset.backgroundColor === 'string') dataset.backgroundColor = swap(dataset.backgroundColor);
+        if (typeof dataset.borderColor === 'string') dataset.borderColor = swap(dataset.borderColor);
+        if (Array.isArray(dataset.backgroundColor)) dataset.backgroundColor = dataset.backgroundColor.map(swap);
+        if (Array.isArray(dataset.borderColor)) dataset.borderColor = dataset.borderColor.map(swap);
+        if (dataset.borderColor === '#ffffff') dataset.borderColor = palette.surface;
+      });
+      chart.update('none');
+    });
+  }
+
+  (function () {
+    const select = document.getElementById('direktur-theme');
+    const apply = (theme) => {
+      const dark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.classList.toggle('dark', dark);
+      document.documentElement.dataset.theme = theme;
+      localStorage.setItem('inti-theme', theme);
+      if (select) select.value = theme;
+      applyDirectorChartTheme();
+    };
+    const initial = localStorage.getItem('inti-theme') || 'system';
+    if (select) {
+      select.value = initial;
+      select.addEventListener('change', e => apply(e.target.value));
+    }
+    applyDirectorChartTheme();
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => {
+      if ((localStorage.getItem('inti-theme') || 'system') === 'system') apply('system');
+    });
+  })();
 </script>
 </body>
 </html>

@@ -68,6 +68,6 @@ class ProductionReportController extends Controller
         return Pdf::loadView('reports.pdf', $data)->setPaper('a4', 'landscape')->download("rekap-hris-{$year}-{$month}.pdf");
     }
 
-    private function year(Request $request): int { $year = (int) $request->input('year', now()->year); return $year >= 2000 && $year <= 2100 ? $year : now()->year; }
-    private function month(Request $request): int { $month = (int) $request->input('month', now()->month); return $month >= 1 && $month <= 12 ? $month : now()->month; }
+    private function year(Request $request): int { $year = (int) $request->input('tahun', now()->year); return $year >= 2000 && $year <= 2100 ? $year : now()->year; }
+    private function month(Request $request): int { $month = (int) $request->input('bulan', now()->month); return $month >= 1 && $month <= 12 ? $month : now()->month; }
 }

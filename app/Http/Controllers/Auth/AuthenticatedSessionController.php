@@ -28,6 +28,16 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        $request->user()->forceFill(['last_login_at' => now()])->save();
+
+        if ($request->user()->must_change_password) {
+            return redirect()->route('profile.edit')->with('force-password-change', true);
+        }
+
+        if ($request->user()->isAdminSistem()) {
+            return redirect()->route('admin.accounts.index');
+        }
+
         return redirect()->intended(route('dashboard', absolute: false));
     }
 

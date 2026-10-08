@@ -52,6 +52,15 @@ class OvertimeSubmission extends Model
         'employee_consent_at' => 'datetime',
         'vp_approved_at' => 'datetime',
         'hr_verified_at' => 'datetime',
+        'hr_returned_at' => 'datetime',
+        'vp_reverified_at' => 'datetime',
+        'actual_minutes' => 'integer',
+        'rounded_minutes' => 'integer',
+        'recognized_minutes' => 'integer',
+        'excess_minutes' => 'integer',
+        'quota_reserved_minutes' => 'integer',
+        'quota_used_minutes' => 'integer',
+        'anomaly_codes' => 'array',
     ];
 
     public function user() { return $this->belongsTo(User::class, 'user_id'); }
@@ -59,4 +68,5 @@ class OvertimeSubmission extends Model
     public function attendanceLog() { return $this->belongsTo(AttendanceLog::class, 'attendance_log_id'); }
     public function vpApprover() { return $this->belongsTo(User::class, 'vp_approver_id'); }
     public function hrVerifier() { return $this->belongsTo(User::class, 'hr_verifier_id'); }
+    public function hrReturnedBy() { return $this->belongsTo(User::class, 'hr_returned_by_id'); }
 }

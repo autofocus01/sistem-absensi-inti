@@ -15,7 +15,7 @@ return new class extends Migration
             DB::statement("
                 ALTER TABLE users
                 MODIFY COLUMN role
-                ENUM('karyawan', 'vp', 'hr_admin', 'direktur_utama')
+                ENUM('karyawan', 'vp', 'hr_admin', 'direktur_utama', 'admin_sistem')
                 DEFAULT 'karyawan'
             ");
 
@@ -45,7 +45,7 @@ return new class extends Migration
             DB::statement("
                 ALTER TABLE users
                 MODIFY COLUMN role
-                ENUM('hr_admin', 'direktur_utama')
+                ENUM('hr_admin', 'direktur_utama', 'admin_sistem')
                 DEFAULT 'hr_admin'
             ");
         }

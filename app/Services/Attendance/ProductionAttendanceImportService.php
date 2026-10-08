@@ -6,6 +6,7 @@ use App\Models\AttendanceImportError;
 use App\Models\AttendanceLog;
 use App\Models\Employee;
 use App\Services\Audit\AuditLogService;
+use App\Services\Attendance\AttendanceRecapSyncService;
 use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +20,19 @@ class ProductionAttendanceImportService
 {
     private const MAX_ROWS = 5000;
     private const MAX_COLUMNS = 100;
+
+    /**
+     * Cache employee lookup selama satu preview/commit agar file besar
+     * tidak melakukan query master yang sama berulang-ulang.
+     *
+     * null juga di-cache supaya NIP invalid berulang tidak menghasilkan
+     * query yang sama ribuan kali.
+     */
+    private array $employeeCache = [];
+
     public function __construct(
+        private readonly AttendanceRecapSyncService $recapSync,
+
         private readonly AuditLogService $audit
     ) {}
 
@@ -41,6 +54,8 @@ class ProductionAttendanceImportService
 
     public function preview(string $path): array
     {
+        $this->employeeCache = [];
+
         [$rows, $headers] = $this->rows($path);
 
         $format = $this->detectFormat($headers);
@@ -66,7 +81,7 @@ class ProductionAttendanceImportService
         $scanGroups = [];
 
         foreach ($rows as $offset => $row) {
-            $line = $offset + 2;
+            $line = $offset + 1;
 
             try {
                 $normalized = $this->normalizeRow($headers, $row, $format);
@@ -112,6 +127,8 @@ class ProductionAttendanceImportService
 
     public function commit(string $path, int $userId): array
     {
+        $this->employeeCache = [];
+
         [$rows, $headers] = $this->rows($path);
 
         $format = $this->detectFormat($headers);
@@ -126,10 +143,11 @@ class ProductionAttendanceImportService
         $errors = [];
         $seen = [];
         $scanGroups = [];
+        $syncPeriods = [];
 
-        DB::transaction(function () use ($rows, $headers, $format, $userId, &$success, &$errors, &$seen, &$scanGroups): void {
+        DB::transaction(function () use ($rows, $headers, $format, $userId, &$success, &$errors, &$seen, &$scanGroups, &$syncPeriods): void {
             foreach ($rows as $offset => $row) {
-                $line = $offset + 2;
+                $line = $offset + 1;
                 try {
                     $data = $this->normalizeRow($headers, $row, $format);
                     $this->validateNormalized($data);
@@ -144,7 +162,7 @@ class ProductionAttendanceImportService
                         throw new RuntimeException('Duplikat baris dalam file untuk NIP dan tanggal yang sama.');
                     }
                     $seen[$key] = true;
-                    $this->upsertAttendance($data, $userId, $line, $row, $success, $errors);
+                    $this->upsertAttendance($data, $userId, $line, $row, $success, $errors, $syncPeriods);
                 } catch (\Throwable $e) {
                     $errors[] = ['row' => $line, 'reason' => $e->getMessage(), 'data' => $row];
                     $this->saveError($row, $headers, $line, $e->getMessage());
@@ -156,7 +174,7 @@ class ProductionAttendanceImportService
                     $data = $this->aggregateScanGroup(array_column($group, 'data'));
                     $line = $group[0]['line'];
                     $row = $group[0]['row'];
-                    $this->upsertAttendance($data, $userId, $line, $row, $success, $errors);
+                    $this->upsertAttendance($data, $userId, $line, $row, $success, $errors, $syncPeriods);
                 } catch (\Throwable $e) {
                     $line = $group[0]['line'];
                     $row = $group[0]['row'];
@@ -179,6 +197,15 @@ class ProductionAttendanceImportService
                 );
             }
         });
+
+        foreach (array_keys($syncPeriods) as $period) {
+            [$year, $month] = array_map('intval', explode('-', $period));
+            try {
+                $this->recapSync->syncPeriod($year, $month);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
 
         return [
             'success' => $success,
@@ -263,6 +290,8 @@ class ProductionAttendanceImportService
         );
 
         $success++;
+        $date = Carbon::parse($data['tanggal']);
+        $syncPeriods[$date->format('Y-m')] = true;
     }
 
     public function forget(string $path): void
@@ -288,14 +317,6 @@ class ProductionAttendanceImportService
             ->getActiveSheet()
             ->toArray(null, true, true, false);
 
-        if (count($rawRows) > self::MAX_ROWS + 10) {
-            throw new RuntimeException('File import melebihi batas maksimal '.self::MAX_ROWS.' baris data.');
-        }
-        foreach (array_slice($rawRows, 0, 10, true) as $candidateRow) {
-            if (count($candidateRow) > self::MAX_COLUMNS) {
-                throw new RuntimeException('File import melebihi batas maksimal '.self::MAX_COLUMNS.' kolom.');
-            }
-        }
         if (count($rawRows) < 2) {
             throw new RuntimeException(
                 'File kosong atau tidak memiliki data.'
@@ -378,19 +399,56 @@ class ProductionAttendanceImportService
                 $rawRows[0]
             );
 
+            $rows = array_slice($rawRows, 1, null, true);
+            $this->assertImportShape($headers, $rows);
+
             return [
-                array_slice($rawRows, 1),
+                $rows,
                 $headers,
             ];
         }
 
+        $rows = array_slice(
+            $rawRows,
+            $headerRowIndex + 1,
+            null,
+            true
+        );
+
+        $this->assertImportShape($headers, $rows);
+
         return [
-            array_slice(
-                $rawRows,
-                $headerRowIndex + 1
-            ),
+            $rows,
             $headers,
         ];
+    }
+
+    private function assertImportShape(array $headers, array $rows): void
+    {
+        if (count($rows) > self::MAX_ROWS) {
+            throw new RuntimeException(
+                'File import melebihi batas maksimal ' . self::MAX_ROWS . ' baris data.'
+            );
+        }
+
+        foreach ($rows as $row) {
+            if (count($row) > self::MAX_COLUMNS) {
+                throw new RuntimeException(
+                    'File import melebihi batas maksimal ' . self::MAX_COLUMNS . ' kolom.'
+                );
+            }
+        }
+
+        $nonEmptyHeaders = array_filter(
+            $headers,
+            static fn (string $header): bool => $header !== ''
+        );
+
+        if (count($nonEmptyHeaders) !== count(array_unique($nonEmptyHeaders))) {
+            throw new RuntimeException(
+                'Header import mengandung nama kolom duplikat yang ambigu.'
+            );
+        }
     }
 
     private function detectFormat(array $headers): ?string
@@ -507,10 +565,8 @@ class ProductionAttendanceImportService
             ]
         );
 
-        $nip = trim(
-            (string) (
-                $row[$nipIndex] ?? ''
-            )
+        $nip = $this->normalizeNip(
+            $row[$nipIndex] ?? ''
         );
 
         /*
@@ -737,31 +793,37 @@ class ProductionAttendanceImportService
 }
 
     private function findEmployeeByNip(string $nip): ?Employee
-{
-    $normalizedNip = $this->normalizeNip($nip);
+    {
+        $normalizedNip = $this->normalizeNip($nip);
 
-    if ($normalizedNip === '') {
-        return null;
-    }
+        if ($normalizedNip === '') {
+            return null;
+        }
 
-    // Pencarian utama.
-    $employee = Employee::query()
-        ->where('nipeg', $normalizedNip)
-        ->first();
+        if (array_key_exists($normalizedNip, $this->employeeCache)) {
+            return $this->employeeCache[$normalizedNip];
+        }
 
-    if ($employee) {
+        // Pencarian utama.
+        $employee = Employee::query()
+            ->where('nipeg', $normalizedNip)
+            ->first();
+
+        if (! $employee) {
+            // Fallback untuk database yang menyimpan NIP sebagai
+            // string dengan whitespace.
+            $employee = Employee::query()
+                ->whereRaw(
+                    "REPLACE(REPLACE(nipeg, ' ', ''), '\\t', '') = ?",
+                    [$normalizedNip]
+                )
+                ->first();
+        }
+
+        $this->employeeCache[$normalizedNip] = $employee;
+
         return $employee;
     }
-
-    // Fallback untuk database yang menyimpan NIP sebagai
-    // string dengan whitespace.
-    return Employee::query()
-        ->whereRaw(
-            "REPLACE(REPLACE(nipeg, ' ', ''), '\\t', '') = ?",
-            [$normalizedNip]
-        )
-        ->first();
-}
 
     private function saveError(
         array $row,
@@ -782,7 +844,7 @@ class ProductionAttendanceImportService
         );
 
         $nip = $nipIndex !== null
-            ? trim((string) ($row[$nipIndex] ?? ''))
+            ? $this->normalizeNip($row[$nipIndex] ?? '')
             : null;
 
         /*
@@ -817,6 +879,12 @@ class ProductionAttendanceImportService
 
         $date ??= now()->toDateString();
 
+        $rawValues = array_slice(
+            array_pad($row, count($headers), null),
+            0,
+            count($headers)
+        );
+
         AttendanceImportError::create([
             'nipeg' => $nip,
             'nama' => null,
@@ -827,11 +895,7 @@ class ProductionAttendanceImportService
             'alasan' => $reason,
             'data_mentah' => array_combine(
                 $headers,
-                array_pad(
-                    $row,
-                    count($headers),
-                    null
-                )
+                $rawValues
             ),
         ]);
     }

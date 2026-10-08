@@ -76,6 +76,6 @@
     </tbody>
   </table>
 
-  <p class="footer">Dokumen ini dibuat otomatis dari sistem absensi PT. INTI pada {{ now()->translatedFormat('d F Y, H:i') }} WIB.</p>
+  <p class="footer">Dokumen ini dibuat otomatis dari sistem absensi PT. INTI pada {{ now()->format('d') }} {{ $namaBulanMap[(int) now()->format('n')] }} {{ now()->format('Y, H:i') }} WIB.</p>
 </body>
 </html>

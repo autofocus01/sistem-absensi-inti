@@ -16,6 +16,7 @@ class OvertimeLimitService
     private const ACTIVE_STATUSES = [
         'PENDING_VP',
         'APPROVED_VP',
+        'RETURNED_TO_VP',
         'VERIFIED_HR',
     ];
 

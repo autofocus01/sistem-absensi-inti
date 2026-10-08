@@ -5,6 +5,15 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
+        <script>
+            (function () {
+                const theme = localStorage.getItem('inti-theme') || 'system';
+                const dark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                document.documentElement.classList.toggle('dark', dark);
+                document.documentElement.dataset.theme = theme;
+            })();
+        </script>
+
         <title>{{ config('app.name', 'Laravel') }}</title>
 
         <!-- Fonts -->
@@ -13,9 +22,19 @@
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+        <style>
+            html.dark body { background:#141c29 !important; color:#edf3fa !important; }
+            html.dark .bg-white { background:#1b2636 !important; }
+            html.dark .bg-gray-100 { background:#141c29 !important; }
+            html.dark .bg-gray-800 { background:#1b2636 !important; }
+            html.dark .bg-gray-900 { background:#111b2b !important; }
+            html.dark .text-gray-900, html.dark .text-gray-800, html.dark .text-gray-700 { color:#edf3fa !important; }
+            html.dark .text-gray-600, html.dark .text-gray-500, html.dark .text-gray-400 { color:#b7c3d2 !important; }
+            html.dark input, html.dark textarea, html.dark select { background:#111b2b !important; color:#edf3fa !important; border-color:#52657d !important; }
+        </style>
     </head>
     <body class="font-sans antialiased">
-        <div class="min-h-screen bg-gray-100 dark:bg-gray-900">
+        <div class="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
             @include('layouts.navigation')
 
             <!-- Page Heading -->

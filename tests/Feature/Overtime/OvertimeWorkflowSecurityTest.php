@@ -439,6 +439,79 @@ test('hr tidak dapat verify ulang submission VERIFIED_HR', function () {
 });
 
 
+test('hr dapat mengembalikan APPROVED_VP ke VP untuk anomaly dan VP dapat verifikasi ulang', function () {
+    $division = createTestDivision('Divisi Test Return');
+
+    $vp = createTestUser('vp', 'VP Return Test');
+    createTestEmployee($vp, $division, 'VP_RETURN');
+
+    $employee = createTestUser('karyawan', 'Employee Return Test');
+    createTestEmployee($employee, $division, 'EMP_RETURN');
+
+    $hr = createTestUser('hr_admin', 'HR Return Test');
+
+    $submission = createTestOvertime($employee, $division, 'APPROVED_VP');
+
+    $returned = $this
+        ->actingAs($hr)
+        ->postJson(route('overtime.hr.verify', $submission->id), [
+            'action' => 'RETURN_TO_VP',
+            'notes' => 'Jam clock-out berbeda dengan evidence sumber.',
+        ]);
+
+    $returned
+        ->assertSuccessful()
+        ->assertJsonPath('data.status', 'RETURNED_TO_VP');
+
+    expect($submission->fresh()->status)->toBe('RETURNED_TO_VP');
+    expect($submission->fresh()->hr_return_reason)
+        ->toBe('Jam clock-out berbeda dengan evidence sumber.');
+
+    $pending = $this
+        ->actingAs($vp)
+        ->getJson(route('overtime.vp.pending'));
+
+    $pending
+        ->assertSuccessful()
+        ->assertJsonFragment(['id' => $submission->id])
+        ->assertJsonFragment(['status' => 'RETURNED_TO_VP']);
+
+    $reverified = $this
+        ->actingAs($vp)
+        ->postJson(route('overtime.vp.approve', $submission->id), [
+            'action' => 'APPROVE',
+            'notes' => 'Evidence sudah diklarifikasi dan sesuai.',
+        ]);
+
+    $reverified
+        ->assertSuccessful()
+        ->assertJsonPath('data.status', 'APPROVED_VP');
+
+    expect($submission->fresh()->vp_reverified_at)->not->toBeNull();
+    expect($submission->fresh()->vp_reverification_notes)
+        ->toBe('Evidence sudah diklarifikasi dan sesuai.');
+});
+
+
+test('hr tidak dapat mengembalikan submission yang belum APPROVED_VP', function () {
+    $division = createTestDivision('Divisi Test Return Boundary');
+    $employee = createTestUser('karyawan', 'Employee Return Boundary');
+    createTestEmployee($employee, $division, 'EMP_RETURN_BOUNDARY');
+    $hr = createTestUser('hr_admin', 'HR Boundary');
+    $submission = createTestOvertime($employee, $division, 'PENDING_VP');
+
+    $response = $this
+        ->actingAs($hr)
+        ->postJson(route('overtime.hr.verify', $submission->id), [
+            'action' => 'RETURN_TO_VP',
+            'notes' => 'Ada anomaly.',
+        ]);
+
+    $response->assertStatus(409);
+    expect($submission->fresh()->status)->toBe('PENDING_VP');
+});
+
+
 /*
 |--------------------------------------------------------------------------
 | Role Boundary

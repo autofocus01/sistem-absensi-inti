@@ -6,6 +6,8 @@ use App\Models\AttendanceLog;
 use App\Models\Division;
 use App\Models\Employee;
 use App\Services\Overtime\OvertimeReportingService;
+use App\Services\Period\PeriodOptionsService;
+use App\Models\HolidayCalendar;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -13,6 +15,7 @@ class TeamRecapController extends Controller
 {
     public function __construct(
         private readonly OvertimeReportingService $overtimeReporting,
+        private readonly PeriodOptionsService $periodOptions,
     ) {
     }
 
@@ -49,9 +52,10 @@ class TeamRecapController extends Controller
             ? Division::query()->whereKey($divisionId)->get()
             : Division::query()->orderBy('nama')->get();
 
-        $bulan = (int) $request->input('bulan', now()->month);
-        $tahun = (int) $request->input('tahun', now()->year);
-        $q = $request->input('q');
+        $bulan = (int) $request->input('bulan', $request->input('month', now()->month));
+        $tahun = (int) $request->input('tahun', $request->input('year', now()->year));
+        $q = trim((string) $request->input('q', ''));
+        $q = $q !== '' ? $q : null;
 
         $logsQuery = AttendanceLog::with(['employee.division', 'approver'])
             ->whereYear('tanggal', $tahun)
@@ -83,12 +87,23 @@ class TeamRecapController extends Controller
                 'hrVerifier',
                 'attendanceLog',
             ])
+            ->where('status', OvertimeReportingService::STATUS_VERIFIED_HR)
             ->where('eligibility_status', 'ELIGIBLE')
             ->where('recognized_minutes', '>', 0);
 
         $logLembur = $overtimeQuery->latest('overtime_date')->get();
 
-        $totalPersonel = $semuaLog->pluck('employee_id')->unique()->count();
+        // Total personel harus berasal dari master Employee, bukan hanya karyawan yang
+        // kebetulan memiliki attendance pada bulan yang sedang dipilih.
+        $employeeScopeQuery = Employee::query()
+            ->when(
+                $divisionId !== null,
+                fn ($query) => $query->where('division_id', $divisionId)
+            );
+
+        $jumlahKaryawanScope = (clone $employeeScopeQuery)->count();
+        $totalPersonel = $jumlahKaryawanScope;
+
         $totalMenitLemburPending = $this->overtimeReporting
             ->pendingVpMinutes($tahun, $bulan, $divisionId);
         $totalMenitLemburDisetujui = $this->overtimeReporting
@@ -100,24 +115,20 @@ class TeamRecapController extends Controller
         $statusLemburCounts = $this->overtimeReporting
             ->statusCounts($tahun, $bulan, $divisionId);
 
-        // Tren kehadiran mingguan.
-        // Hari kerja = Senin-Jumat, dikurangi tanggal libur nasional tetap.
-        $liburNasionalTanggalTetap = [
-            '01-01',
-            '05-01',
-            '06-01',
-            '08-17',
-            '12-25',
-        ];
+        // Tren kehadiran mingguan memakai kalender libur nasional aktif yang sama
+        // dengan modul lembur dan laporan produksi. Jangan gunakan daftar tanggal
+        // hard-code karena hari libur dapat berubah tiap tahun.
+        $periodeMulai = \Carbon\Carbon::create($tahun, $bulan, 1)->startOfMonth();
+        $periodeAkhir = $periodeMulai->copy()->endOfMonth();
+        $liburNasionalTanggal = HolidayCalendar::query()
+            ->whereBetween('tanggal', [$periodeMulai->toDateString(), $periodeAkhir->toDateString()])
+            ->where('is_active', true)
+            ->where('jenis', 'NATIONAL_HOLIDAY')
+            ->pluck('tanggal')
+            ->map(fn ($date) => \Carbon\Carbon::parse($date)->toDateString())
+            ->flip();
 
-        $jumlahKaryawanScope = Employee::query()
-            ->when(
-                $divisionId !== null,
-                fn ($query) => $query->where('division_id', $divisionId)
-            )
-            ->count();
-
-        $akhirBulan = \Carbon\Carbon::create($tahun, $bulan, 1)->endOfMonth()->day;
+        $akhirBulan = $periodeAkhir->day;
         $trenMingguan = [];
 
         for ($mulaiHari = 1; $mulaiHari <= $akhirBulan; $mulaiHari += 7) {
@@ -128,13 +139,9 @@ class TeamRecapController extends Controller
             $hariKerjaMinggu = 0;
 
             for ($d = $tanggalMulai->copy(); $d->lte($tanggalAkhir); $d->addDay()) {
-                $isLiburTetap = in_array(
-                    $d->format('m-d'),
-                    $liburNasionalTanggalTetap,
-                    true
-                );
+                $isLiburNasional = $liburNasionalTanggal->has($d->toDateString());
 
-                if ($d->dayOfWeekIso <= 5 && ! $isLiburTetap) {
+                if ($d->dayOfWeekIso <= 5 && ! $isLiburNasional) {
                     $hariKerjaMinggu++;
                 }
             }
@@ -196,6 +203,8 @@ class TeamRecapController extends Controller
             'rateMin' => round($rateMin, 1),
             'rateMax' => round($rateMax, 1),
             'statusLemburCounts' => $statusLemburCounts,
+            'availableYears' => $this->periodOptions->availableYears()->all(),
+            'monthNames' => $this->periodOptions->monthNames(),
         ]);
     }
 }

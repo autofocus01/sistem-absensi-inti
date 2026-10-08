@@ -3,6 +3,9 @@
 @section('title', 'Absensi Saya - PT. INTI')
 
 @section('content')
+@php
+    $monthNames = [1=>'Januari',2=>'Februari',3=>'Maret',4=>'April',5=>'Mei',6=>'Juni',7=>'Juli',8=>'Agustus',9=>'September',10=>'Oktober',11=>'November',12=>'Desember'];
+@endphp
 <div class="inti-page">
   <div class="inti-page-header">
     <div>
@@ -119,16 +122,16 @@
         <div class="inti-subtitle">{{ $monthLabel }}</div>
       </div>
       <div class="inti-responsive-toolbar">
-        <form method="GET" action="{{ route('attendance.my') }}" class="inti-responsive-toolbar">
-          <select name="month" class="inti-input" aria-label="Bulan">
+        <form data-auto-filter method="GET" action="{{ route('attendance.my') }}" class="inti-responsive-toolbar">
+          <select name="bulan" class="inti-input" aria-label="Bulan">
             @foreach(range(1, 12) as $m)
-              <option value="{{ $m }}" @selected($month === $m)>{{ \Carbon\Carbon::create()->month($m)->translatedFormat('F') }}</option>
+              <option value="{{ $m }}" @selected($month === $m)>{{ $monthNames[$m] }}</option>
             @endforeach
           </select>
-          <input type="number" name="year" min="2000" max="2100" value="{{ $year }}" class="inti-input" aria-label="Tahun">
+          <input type="number" name="tahun" min="2000" max="2100" value="{{ $year }}" class="inti-input" aria-label="Tahun">
           <button class="inti-btn inti-btn-secondary" type="submit">Tampilkan</button>
         </form>
-        <a href="{{ route('timesheet.index',['month'=>$month,'year'=>$year]) }}" class="inti-btn inti-btn-ghost">Buka Timesheet</a>
+        <a href="{{ route('timesheet.index',['bulan'=>$month,'tahun'=>$year]) }}" class="inti-btn inti-btn-ghost">Buka Timesheet</a>
       </div>
     </div>
 

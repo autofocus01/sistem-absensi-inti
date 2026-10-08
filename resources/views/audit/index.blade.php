@@ -9,11 +9,11 @@
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-4">
             <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-4">
-                <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <form data-auto-filter method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-3">
                     <div>
-                        <label class="block text-sm font-medium mb-1">Action</label>
+                        <label class="block text-sm font-medium mb-1">Aksi</label>
                         <select name="action" class="w-full rounded-md border-gray-300">
-                            <option value="">Semua action</option>
+                            <option value="">Semua Aksi</option>
                             @foreach ($actions as $action)
                                 <option value="{{ $action }}" @selected(request('action') === $action)>{{ $action }}</option>
                             @endforeach
@@ -24,8 +24,8 @@
                         <input type="date" name="date" value="{{ request('date') }}" class="w-full rounded-md border-gray-300">
                     </div>
                     <div class="md:col-span-2 flex items-end gap-2">
-                        <button class="px-4 py-2 rounded-md bg-gray-900 text-white">Filter</button>
-                        <a href="{{ route('audit-logs.index') }}" class="px-4 py-2 rounded-md border">Reset</a>
+                        <button class="px-4 py-2 rounded-md bg-gray-900 text-white">Terapkan Filter</button>
+                        <a href="{{ route('audit-logs.index') }}" class="px-4 py-2 rounded-md border">Atur Ulang</a>
                     </div>
                 </form>
             </div>
@@ -37,7 +37,7 @@
                             <tr>
                                 <th class="px-4 py-3 text-left">Waktu</th>
                                 <th class="px-4 py-3 text-left">User</th>
-                                <th class="px-4 py-3 text-left">Action</th>
+                                <th class="px-4 py-3 text-left">Aksi</th>
                                 <th class="px-4 py-3 text-left">Subject</th>
                                 <th class="px-4 py-3 text-left">Catatan</th>
                             </tr>

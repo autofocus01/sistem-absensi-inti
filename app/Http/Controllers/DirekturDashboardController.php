@@ -8,6 +8,7 @@ use App\Models\AttendanceLog;
 use App\Models\Division;
 use App\Models\Employee;
 use App\Services\Overtime\OvertimeReportingService;
+use App\Services\Period\PeriodOptionsService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -17,7 +18,10 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class DirekturDashboardController extends Controller
 {
-    public function __construct(private readonly OvertimeReportingService $overtime) {}
+    public function __construct(
+        private readonly OvertimeReportingService $overtime,
+        private readonly PeriodOptionsService $periodOptions,
+    ) {}
 
     public function index(Request $request)
     {
@@ -95,7 +99,7 @@ class DirekturDashboardController extends Controller
             : 0;
 
         // Lembur bulan ini: dihitung ulang dari log harian (bukan kolom tersimpan), biar konsisten
-        // dengan Rekapitulasi Tim & Otorisasi Khusus. Ditampilkan dalam JAM, bukan Rupiah - sistem
+        // dengan Rekapitulasi Tim. Ditampilkan dalam JAM, bukan Rupiah - sistem
         // ini tidak menyimpan data gaji/tarif lembur, jadi estimasi biaya sengaja tidak dibuat-buat.
         // Lembur resmi hanya berasal dari submission yang sudah VERIFIED_HR.
         // Jam pulang semata tidak pernah dianggap sebagai lembur resmi.
@@ -130,7 +134,7 @@ class DirekturDashboardController extends Controller
             ));
 
                 return [
-                    'label'          => $periode->translatedFormat('M Y'),
+                    'label'          => ($this->periodOptions->shortMonthNames()[$periode->month] . ' ' . $periode->year),
                     'rata_kehadiran' => round((clone $recapPeriode)->avg('persen_kehadiran') ?? 0, 1),
                     'total_alpha'    => (clone $recapPeriode)->sum('alpha'),
                 ];
@@ -242,6 +246,7 @@ class DirekturDashboardController extends Controller
                 'tanggal' => $log->tanggal,
                 'nama' => $log->employee?->nama ?? '-',
                 'nipeg' => $log->employee?->nipeg ?? '-',
+                'band' => $log->employee?->band_code,
                 'divisi' => $log->employee?->division?->nama ?? '-',
                 'jam_masuk' => $log->jam_masuk,
                 'jam_pulang' => $log->jam_pulang,
@@ -272,6 +277,9 @@ class DirekturDashboardController extends Controller
         return [
             'tahun'             => $tahun,
             'bulan'             => $bulan,
+            'namaBulan'         => $this->periodOptions->monthNames()[$bulan],
+            'namaBulanSingkat'  => $this->periodOptions->shortMonthNames()[$bulan],
+            'namaBulanMap'      => $this->periodOptions->monthNames(),
             'divisionId'        => $divisionId,
             'divisions'         => $divisions,
             'totalKaryawan'     => $totalKaryawan,
@@ -306,7 +314,7 @@ class DirekturDashboardController extends Controller
     public function exportExcel(Request $request)
     {
         $data = $this->buildReportData($request);
-        $namaBulan = Carbon::create()->month($data['bulan'])->translatedFormat('F');
+        $namaBulan = $this->periodOptions->monthNames()[$data['bulan']];
 
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
@@ -383,7 +391,7 @@ class DirekturDashboardController extends Controller
     public function exportPdf(Request $request)
     {
         $data = $this->buildReportData($request);
-        $data['namaBulan'] = Carbon::create()->month($data['bulan'])->translatedFormat('F');
+        $data['namaBulan'] = $this->periodOptions->monthNames()[$data['bulan']];
 
         $pdf = Pdf::loadView('direktur.report-pdf', $data)->setPaper('a4', 'portrait');
 

@@ -34,8 +34,8 @@ class OvertimeCalculationServiceTest extends TestCase
 
         $this->assertSame('WORKDAY', $result['day_type']);
         $this->assertSame(0, $result['actual_minutes']);
-        $this->assertSame(0, $result['recognized_minutes']);
-        $this->assertSame('NOT_ELIGIBLE', $result['eligibility']);
+        $this->assertSame(30, $result['recognized_minutes']);
+        $this->assertSame('ELIGIBLE', $result['eligibility']);
     }
 
     public function test_workday_16_31_has_zero_recognized_overtime(): void
@@ -49,8 +49,8 @@ class OvertimeCalculationServiceTest extends TestCase
 
         $this->assertSame('WORKDAY', $result['day_type']);
         $this->assertSame(1, $result['actual_minutes']);
-        $this->assertSame(0, $result['recognized_minutes']);
-        $this->assertSame('NOT_ELIGIBLE', $result['eligibility']);
+        $this->assertSame(30, $result['recognized_minutes']);
+        $this->assertSame('ELIGIBLE', $result['eligibility']);
     }
 
     public function test_workday_16_59_has_zero_recognized_overtime(): void
@@ -123,7 +123,7 @@ class OvertimeCalculationServiceTest extends TestCase
         );
 
         $this->assertSame('WORKDAY', $result['day_type']);
-        $this->assertSame(59, $result['actual_minutes']);
+        $this->assertSame(29, $result['actual_minutes']);
         $this->assertSame(30, $result['recognized_minutes']);
         $this->assertSame('ELIGIBLE', $result['eligibility']);
     }
@@ -138,8 +138,8 @@ class OvertimeCalculationServiceTest extends TestCase
         );
 
         $this->assertSame('WORKDAY', $result['day_type']);
-        $this->assertSame(60, $result['actual_minutes']);
-        $this->assertSame(60, $result['recognized_minutes']);
+        $this->assertSame(30, $result['actual_minutes']);
+        $this->assertSame(30, $result['recognized_minutes']);
         $this->assertSame('ELIGIBLE', $result['eligibility']);
     }
 
@@ -149,37 +149,37 @@ class OvertimeCalculationServiceTest extends TestCase
     |--------------------------------------------------------------------------
     */
 
-    public function test_weekend_60_minutes_recognizes_60_minutes(): void
+    public function test_weekend_30_minutes_recognizes_30_minutes(): void
     {
         $result = $this->service->calculate(
             Carbon::parse('2026-09-19'),
             Carbon::parse('2026-09-19 08:00:00'),
-            Carbon::parse('2026-09-19 09:00:00'),
+            Carbon::parse('2026-09-19 08:30:00'),
             $this->weekendPolicy(),
         );
 
         $this->assertSame('WEEKEND', $result['day_type']);
-        $this->assertSame(60, $result['actual_minutes']);
-        $this->assertSame(60, $result['recognized_minutes']);
+        $this->assertSame(30, $result['actual_minutes']);
+        $this->assertSame(30, $result['recognized_minutes']);
         $this->assertSame('ELIGIBLE', $result['eligibility']);
     }
 
-    public function test_weekend_59_minutes_is_not_eligible(): void
+    public function test_weekend_29_minutes_is_not_eligible(): void
     {
         $result = $this->service->calculate(
             Carbon::parse('2026-09-19'),
             Carbon::parse('2026-09-19 08:00:00'),
-            Carbon::parse('2026-09-19 08:59:00'),
+            Carbon::parse('2026-09-19 08:29:00'),
             $this->weekendPolicy(),
         );
 
         $this->assertSame('WEEKEND', $result['day_type']);
-        $this->assertSame(59, $result['actual_minutes']);
+        $this->assertSame(29, $result['actual_minutes']);
         $this->assertSame(0, $result['recognized_minutes']);
         $this->assertSame('NOT_ELIGIBLE', $result['eligibility']);
     }
 
-    public function test_weekend_90_minutes_is_rounded_down_to_60_minutes(): void
+    public function test_weekend_90_minutes_is_rounded_down_to_90_minutes(): void
     {
         $result = $this->service->calculate(
             Carbon::parse('2026-09-19'),
@@ -190,7 +190,7 @@ class OvertimeCalculationServiceTest extends TestCase
 
         $this->assertSame('WEEKEND', $result['day_type']);
         $this->assertSame(90, $result['actual_minutes']);
-        $this->assertSame(60, $result['recognized_minutes']);
+        $this->assertSame(90, $result['recognized_minutes']);
         $this->assertSame('ELIGIBLE', $result['eligibility']);
     }
 
@@ -200,32 +200,32 @@ class OvertimeCalculationServiceTest extends TestCase
     |--------------------------------------------------------------------------
     */
 
-    public function test_national_holiday_60_minutes_recognizes_60_minutes(): void
+    public function test_national_holiday_30_minutes_recognizes_30_minutes(): void
     {
         $result = $this->service->calculate(
             Carbon::parse('2026-08-17'),
             Carbon::parse('2026-08-17 08:00:00'),
-            Carbon::parse('2026-08-17 09:00:00'),
+            Carbon::parse('2026-08-17 08:30:00'),
             $this->holidayPolicy(),
         );
 
         $this->assertSame('NATIONAL_HOLIDAY', $result['day_type']);
-        $this->assertSame(60, $result['actual_minutes']);
-        $this->assertSame(60, $result['recognized_minutes']);
+        $this->assertSame(30, $result['actual_minutes']);
+        $this->assertSame(30, $result['recognized_minutes']);
         $this->assertSame('ELIGIBLE', $result['eligibility']);
     }
 
-    public function test_national_holiday_59_minutes_is_not_eligible(): void
+    public function test_national_holiday_29_minutes_is_not_eligible(): void
     {
         $result = $this->service->calculate(
             Carbon::parse('2026-08-17'),
             Carbon::parse('2026-08-17 08:00:00'),
-            Carbon::parse('2026-08-17 08:59:00'),
+            Carbon::parse('2026-08-17 08:29:00'),
             $this->holidayPolicy(),
         );
 
         $this->assertSame('NATIONAL_HOLIDAY', $result['day_type']);
-        $this->assertSame(59, $result['actual_minutes']);
+        $this->assertSame(29, $result['actual_minutes']);
         $this->assertSame(0, $result['recognized_minutes']);
         $this->assertSame('NOT_ELIGIBLE', $result['eligibility']);
     }
@@ -358,9 +358,9 @@ class OvertimeCalculationServiceTest extends TestCase
         return array_merge([
             'day_type' => 'WEEKEND',
             'normal_end' => '16:30:00',
-            'minimum_minutes' => 60,
+            'minimum_minutes' => 30,
             'rounding_method' => 'floor',
-            'rounding_interval' => 60,
+            'rounding_interval' => 30,
             'maximum_minutes_event' => null,
         ], $overrides);
     }
@@ -370,9 +370,9 @@ class OvertimeCalculationServiceTest extends TestCase
         return array_merge([
             'day_type' => 'NATIONAL_HOLIDAY',
             'normal_end' => '16:30:00',
-            'minimum_minutes' => 60,
+            'minimum_minutes' => 30,
             'rounding_method' => 'floor',
-            'rounding_interval' => 60,
+            'rounding_interval' => 30,
             'maximum_minutes_event' => null,
         ], $overrides);
     }

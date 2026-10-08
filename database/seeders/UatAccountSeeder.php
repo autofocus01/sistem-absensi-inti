@@ -149,6 +149,12 @@ class UatAccountSeeder extends Seeder
             name: 'Direktur UAT',
             role: 'direktur_utama',
         );
+
+        $this->upsertUser(
+            email: 'admin.sistem@test.local',
+            name: 'Administrator Sistem UAT',
+            role: 'admin_sistem',
+        );
     }
 
     private function upsertUser(string $email, string $name, string $role): User
@@ -159,6 +165,8 @@ class UatAccountSeeder extends Seeder
                 'name' => $name,
                 'password' => Hash::make('password'),
                 'role' => $role,
+                'is_active' => true,
+                'must_change_password' => false,
             ],
         );
     }

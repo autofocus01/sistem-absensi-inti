@@ -1,58 +1,419 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Sistem Absensi & Lembur PT INTI
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sistem informasi absensi, timesheet, pengajuan lembur, persetujuan VP Divisi, dan verifikasi HR untuk kebutuhan operasional PT INTI.
 
-## About Laravel
+## Status
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+**Release:** v1.0 Production  
+**Status:** Production Ready / Final Sign-Off  
+**Stack:** Laravel / PHP / MySQL
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Fitur Utama
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Absensi & Timesheet
+- Pencatatan Clock In dan Clock Out.
+- Rekap absensi dan timesheet karyawan.
+- Dukungan import data absensi production.
+- Validasi master karyawan berdasarkan NIPEG.
+- Pencegahan duplikasi data absensi untuk karyawan/tanggal yang sama.
+- Pencatatan anomaly dan import error.
 
-## Learning Laravel
+### Master Karyawan
+- Import master karyawan melalui XLSX/XLS/CSV.
+- Preview sebelum commit.
+- Validasi NIPEG, nama, dan divisi.
+- Deteksi NIPEG duplikat dalam satu file.
+- Deteksi CREATE/UPDATE.
+- Tidak mengubah `user_id` secara tidak sengaja saat import.
+- Audit perubahan data master.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Pengajuan Lembur
+Alur resmi:
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```text
+Karyawan
+   ↓
+VP Divisi
+   ↓
+HR
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Pengajuan menyimpan bukti persetujuan karyawan, termasuk waktu, IP, user-agent, sumber, versi pernyataan, dan teks persetujuan.
 
-## Contributing
+### Persetujuan VP
+VP hanya dapat memproses pengajuan dari divisinya sendiri.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+VP dapat:
+- Setujui pengajuan.
+- Tolak pengajuan dengan catatan.
+- Melihat riwayat keputusan yang dibuatnya.
 
-## Code of Conduct
+### Verifikasi HR
+HR memproses pengajuan yang sudah disetujui VP.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+HR dapat:
+- Verifikasi.
+- Tolak.
+- Melihat status dan data pendukung pengajuan.
 
-## Security Vulnerabilities
+### Riwayat
+Tersedia dua perspektif:
+- **Karyawan:** Riwayat Pengajuan Lembur miliknya sendiri.
+- **VP:** Riwayat keputusan yang dibuat oleh VP tersebut.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Aturan Lembur
 
-## License
+Jam kerja normal:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```text
+Senin–Jumat
+07:30–16:30
+```
+
+Tidak menggunakan sistem shift.
+
+### Lembur Hari Kerja
+
+- Clock Out tepat pukul 16:30 = bukan lembur.
+- Lembur dimulai setelah 16:30.
+- Minimum lembur hari kerja = 30 menit.
+- Pembulatan dilakukan ke bawah per kelipatan 30 menit.
+
+Contoh:
+
+| Clock Out | Lembur Diakui |
+|---|---:|
+| 16:30 | 0 menit |
+| 16:59 | 0 menit |
+| 17:00 | 30 menit |
+| 17:01 | 30 menit |
+| 17:17 | 30 menit |
+| 17:29 | 30 menit |
+| 17:30 | 60 menit |
+
+### Weekend / Hari Libur Nasional
+
+Pengajuan lembur pada hari istirahat mingguan atau hari libur nasional diproses menggunakan policy khusus dan minimum yang dikonfigurasi.
+
+Batas legal dan batas internal perusahaan dipisahkan dalam policy agar tidak tercampur.
+
+### Validasi Presensi Aktual
+
+Sistem tidak hanya mempercayai jam yang diketik pada formulir.
+
+Setelah Clock Out:
+- waktu aktual presensi digunakan untuk rekonsiliasi;
+- durasi lembur dihitung ulang;
+- `recognized_minutes` ditentukan oleh engine perhitungan;
+- pengajuan yang tidak memenuhi syarat ditandai tidak eligible.
+
+Contoh:
+
+```text
+Pengajuan:
+16:30–19:30
+
+Clock Out aktual:
+10:00
+
+Hasil:
+INVALID_INTERVAL
+recognized_minutes = 0
+```
+
+Sistem tidak memperlakukan kondisi tersebut sebagai lembur overnight/shift.
+
+## Batas Lembur
+
+Sistem memisahkan:
+- batas legal;
+- batas internal perusahaan;
+- batas per kejadian;
+- akumulasi harian/mingguan/bulanan sesuai policy.
+
+Batas umum legal yang digunakan dalam policy hari kerja mengikuti ketentuan yang telah dijadikan dasar implementasi sistem. Detail angka sebaiknya selalu dikonfirmasi kembali terhadap regulasi dan kebijakan perusahaan yang berlaku saat deployment.
+
+## Role & Hak Akses
+
+### Karyawan
+- Dashboard.
+- Absensi & Timesheet.
+- Pengajuan lembur.
+- Riwayat pengajuan lembur.
+- Profil.
+
+### VP
+- Dashboard.
+- Absensi sendiri.
+- Persetujuan lembur anggota divisinya.
+- Setujui/tolak.
+- Riwayat keputusan VP.
+- Rekap divisi.
+- Profil.
+
+### HR
+- Dashboard HR.
+- Master karyawan.
+- Import karyawan.
+- Import absensi production.
+- Pengelolaan divisi.
+- Verifikasi lembur.
+- Audit/log terkait operasional.
+
+### Batas Divisi
+
+VP tidak boleh memproses pengajuan dari divisi lain.
+
+Pemeriksaan division boundary dilakukan di server, bukan hanya di tampilan frontend.
+
+## State Machine Lembur
+
+Status utama:
+
+```text
+PENDING_VP
+    ├── APPROVED_VP
+    │       ├── VERIFIED_HR
+    │       └── REJECTED_HR
+    │
+    └── REJECTED_VP
+```
+
+Status pengajuan disimpan pada database dan perubahan keputusan dicatat bersama identitas approver/verifier dan timestamp.
+
+## Keamanan & Audit
+
+Sistem menerapkan beberapa pengamanan:
+- Authorization berdasarkan role.
+- Validasi division boundary VP.
+- Validasi state transition di server.
+- Transaksi database untuk keputusan VP/HR.
+- `lockForUpdate` pada proses keputusan yang membutuhkan konsistensi.
+- Pengajuan aktif ganda pada tanggal yang sama dicegah.
+- Consent karyawan direkam sebagai evidence.
+- Audit log untuk aktivitas penting.
+- Data official reporting hanya menggunakan pengajuan yang memenuhi status dan eligibility yang ditentukan sistem.
+
+## Import Data
+
+### Import Master Karyawan
+
+Format utama:
+
+```text
+NIPEG
+Nama
+Jenis Kelamin
+Jabatan
+No HP
+Alamat
+Divisi
+```
+
+Alur:
+
+```text
+Upload
+  ↓
+Preview
+  ↓
+Validasi
+  ↓
+CREATE / UPDATE
+  ↓
+Commit
+```
+
+### Import Absensi Production
+
+Sistem mendukung format import yang disediakan modul production attendance import.
+
+Data yang tidak memiliki NIPEG pada master karyawan akan ditolak dan tidak membuat AttendanceLog.
+
+## Instalasi
+
+Clone/copy source project ke server:
+
+```bash
+git clone <repository-url> sistem-absensi-inti
+cd sistem-absensi-inti
+```
+
+Install dependency:
+
+```bash
+composer install --no-dev --optimize-autoloader
+```
+
+Siapkan environment:
+
+```bash
+cp .env.example .env
+php artisan key:generate
+```
+
+Atur koneksi database pada `.env`, kemudian:
+
+```bash
+php artisan migrate --force
+```
+
+Jika deployment menggunakan asset frontend:
+
+```bash
+npm install
+npm run build
+```
+
+## Konfigurasi Production
+
+Minimal:
+
+```env
+APP_ENV=production
+APP_DEBUG=false
+```
+
+Pastikan `APP_KEY`, database, URL aplikasi, dan konfigurasi server sudah benar.
+
+Setelah deployment:
+
+```bash
+php artisan optimize:clear
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+```
+
+## Preflight
+
+Sebelum go-live:
+
+```bash
+php artisan production:preflight
+```
+
+Untuk pengecekan tanpa koneksi database:
+
+```bash
+php artisan production:preflight --no-db
+```
+
+Mode `--no-db` hanya digunakan untuk pemeriksaan yang memang tidak membutuhkan koneksi database.
+
+## Testing
+
+Jalankan seluruh test:
+
+```bash
+php artisan test
+```
+
+Target release:
+
+```text
+0 failed
+```
+
+Sebelum deployment production, test suite harus dijalankan setelah migration dan source final berada pada commit/release yang akan digunakan.
+
+## Database Backup
+
+Sebelum migration/deployment production:
+
+```bash
+mysqldump -u <username> -p absensi_inti > absensi_inti_backup_before_release.sql
+```
+
+Simpan backup di lokasi terpisah dari server aplikasi.
+
+## Deployment Checklist
+
+- [ ] Backup database.
+- [ ] Pastikan source release sudah benar.
+- [ ] Pastikan `.env` production tidak ikut repository/package.
+- [ ] `APP_ENV=production`.
+- [ ] `APP_DEBUG=false`.
+- [ ] Dependency production terpasang.
+- [ ] Migration status sudah benar.
+- [ ] `php artisan production:preflight` PASS.
+- [ ] `php artisan test` PASS.
+- [ ] Cache production dibuat ulang.
+- [ ] Permission `storage` dan `bootstrap/cache` benar.
+- [ ] Login Karyawan berhasil.
+- [ ] Login VP berhasil.
+- [ ] Login HR berhasil.
+- [ ] UAT pengajuan → VP → HR berhasil.
+- [ ] UAT Setujui/Tolak VP berhasil.
+- [ ] Riwayat Karyawan dan Riwayat VP berhasil.
+- [ ] Import karyawan berhasil.
+- [ ] Import absensi berhasil.
+- [ ] Backup database tersedia.
+
+## Rollback
+
+Jika release perlu dikembalikan:
+
+1. Hentikan proses deployment.
+2. Simpan log/error yang terjadi.
+3. Kembalikan source ke release sebelumnya.
+4. Jangan menjalankan `migrate:fresh` pada production.
+5. Jika migration release menyebabkan perubahan schema yang tidak kompatibel, gunakan prosedur rollback migration yang telah diuji atau restore database backup sesuai runbook.
+6. Bersihkan dan bangun ulang cache:
+
+```bash
+php artisan optimize:clear
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+```
+
+7. Jalankan preflight.
+8. Lakukan smoke test login dan transaksi utama.
+
+## Struktur Konseptual
+
+```text
+Absensi
+   ↓
+Timesheet
+   ↓
+Pengajuan Lembur
+   ↓
+Validasi Policy + Presensi
+   ↓
+VP Divisi
+   ├── Tolak
+   └── Setujui
+          ↓
+         HR
+       ├── Tolak
+       └── Verifikasi
+              ↓
+       Official Overtime Record
+```
+
+## Catatan Release
+
+Release v1.0 ditujukan sebagai baseline production setelah:
+- seluruh automated test lulus;
+- migration production tervalidasi;
+- production preflight lulus;
+- UAT Karyawan/VP/HR selesai;
+- backup database tersedia;
+- konfigurasi production diverifikasi.
+
+## Prinsip Operasional
+
+Untuk perubahan berikutnya:
+
+1. Jangan langsung mengubah source production.
+2. Buat perubahan di branch/development.
+3. Tambahkan atau perbarui automated test.
+4. Jalankan seluruh test suite.
+5. Jalankan preflight.
+6. Lakukan UAT.
+7. Backup database.
+8. Baru deploy.
+
+**Baseline v1.0 sebaiknya dikunci setelah sign-off production.**

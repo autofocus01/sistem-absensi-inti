@@ -6,6 +6,7 @@ use App\Http\Requests\StoreOvertimeRequest;
 use App\Models\AttendanceLog;
 use App\Models\OvertimeSubmission;
 use App\Services\Audit\AuditLogService;
+use App\Services\Demo\DemoClock;
 use App\Services\Overtime\OvertimeCalculationService;
 use App\Services\Overtime\OvertimeEligibilityService;
 use App\Services\Overtime\OvertimeLimitService;
@@ -25,6 +26,7 @@ class OvertimeController extends Controller
         private readonly OvertimeEligibilityService $eligibilityService,
         private readonly OvertimeLimitService $limitService,
         private readonly AuditLogService $audit,
+        private readonly DemoClock $clock,
     ) {
     }
 
@@ -52,7 +54,7 @@ class OvertimeController extends Controller
 
         $date = isset($draft['date'])
             ? Carbon::parse($draft['date'])
-            : Carbon::now('Asia/Jakarta');
+            : $this->clock->now();
 
         $attendance = AttendanceLog::query()
             ->where('employee_id', $employee->id)
@@ -90,6 +92,17 @@ class OvertimeController extends Controller
             ? $normalEnd->format('H:i')
             : $clockIn->format('H:i');
 
+        $previewStart = $policy['day_type'] === 'WORKDAY'
+            ? $normalEnd
+            : $clockIn;
+
+        $previewCalculation = $this->calculator->calculate(
+            $date,
+            $previewStart,
+            $clockOut,
+            $policy
+        );
+
         $draft = $draft ?: [
             'date' => $date->toDateString(),
             'clock_in' => $attendance->jam_masuk,
@@ -100,6 +113,11 @@ class OvertimeController extends Controller
             'end_time' => $clockOut->format('H:i'),
             'actual_work_minutes' => $actualWorkMinutes,
             'minimum_minutes' => (int) ($policy['minimum_minutes'] ?? 30),
+            'maximum_minutes_event' => (int) ($policy['maximum_minutes_event'] ?? 0),
+            'actual_overtime_minutes' => (int) ($previewCalculation['actual_minutes'] ?? 0),
+            'rounded_overtime_minutes' => (int) ($previewCalculation['rounded_minutes'] ?? 0),
+            'recognized_overtime_minutes' => (int) ($previewCalculation['recognized_minutes'] ?? 0),
+            'excess_minutes' => (int) ($previewCalculation['excess_minutes'] ?? 0),
         ];
 
         return view('overtime.index', [
@@ -326,32 +344,61 @@ class OvertimeController extends Controller
                     ], 422);
                 }
 
-                // Pengajuan tidak boleh mengklaim waktu melewati Clock-out aktual.
-                if ($end->greaterThan($actualEnd)) {
+                /*
+                 * Evidence presensi adalah sumber kebenaran.
+                 *
+                 * Request tidak boleh memilih interval lembur yang berbeda
+                 * dari interval yang dibuktikan oleh AttendanceLog. Jika
+                 * dibiarkan, estimated_hours dapat 30 menit sementara
+                 * recognized_minutes dihitung dari 60 menit evidence aktual.
+                 */
+                if (
+                    $start->format('H:i') !== $actualStart->format('H:i')
+                    || $end->format('H:i') !== $actualEnd->format('H:i')
+                ) {
                     return response()->json([
-                        'message' => 'Jam selesai pengajuan lembur tidak boleh melewati waktu Clock-out aktual (' .
-                            $attendance->jam_pulang . ').',
-                    ], 422);
-                }
-
-                // Hari kerja dimulai dari 16:30; weekend/libur dimulai dari Clock-in aktual.
-                if ($start->lessThan($actualStart)) {
-                    return response()->json([
-                        'message' => 'Jam mulai lembur tidak boleh lebih awal dari jam kerja normal (' .
-                            $actualStart->format('H:i') . ').',
+                        'message' => 'Rentang waktu lembur harus sama dengan evidence presensi aktual: ' .
+                            $actualStart->format('H:i') . ' - ' .
+                            $actualEnd->format('H:i') . '.',
+                        'attendance' => [
+                            'jam_masuk' => $attendance->jam_masuk,
+                            'jam_pulang' => $attendance->jam_pulang,
+                            'overtime_start' => $actualStart->format('H:i'),
+                            'overtime_end' => $actualEnd->format('H:i'),
+                        ],
                     ], 422);
                 }
 
                 /*
-                 * Perhitungan lembur tetap terpisah dari
-                 * eligibility Band.
+                 * Setelah evidence tervalidasi, gunakan nilai server-side
+                 * untuk persistence dan calculation. Jangan gunakan kembali
+                 * input client sebagai sumber durasi.
                  */
+                $start = $actualStart->copy();
+                $end = $actualEnd->copy();
+
                 $calculation = $this->calculator->calculate(
                     $date,
                     $actualStart,
                     $actualEnd,
                     $policy
                 );
+
+                /*
+                 * Maximum event adalah CAP OT yang diakui, bukan hard reject.
+                 * Jika actual OT melebihi batas, bagian sampai batas maksimum
+                 * tetap dapat diajukan. Selisihnya disimpan sebagai excess dan
+                 * tidak ikut quota karena quota selalu memakai recognized_minutes.
+                 */
+                if (
+                    $calculation['eligibility'] !== 'ELIGIBLE'
+                    || (int) $calculation['recognized_minutes'] <= 0
+                ) {
+                    return response()->json([
+                        'message' => 'Interval presensi aktual belum memenuhi minimum lembur yang berlaku.',
+                        'calculation' => $calculation,
+                    ], 422);
+                }
 
                 /*
                  * Band 2/3 eligible mengajukan,
@@ -381,8 +428,8 @@ class OvertimeController extends Controller
 
                     'overtime_date' => $date->toDateString(),
 
-                    'start_time' => $request->start_time,
-                    'end_time' => $request->end_time,
+                    'start_time' => $start->format('H:i:s'),
+                    'end_time' => $end->format('H:i:s'),
 
                     'estimated_hours' =>
                         round(
@@ -432,10 +479,24 @@ class OvertimeController extends Controller
                     'recognized_minutes' =>
                         $calculation['recognized_minutes'],
 
+                    'rounded_minutes' =>
+                        $calculation['rounded_minutes'],
+
+                    'excess_minutes' =>
+                        $calculation['excess_minutes'],
+
+                    'quota_reserved_minutes' =>
+                        $calculation['recognized_minutes'],
+
+                    'anomaly_codes' =>
+                        $calculation['excess_minutes'] > 0
+                            ? ['EXCESS_OVERTIME']
+                            : null,
+
                     /*
-                     * Eligibility berasal dari Band Code.
+                     * Eligibility berasal dari hasil calculation.
                      */
-                    'eligibility_status' => 'ELIGIBLE',
+                    'eligibility_status' => $calculation['eligibility'],
 
                     'status' => 'PENDING_VP',
                 ])->save();
@@ -462,7 +523,9 @@ class OvertimeController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' =>
-                        'Pengajuan lembur berhasil dikirim ke VP Divisi.',
+                        $calculation['excess_minutes'] > 0
+                            ? 'Pengajuan lembur sebesar ' . ($calculation['recognized_minutes'] / 60) . ' jam berhasil dikirim ke VP Divisi. Excess ' . ($calculation['excess_minutes'] / 60) . ' jam tidak diperhitungkan ke quota.'
+                            : 'Pengajuan lembur berhasil dikirim ke VP Divisi.',
                     'data' =>
                         $overtime->load('division'),
                     'calculation' =>
@@ -553,8 +616,9 @@ class OvertimeController extends Controller
                 'user.employee.division',
                 'division',
                 'attendanceLog',
+                'hrReturnedBy',
             ])
-            ->where('status', 'PENDING_VP')
+            ->whereIn('status', ['PENDING_VP', 'RETURNED_TO_VP'])
             ->where(
                 'division_id',
                 $employee->division_id
@@ -571,7 +635,7 @@ class OvertimeController extends Controller
     ) {
         $request->validate([
             'action' => 'required|in:APPROVE,REJECT',
-            'notes' => 'nullable|string|max:255',
+            'notes' => 'nullable|string|max:1000',
         ]);
 
         $vp = $request->user();
@@ -602,7 +666,9 @@ class OvertimeController extends Controller
                     403
                 );
 
-                if ($overtime->status !== 'PENDING_VP') {
+                $isReturnedForReverification = $overtime->status === 'RETURNED_TO_VP';
+
+                if (! in_array($overtime->status, ['PENDING_VP', 'RETURNED_TO_VP'], true)) {
                     abort(
                         409,
                         'Pengajuan sudah diproses sebelumnya dan tidak dapat diproses ulang.'
@@ -628,28 +694,32 @@ class OvertimeController extends Controller
 
                 $before = $overtime->toArray();
 
+                $now = now();
                 $overtime->forceFill([
                     'status' =>
                         $approved
                             ? 'APPROVED_VP'
                             : 'REJECTED_VP',
 
-                    'vp_approver_id' =>
-                        $vp->id,
+                    'vp_approver_id' => $vp->id,
+                    'vp_approved_at' => $now,
+                ]);
 
-                    'vp_approved_at' =>
-                        now(),
+                if ($isReturnedForReverification) {
+                    $overtime->vp_reverified_at = $now;
+                    $overtime->vp_reverification_notes = $request->notes;
+                } else {
+                    $overtime->vp_notes = $request->notes;
+                }
 
-                    'vp_notes' =>
-                        $request->notes,
-                ])->save();
+                $overtime->save();
 
                 $fresh = $overtime->fresh();
 
                 $this->audit->record(
-                    $approved
-                        ? 'VP_APPROVED'
-                        : 'VP_REJECTED',
+                    $isReturnedForReverification
+                        ? ($approved ? 'VP_REVERIFIED' : 'VP_REJECTED_AFTER_HR_RETURN')
+                        : ($approved ? 'VP_APPROVED' : 'VP_REJECTED'),
                     $fresh,
                     $before,
                     $fresh->toArray(),
@@ -662,6 +732,9 @@ class OvertimeController extends Controller
 
         return response()->json([
             'success' => true,
+            'message' => $overtime->vp_reverified_at
+                ? ($overtime->status === 'APPROVED_VP' ? 'Pengajuan berhasil diverifikasi ulang dan dikirim kembali ke HR.' : 'Pengajuan ditolak setelah verifikasi ulang VP.')
+                : ($overtime->status === 'APPROVED_VP' ? 'Pengajuan lembur disetujui VP.' : 'Pengajuan lembur ditolak VP.'),
             'data' => $overtime,
         ]);
     }
@@ -692,8 +765,8 @@ class OvertimeController extends Controller
         string $id
     ) {
         $request->validate([
-            'action' => 'required|in:VERIFY,REJECT',
-            'notes' => 'nullable|string|max:255',
+            'action' => 'required|in:VERIFY,REJECT,RETURN_TO_VP',
+            'notes' => 'nullable|string|max:1000',
         ]);
 
         $hr = $request->user();
@@ -717,8 +790,12 @@ class OvertimeController extends Controller
                     );
                 }
 
-                $verified =
-                    $request->action === 'VERIFY';
+                if ($request->action === 'RETURN_TO_VP' && blank($request->notes)) {
+                    abort(422, 'Alasan anomaly wajib diisi saat pengajuan dikembalikan ke VP.');
+                }
+
+                $verified = $request->action === 'VERIFY';
+                $returnedToVp = $request->action === 'RETURN_TO_VP';
 
                 if (
                     $verified
@@ -736,28 +813,31 @@ class OvertimeController extends Controller
 
                 $before = $overtime->toArray();
 
+                $now = now();
                 $overtime->forceFill([
-                    'status' =>
-                        $verified
-                            ? 'VERIFIED_HR'
-                            : 'REJECTED_HR',
+                    'status' => $returnedToVp
+                        ? 'RETURNED_TO_VP'
+                        : ($verified ? 'VERIFIED_HR' : 'REJECTED_HR'),
+                    'hr_notes' => $returnedToVp ? $overtime->hr_notes : $request->notes,
+                ]);
 
-                    'hr_verifier_id' =>
-                        $hr->id,
+                if ($returnedToVp) {
+                    $overtime->hr_returned_by_id = $hr->id;
+                    $overtime->hr_returned_at = $now;
+                    $overtime->hr_return_reason = $request->notes;
+                } else {
+                    $overtime->hr_verifier_id = $hr->id;
+                    $overtime->hr_verified_at = $now;
+                }
 
-                    'hr_verified_at' =>
-                        now(),
-
-                    'hr_notes' =>
-                        $request->notes,
-                ])->save();
+                $overtime->save();
 
                 $fresh = $overtime->fresh();
 
                 $this->audit->record(
-                    $verified
-                        ? 'HR_VERIFIED'
-                        : 'HR_REJECTED',
+                    $returnedToVp
+                        ? 'HR_RETURNED_TO_VP'
+                        : ($verified ? 'HR_VERIFIED' : 'HR_REJECTED'),
                     $fresh,
                     $before,
                     $fresh->toArray(),
@@ -770,6 +850,9 @@ class OvertimeController extends Controller
 
         return response()->json([
             'success' => true,
+            'message' => $overtime->status === 'RETURNED_TO_VP'
+                ? 'Pengajuan dikembalikan ke VP untuk verifikasi ulang.'
+                : ($overtime->status === 'VERIFIED_HR' ? 'Pengajuan lembur berhasil diverifikasi final oleh HR.' : 'Pengajuan lembur ditolak HR.'),
             'data' => $overtime,
         ]);
     }

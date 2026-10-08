@@ -108,3 +108,28 @@ test('formatMinutes konsisten untuk timesheet', function () {
         ->and($service->formatMinutes(90))
         ->toBe('1j 30m');
 });
+
+test('returned to vp dihitung sebagai antrean VP, bukan official atau antrean HR', function () {
+    [$user, $employee, $division] = reportingEmployee();
+
+    testPersistOvertimeSubmission([
+        'user_id' => $user->id,
+        'division_id' => $division->id,
+        'overtime_date' => '2026-09-25',
+        'start_time' => '16:30',
+        'end_time' => '17:30',
+        'estimated_hours' => 1.0,
+        'actual_minutes' => 60,
+        'recognized_minutes' => 60,
+        'eligibility_status' => 'ELIGIBLE',
+        'category' => 'hari_kerja',
+        'reason' => 'Test return to VP',
+        'status' => 'RETURNED_TO_VP',
+    ]);
+
+    $service = app(OvertimeReportingService::class);
+
+    expect($service->pendingVpMinutes(2026, 9, $division->id))->toBe(60);
+    expect($service->pendingHrMinutes(2026, 9, $division->id))->toBe(0);
+    expect($service->officialMinutes(2026, 9, $division->id))->toBe(0);
+});

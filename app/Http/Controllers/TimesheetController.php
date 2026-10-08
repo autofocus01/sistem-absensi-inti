@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AttendanceLog;
 use App\Models\Employee;
 use App\Services\Overtime\OvertimeReportingService;
+use App\Services\Period\PeriodOptionsService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,7 +14,8 @@ use Illuminate\Pagination\LengthAwarePaginator;
 class TimesheetController extends Controller
 {
     public function __construct(
-        private readonly OvertimeReportingService $overtimeReportingService
+        private readonly OvertimeReportingService $overtimeReportingService,
+        private readonly PeriodOptionsService $periodOptions,
     ) {
     }
 
@@ -38,22 +40,13 @@ class TimesheetController extends Controller
          * PERIODE
          * ============================================================
          *
-         * Mendukung:
-         * ?month=9&year=2026
-         * atau:
+         * Standar seluruh filter periode aplikasi:
          * ?bulan=9&tahun=2026
          */
-        $month = (int) (
-            $request->input('month')
-            ?? $request->input('bulan')
-            ?? now()->month
-        );
-
-        $year = (int) (
-            $request->input('year')
-            ?? $request->input('tahun')
-            ?? now()->year
-        );
+        // bulan/tahun adalah parameter standar; month/year dipertahankan sebagai
+        // alias kompatibilitas untuk URL lama dan integrasi internal.
+        $month = (int) $request->input('bulan', $request->input('month', now()->month));
+        $year = (int) $request->input('tahun', $request->input('year', now()->year));
 
         if ($month < 1 || $month > 12) {
             $month = now()->month;
@@ -272,6 +265,7 @@ class TimesheetController extends Controller
                     'employee_id' => $employee->id,
                     'employee_name' => $employee->nama,
                     'employee_nipeg' => $employee->nipeg,
+                    'employee_band' => $employee->band_code,
                     'employee_division' => $employee->division?->nama,
 
                     'tanggal' => $date->copy(),
@@ -316,11 +310,7 @@ class TimesheetController extends Controller
         /*
          * Tahun tersedia untuk filter periode.
          */
-        $currentYear = now()->year;
-
-        $availableYears = collect(
-            range($currentYear - 3, $currentYear + 1)
-        )->values()->all();
+        $availableYears = $this->periodOptions->availableYears()->all();
 
         /*
          * Daftar divisi untuk HR filter.
