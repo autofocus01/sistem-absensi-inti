@@ -113,3 +113,32 @@ it('normalizes Excel-like numeric NIP and preserves real Excel row number after 
 
     expect(session('attendance_import_path'))->not->toBeNull();
 });
+
+/*
+|--------------------------------------------------------------------------
+| REGRESSION: commit import harus menyinkronkan AttendanceRecap untuk
+| periode yang terpengaruh. Sebelumnya upsertAttendance dipanggil tanpa
+| parameter by-reference $syncPeriods, sehingga syncPeriod tidak pernah
+| dijalankan dan rekap HR menampilkan data stale setelah import.
+|--------------------------------------------------------------------------
+*/
+it('syncs attendance recap after a successful import commit', function () {
+    Storage::fake('local');
+    $user = makeHrImportUser();
+    $employee = makeImportEmployee();
+
+    $csv = "NIP,Tanggal,Jam Masuk,Jam Pulang\n{$employee->nipeg},2026-09-24,07:30,16:30\n";
+    $file = UploadedFile::fake()->createWithContent('absensi.csv', $csv);
+
+    $this->actingAs($user)->post(route('attendance.import.production.preview'), ['file' => $file])->assertOk();
+    $this->actingAs($user)->post(route('attendance.import.production.commit'))->assertRedirect(route('attendance.import.production'));
+
+    $recap = \App\Models\AttendanceRecap::query()
+        ->where('employee_id', $employee->id)
+        ->where('tahun', 2026)
+        ->where('bulan', 9)
+        ->first();
+
+    expect($recap)->not->toBeNull('AttendanceRecap harus tersinkron setelah commit import.');
+    expect($recap->hadir)->toBeGreaterThanOrEqual(1);
+});

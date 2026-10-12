@@ -64,8 +64,12 @@ class OvertimeCalculationService
             ? $roundedMinutes
             : min($roundedMinutes, $maximumEvent);
 
+        // Excess is measured against the rounded duration that would otherwise
+        // have been recognized. Using roundedMinutes (not actualMinutes) keeps
+        // excess consistent with rounding: floor(305 min @30) = 300, and a
+        // 240-minute maximum yields 240 recognized + 60 excess, never 65.
         $excessMinutes = $maximumEvent !== null
-            ? max(0, $actualMinutes - $maximumEvent)
+            ? max(0, $roundedMinutes - $recognizedMinutes)
             : 0;
 
         $eligibility = $recognizedMinutes >= $minimum

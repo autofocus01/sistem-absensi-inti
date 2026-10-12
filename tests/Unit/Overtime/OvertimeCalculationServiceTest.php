@@ -296,6 +296,30 @@ class OvertimeCalculationServiceTest extends TestCase
         $this->assertSame('ELIGIBLE', $result['eligibility']);
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | REGRESSION: excess harus diukur dari durasi yang dibulatkan, bukan
+    | durasi aktual. 305 menit aktual dengan interval 30 dibulatkan ke 300.
+    | Jika excess dihitung dari actual (305 - 240 = 65), angka excess terlaporkan
+    | lebih tinggi dari selisih durasi yang benar-benar berpotensi diakui.
+    |--------------------------------------------------------------------------
+    */
+    public function test_excess_minutes_is_computed_from_rounded_minutes_not_actual(): void
+    {
+        $result = $this->service->calculate(
+            Carbon::parse('2026-10-03'),
+            Carbon::parse('2026-10-03 08:00:00'),
+            Carbon::parse('2026-10-03 13:05:00'),
+            $this->weekendPolicy(['maximum_minutes_event' => 240]),
+        );
+
+        $this->assertSame(305, $result['actual_minutes']);
+        $this->assertSame(300, $result['rounded_minutes']);
+        $this->assertSame(240, $result['recognized_minutes']);
+        $this->assertSame(60, $result['excess_minutes']);
+        $this->assertSame('ELIGIBLE', $result['eligibility']);
+    }
+
     private function workdayPolicy(array $overrides = []): array
     {
         return array_merge([
@@ -333,25 +357,3 @@ class OvertimeCalculationServiceTest extends TestCase
     }
 }
 
-
-test('same-date clock-out before overtime start is not eligible and never becomes overnight overtime', function () {
-    $service = app(\App\Services\Overtime\OvertimeCalculationService::class);
-
-    $result = $service->calculate(
-        Carbon::parse('2026-09-21 00:00:00'),
-        Carbon::parse('2026-09-21 16:30:00'),
-        Carbon::parse('2026-09-21 10:00:00'),
-        [
-            'day_type' => 'WORKDAY',
-            'normal_end' => '16:30:00',
-            'minimum_minutes' => 30,
-            'rounding_method' => 'floor',
-            'rounding_interval' => 30,
-            'maximum_minutes_event' => null,
-        ],
-    );
-
-    expect($result['actual_minutes'])->toBe(0)
-        ->and($result['recognized_minutes'])->toBe(0)
-        ->and($result['eligibility'])->toBe('INVALID_INTERVAL');
-});

@@ -237,7 +237,8 @@ class ProductionAttendanceImportService
         int $line,
         array $row,
         int &$success,
-        array &$errors
+        array &$errors,
+        array &$syncPeriods
     ): void {
         $employee = $this->findEmployeeByNip($data['nipeg']);
         if (! $employee) {
