@@ -9,10 +9,13 @@ use App\Models\Employee;
 use App\Models\HolidayCalendar;
 use App\Services\Overtime\OvertimeReportingService;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 
 class ProductionReportService
 {
-    public function __construct(private readonly OvertimeReportingService $overtime) {}
+    public function __construct(private readonly OvertimeReportingService $overtime)
+    {
+    }
 
     public function period(int $year, int $month, ?int $divisionId = null): array
     {
@@ -25,8 +28,8 @@ class ProductionReportService
             ->orderBy('nama')
             ->get();
 
-        // AttendanceLog adalah sumber fakta presensi. Jangan menjadikan AttendanceRecap
-        // sebagai sumber utama laporan karena recap bisa belum diregenerasi setelah import.
+        // AttendanceLog adalah sumber fakta presensi; AttendanceRecap dapat tertinggal
+        // jika belum diregenerasi setelah import.
         $logsByEmployee = AttendanceLog::query()
             ->with('employee.division')
             ->whereBetween('tanggal', [$start->toDateString(), $end->toDateString()])
@@ -41,7 +44,7 @@ class ProductionReportService
             ->get()
             ->groupBy('employee_id');
 
-        // Hari kerja laporan = Senin-Jumat, dikurangi kalender libur nasional aktif.
+        // Hari libur nasional aktif tidak dihitung sebagai hari kerja normal.
         $holidayDates = HolidayCalendar::query()
             ->whereBetween('tanggal', [$start->toDateString(), $end->toDateString()])
             ->where('is_active', true)
@@ -56,21 +59,43 @@ class ProductionReportService
         $pendingVp = $this->overtime->pendingVpMinutes($year, $month, $divisionId);
         $pendingHr = $this->overtime->pendingHrMinutes($year, $month, $divisionId);
 
-        $rows = $employees->map(function (Employee $employee) use ($logsByEmployee, $workingDays, $year, $month) {
-            $logs = $logsByEmployee->get($employee->id, collect());
+        $rows = $employees->map(function (Employee $employee) use (
+            $logsByEmployee,
+            $workingDays,
+            $holidayDates,
+            $year,
+            $month
+        ) {
+            $allLogs = $logsByEmployee->get($employee->id, collect());
 
-            $hadir = $logs
-                ->filter(fn (AttendanceLog $log) => (bool) $log->jam_masuk)
-                ->count();
+            /*
+             * Klasifikasi yang dikunci:
+             * - Hadir normal hanya dihitung pada Senin-Jumat yang bukan libur nasional.
+             * - Log Sabtu/Minggu/libur nasional tidak menambah angka Hadir.
+             * - Lembur resmi/pending dihitung dari workflow OvertimeSubmission melalui
+             *   OvertimeReportingService, bukan dari keberadaan AttendanceLog saja.
+             * Dengan demikian satu log weekend tidak otomatis menjadi kehadiran normal.
+             */
+            $normalWorkLogs = $allLogs->filter(function (AttendanceLog $log) use ($holidayDates) {
+                if (! $log->jam_masuk || ! $log->tanggal) {
+                    return false;
+                }
 
-            $telatHari = $logs
+                $date = Carbon::parse($log->tanggal)->toDateString();
+
+                return Carbon::parse($date)->isWeekday()
+                    && ! $holidayDates->has($date);
+            });
+
+            $hadir = $normalWorkLogs->count();
+            $telatHari = $normalWorkLogs
                 ->filter(fn (AttendanceLog $log) => $log->menitTelat() > 0)
                 ->count();
+            $menitTelat = (int) $normalWorkLogs->sum(
+                fn (AttendanceLog $log) => $log->menitTelat()
+            );
 
-            $menitTelat = $logs->sum(fn (AttendanceLog $log) => $log->menitTelat());
-
-            // Laporan produksi tidak boleh bergantung pada AttendanceRecap yang mungkin
-            // belum diregenerasi setelah import. AttendanceLog menjadi sumber fakta utama.
+            // Alpha hanya dibandingkan dengan hari kerja normal yang dijadwalkan.
             $alpha = max(0, $workingDays - $hadir);
             $persenKehadiran = $workingDays > 0
                 ? round(min(100, ($hadir / $workingDays) * 100), 1)
@@ -86,7 +111,11 @@ class ProductionReportService
                 'menit_telat' => $menitTelat,
                 'alpha' => $alpha,
                 'persen_kehadiran' => $persenKehadiran,
-                'official_ot_minutes' => $this->overtime->monthlyOfficialMinutes($employee->id, $year, $month),
+                'official_ot_minutes' => $this->overtime->monthlyOfficialMinutes(
+                    $employee->id,
+                    $year,
+                    $month
+                ),
             ];
         });
 
@@ -98,6 +127,7 @@ class ProductionReportService
             'employees' => $employees,
             'divisions' => Division::query()->orderBy('nama')->get(),
             'rows' => $rows,
+            // Riwayat log tetap dikembalikan untuk audit; hanya agregasi Hadir yang dibatasi.
             'logs' => $logsByEmployee->flatten(),
             'recaps' => AttendanceRecap::query()
                 ->where('tahun', $year)
@@ -126,9 +156,9 @@ class ProductionReportService
     }
 
     /**
-     * Hitung hari kerja Senin-Jumat dikurangi hari libur nasional aktif.
+     * Hitung hari kerja normal: Senin-Jumat dikurangi hari libur nasional aktif.
      */
-    private function workingDays(Carbon $start, Carbon $end, $holidayDates): int
+    private function workingDays(Carbon $start, Carbon $end, Collection $holidayDates): int
     {
         $days = 0;
 

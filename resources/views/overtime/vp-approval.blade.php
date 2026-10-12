@@ -10,6 +10,8 @@
     }
 
     .vp-card {
+        min-width: 0;
+        max-width: 100%;
         border: 1px solid rgba(15, 23, 42, .07);
         box-shadow: 0 1px 3px rgba(15, 23, 42, .04);
     }
@@ -48,18 +50,47 @@
     }
 
     .vp-table-wrap {
+        display: block;
         width: 100%;
+        max-width: 100%;
+        min-width: 0;
         overflow-x: auto;
+        overflow-y: hidden;
         overscroll-behavior-x: contain;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: thin;
+        border-top: 1px solid rgba(15, 23, 42, .05);
     }
 
     .vp-table {
         width: 100%;
         min-width: 1180px;
+        table-layout: auto;
         border-collapse: separate;
         border-spacing: 0;
+    }
+
+    .vp-table th,
+    .vp-table td {
+        vertical-align: top;
+    }
+
+    .vp-duration-main {
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .vp-duration-meta {
+        margin-top: 5px;
+        font-size: 11px;
+        line-height: 1.45;
+        color: var(--on-surface-variant, #64748b);
+        white-space: nowrap;
+    }
+
+    .vp-duration-excess {
+        color: #b45309;
+        font-weight: 700;
     }
 
     .vp-table tbody tr {
@@ -159,6 +190,83 @@
             transition: none;
         }
     }
+
+
+    /* R3: enforce predictable table sizing across desktop, tablet and mobile */
+    .vp-approval-page,
+    .vp-approval-page > *,
+    .vp-approval-page section,
+    .vp-approval-page .vp-card,
+    .vp-approval-page .vp-table-wrap {
+        box-sizing: border-box;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .vp-approval-page .vp-table-wrap {
+        width: 100% !important;
+        overflow-x: auto !important;
+        overflow-y: hidden;
+        scrollbar-width: thin;
+        -webkit-overflow-scrolling: touch;
+        isolation: isolate;
+    }
+
+    .vp-approval-page table.vp-table {
+        display: table !important;
+        width: 100% !important;
+        min-width: 1120px !important;
+        max-width: none !important;
+        table-layout: auto !important;
+        border-collapse: separate !important;
+    }
+
+    .vp-approval-page .vp-table thead {
+        display: table-header-group !important;
+    }
+
+    .vp-approval-page .vp-table tbody {
+        display: table-row-group !important;
+    }
+
+    .vp-approval-page .vp-table tr {
+        display: table-row !important;
+    }
+
+    .vp-approval-page .vp-table th,
+    .vp-approval-page .vp-table td {
+        display: table-cell !important;
+        box-sizing: border-box;
+        vertical-align: top;
+    }
+
+    .vp-approval-page .vp-table th:nth-child(1) { min-width: 105px; }
+    .vp-approval-page .vp-table th:nth-child(2) { min-width: 190px; }
+    .vp-approval-page .vp-table th:nth-child(3) { min-width: 160px; }
+    .vp-approval-page .vp-table th:nth-child(4) { min-width: 140px; }
+    .vp-approval-page .vp-table th:nth-child(5) { min-width: 220px; }
+    .vp-approval-page .vp-table th:nth-child(6) { min-width: 145px; }
+    .vp-approval-page .vp-table th:nth-child(7) { min-width: 150px; }
+
+    .vp-approval-page .vp-table td[colspan="7"] {
+        width: 100%;
+        text-align: center;
+    }
+
+    @media (max-width: 1023px) {
+        .vp-approval-page { width: 100%; }
+        .vp-approval-page .vp-table-wrap { margin-inline: 0; }
+        .vp-approval-page .vp-table { min-width: 1080px !important; }
+    }
+
+    @media (max-width: 767px) {
+        .vp-approval-page .vp-card { border-radius: 14px; }
+        .vp-approval-page .vp-table { min-width: 1040px !important; }
+        .vp-approval-page .vp-table th,
+        .vp-approval-page .vp-table td { padding: 10px 12px; }
+        .vp-approval-page .vp-mobile-note { display: flex !important; }
+    }
+
 </style>
 @endsection
 
@@ -814,9 +922,30 @@ async function loadVpPendingData() {
                 '-';
 
 
-            const estimatedHours =
-                item.estimated_hours ||
-                '0';
+            // estimated_hours is the actual submitted interval. The quota and
+            // approval amount must use recognized_minutes, not estimated_hours.
+            const actualMinutes = Number.isFinite(Number(item.estimated_hours))
+                ? Math.max(0, Math.round(Number(item.estimated_hours) * 60))
+                : Math.max(0, Number(item.rounded_minutes ?? 0));
+
+            const recognizedMinutes = Math.max(
+                0,
+                Number(item.recognized_minutes ?? item.recognized_overtime_minutes ?? 0)
+            );
+
+            const excessMinutes = Math.max(
+                0,
+                Number(item.excess_minutes ?? Math.max(0, actualMinutes - recognizedMinutes))
+            );
+
+            const formatHours = minutes => {
+                const value = (Math.max(0, Number(minutes) || 0) / 60);
+                return `${Number.isInteger(value) ? value.toFixed(0) : value.toFixed(2).replace(/0+$/, '').replace(/\\.$/, '')} jam`;
+            };
+
+            const actualDurationLabel = formatHours(actualMinutes);
+            const recognizedDurationLabel = formatHours(recognizedMinutes);
+            const excessDurationLabel = formatHours(excessMinutes);
 
 
             const reason =
@@ -915,17 +1044,19 @@ async function loadVpPendingData() {
                     </td>
 
 
-                    {{-- DURATION --}}
+                    {{-- DURASI AKTUAL, DIAKUI, DAN EXCESS --}}
                     <td class="py-4 px-space-base align-top">
-
-                        <div class="font-title-lg text-title-lg text-secondary">
-                            ${esc(estimatedHours)}
+                        <div class="vp-duration-main font-title-lg text-title-lg text-on-surface">
+                            ${esc(actualDurationLabel)}
                         </div>
-
-                        <div class="mt-1 font-label-sm text-label-sm text-on-surface-variant">
-                            Jam
+                        <div class="vp-duration-meta">
+                            Diakui: <strong>${esc(recognizedDurationLabel)}</strong>
                         </div>
-
+                        ${
+                            excessMinutes > 0
+                                ? `<div class="vp-duration-meta vp-duration-excess">Excess: ${esc(excessDurationLabel)}</div>`
+                                : `<div class="vp-duration-meta">Excess: 0 jam</div>`
+                        }
                     </td>
 
 

@@ -11,7 +11,7 @@
     document.documentElement.dataset.theme = theme;
   })();
 </script>
-<title>Dashboard Direktur Utama - PT. INTI</title>
+<title>Dasbor Direktur Utama - PT. INTI</title>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
 <link href="https://fonts.googleapis.com" rel="preconnect">
 <link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
@@ -161,55 +161,65 @@
     *, *::before, *::after { scroll-behavior:auto !important; transition-duration:0.01ms !important; animation-duration:0.01ms !important; }
   }
 </style>
+<link rel="stylesheet" href="{{ asset('css/p4-uiux-audit.css') }}">
 </head>
 <body class="bg-background font-body-md text-body-md text-on-surface antialiased">
 
-<div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black/40 z-40 hidden lg:hidden"></div>
+<div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black/40 z-40 hidden md:hidden"></div>
 
 <aside id="sidebar" class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col justify-between select-none
-                            transform -translate-x-full transition-transform duration-200 ease-in-out lg:translate-x-0">
-  <div class="flex flex-col">
-    <div class="h-20 px-space-lg flex items-center gap-space-md border-b border-surface-container-low/60">
-      <img src="{{ asset('images/logo-inti.png') }}" alt="PT. INTI" class="h-8 w-auto object-contain">
+                            transform -translate-x-full transition-transform duration-200 ease-in-out md:translate-x-0">
+  <div class="flex flex-col flex-1 min-h-0 overflow-y-auto">
+    <div class="h-20 px-space-lg flex items-center gap-space-md border-b border-surface-container-low/60 shrink-0">
+      <a href="{{ route('dashboard') }}" class="flex items-center focus:outline-none transition-opacity hover:opacity-80" title="Kembali ke Dashboard">
+        <img src="{{ asset('images/logo-inti.png') }}" alt="PT. INTI" class="h-8 w-auto object-contain">
+      </a>
     </div>
     <div class="px-space-md py-space-xs">
       <div class="px-space-sm pb-space-xs flex items-center justify-between">
-        <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Eksekutif &amp; Direksi</span>
-        <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-surface-container-low text-on-surface-variant">BOD</span>
+        <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Portal Direktur Utama</span>
+        <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-surface-container-low text-on-surface-variant">DIREKTUR</span>
       </div>
       <nav class="flex flex-col gap-space-xs">
         <button type="button" onclick="showTab('ringkasan')" id="nav-ringkasan"
-                class="flex items-center px-space-md py-space-sm rounded-lg font-title-sm text-left bg-primary-container text-on-primary">
+                class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm text-left bg-primary-container text-on-primary">
           <span class="material-symbols-outlined text-[18px] mr-2">dashboard</span> Dashboard
         </button>
         <button type="button" onclick="showTab('realtime')" id="nav-realtime"
-                class="flex items-center px-space-md py-space-sm rounded-lg font-title-sm text-left text-on-surface hover:bg-surface-container-low">
+                class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm text-left text-on-surface hover:bg-surface-container-low">
           <span class="material-symbols-outlined text-[18px] mr-2">today</span> Presensi Hari Ini
         </button>
         <button type="button" onclick="showTab('history')" id="nav-history"
-                class="flex items-center px-space-md py-space-sm rounded-lg font-title-sm text-left text-on-surface hover:bg-surface-container-low">
+                class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm text-left text-on-surface hover:bg-surface-container-low">
           <span class="material-symbols-outlined text-[18px] mr-2">history</span> History
         </button>
       </nav>
     </div>
   </div>
 
-  <div class="p-space-base m-space-md rounded-xl bg-surface-container-low flex flex-col gap-space-xs">
-    <div class="flex items-center justify-between">
-      <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Sumber Data</span>
-      <span class="inline-flex items-center gap-1.5 font-label-sm text-label-sm text-on-surface-variant font-semibold">
-        <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>Live
+  <div class="border-t border-surface-container-low p-space-md bg-surface-container-lowest shrink-0">
+    <a href="{{ route('profile.edit') }}" class="flex items-center gap-2 rounded-lg px-1 py-2 text-on-surface hover:bg-surface-container-low transition-colors">
+      <span class="w-8 h-8 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-title-sm shrink-0">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
+      <span class="min-w-0 flex-1">
+        <span class="block font-title-sm text-title-sm truncate">{{ auth()->user()->name }}</span>
+        <span class="block font-body-sm text-body-sm text-on-surface-variant truncate">Direktur Utama</span>
       </span>
+    </a>
+    <div class="flex flex-col gap-1 mt-1">
+      <a href="{{ route('profile.edit') }}" class="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-on-surface hover:bg-surface-container-low"><span class="material-symbols-outlined text-[18px]">account_circle</span>Profil Saya</a>
+      <form method="POST" action="{{ route('logout') }}">
+        @csrf
+        <button type="submit" class="w-full flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-error hover:bg-error/10 text-left"><span class="material-symbols-outlined text-[18px]">logout</span>Keluar</button>
+      </form>
     </div>
-    <span class="font-title-sm text-title-sm text-on-surface">Rekap Absensi Terverifikasi</span>
-    <p class="font-body-sm text-body-sm text-on-surface-variant">Periode {{ $namaBulan }} {{ $tahun }}</p>
+    <div class="mt-2 px-2 pt-2 border-t border-surface-container-low text-[11px] text-on-surface-variant">Rekap Absensi Terverifikasi · {{ $namaBulan }} {{ $tahun }}</div>
   </div>
 </aside>
 
-<div class="lg:pl-72 flex flex-col min-h-screen">
-  <header class="direktur-topbar fixed top-0 left-0 lg:left-72 right-0 h-20 z-30 flex items-center justify-between px-4 md:px-space-xl">
+<div class="md:pl-72 flex flex-col min-h-screen">
+  <header class="direktur-topbar fixed top-0 left-0 md:left-72 right-0 h-20 z-30 flex items-center justify-between px-4 md:px-space-xl">
     <div class="direktur-topbar__brand flex items-center gap-3 min-w-0">
-      <button onclick="toggleSidebar()" class="direktur-topbar__menu lg:hidden p-2 -ml-2 rounded-lg" aria-label="Buka menu">
+      <button onclick="toggleSidebar()" class="direktur-topbar__menu md:hidden p-2 -ml-2 rounded-lg" aria-label="Buka menu">
         <span class="material-symbols-outlined text-[22px]">menu</span>
       </button>
       <span class="material-symbols-outlined direktur-topbar__shield hidden sm:inline text-[19px]">shield</span>
@@ -256,7 +266,7 @@
           <a href="{{ route('profile.edit') }}" class="direktur-user-menu__item block px-4 py-2.5 text-sm">Profil Saya</a>
           <form method="POST" action="{{ route('logout') }}">
             @csrf
-            <button type="submit" class="direktur-user-menu__logout w-full text-left px-4 py-2.5 text-sm">Logout</button>
+            <button type="submit" class="direktur-user-menu__logout w-full text-left px-4 py-2.5 text-sm">Keluar</button>
           </form>
         </div>
       </div>
@@ -639,7 +649,7 @@
         <div class="overflow-x-auto mt-4 direktur-responsive-table">
           <table class="w-full text-left min-w-[1050px]">
             <thead><tr class="bg-surface-container-low text-xs uppercase tracking-wider text-on-surface-variant">
-              <th class="py-3 px-4">Karyawan</th><th class="py-3 px-4">NIPEG</th><th class="py-3 px-4">Band</th><th class="py-3 px-4">Divisi</th><th class="py-3 px-4">Hari Ini</th><th class="py-3 px-4">Kehadiran Bulanan</th><th class="py-3 px-4">Telat</th><th class="py-3 px-4">Anomaly</th>
+              <th class="py-3 px-4">Karyawan</th><th class="py-3 px-4">NIPEG</th><th class="py-3 px-4">Band</th><th class="py-3 px-4">Divisi</th><th class="py-3 px-4">Hari Ini</th><th class="py-3 px-4">Kehadiran Bulanan</th><th class="py-3 px-4">Telat</th><th class="py-3 px-4">Anomali</th>
             </tr></thead>
             <tbody class="divide-y divide-surface-container-low">
               @forelse(($employeePaginator ?? $employeeOverview->take(25)) as $row)
@@ -663,7 +673,7 @@
             <div><h2 class="font-headline-md text-headline-md text-primary">Presensi Hari Ini</h2><p class="text-sm text-on-surface-variant">Snapshot presensi seluruh karyawan pada hari ini.</p></div>
             <span class="px-3 py-1 rounded-full bg-secondary-container text-on-surface text-xs font-semibold">Snapshot · <span id="director-live-date">-- -- ----</span> · <span id="director-live-time">--:--:--</span> WIB</span>
           </div>
-          <div class="overflow-x-auto mt-4 direktur-responsive-table"><table class="w-full text-left min-w-[900px]"><thead><tr class="bg-surface-container-low text-xs uppercase tracking-wider text-on-surface-variant"><th class="py-3 px-4">Karyawan</th><th class="py-3 px-4">Band</th><th class="py-3 px-4">Divisi</th><th class="py-3 px-4">Clock In</th><th class="py-3 px-4">Clock Out</th><th class="py-3 px-4">Status</th></tr></thead><tbody class="divide-y divide-surface-container-low">
+          <div class="overflow-x-auto mt-4 direktur-responsive-table"><table class="w-full text-left min-w-[900px]"><thead><tr class="bg-surface-container-low text-xs uppercase tracking-wider text-on-surface-variant"><th class="py-3 px-4">Karyawan</th><th class="py-3 px-4">Band</th><th class="py-3 px-4">Divisi</th><th class="py-3 px-4">Jam Masuk</th><th class="py-3 px-4">Jam Pulang</th><th class="py-3 px-4">Status</th></tr></thead><tbody class="divide-y divide-surface-container-low">
           @forelse($realtimeRows as $row)<tr><td class="py-3 px-4 font-semibold">{{ $row['nama'] }}<div class="text-xs text-on-surface-variant">{{ $row['nipeg'] }}</div></td><td class="py-3 px-4"><span class="inline-flex px-2 py-0.5 rounded-full bg-primary-container/30 text-primary text-xs font-semibold">{{ $row['band'] !== null ? 'Band ' . $row['band'] : '-' }}</span></td><td class="py-3 px-4">{{ $row['divisi'] }}</td><td class="py-3 px-4">{{ $row['jam_masuk'] ? substr($row['jam_masuk'],0,5) : '--:--' }}</td><td class="py-3 px-4">{{ $row['jam_pulang'] ? substr($row['jam_pulang'],0,5) : '--:--' }}</td><td class="py-3 px-4">{{ $row['status_hari_ini'] }}</td></tr>@empty<tr><td colspan="6" class="py-8 text-center text-on-surface-variant">Belum ada presensi hari ini.</td></tr>@endforelse
           </tbody></table></div>
         </div>

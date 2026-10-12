@@ -11,7 +11,7 @@
     <div>
       <span class="inti-eyebrow">PRESENSI PERSONAL</span>
       <h1 class="inti-title">Absensi Saya</h1>
-      <p class="inti-subtitle">Kelola Clock In, Clock Out, dan lihat riwayat presensi Anda.</p>
+      <p class="inti-subtitle">Catat jam masuk, jam pulang, dan lihat riwayat presensi Anda.</p>
     </div>
     <div class="inti-subtitle">{{ $today->translatedFormat('l, d F Y') }}</div>
   </div>
@@ -33,12 +33,12 @@
       <div class="inti-kpi-meta">Jam kerja normal 07:30–16:30</div>
     </div>
     <div class="inti-card inti-kpi">
-      <div class="inti-kpi-label">Clock In</div>
+      <div class="inti-kpi-label">Jam Masuk</div>
       <div class="inti-kpi-value">{{ $todayAttendance?->jam_masuk ? substr($todayAttendance->jam_masuk, 0, 5) : '--:--' }}</div>
       <div class="inti-kpi-meta">{{ $hasIn ? 'Sudah tercatat' : 'Belum tercatat' }}</div>
     </div>
     <div class="inti-card inti-kpi">
-      <div class="inti-kpi-label">Clock Out</div>
+      <div class="inti-kpi-label">Jam Pulang</div>
       <div class="inti-kpi-value">{{ $todayAttendance?->jam_pulang ? substr($todayAttendance->jam_pulang, 0, 5) : '--:--' }}</div>
       <div class="inti-kpi-meta">{{ $hasOut ? 'Sudah tercatat' : 'Belum tercatat' }}</div>
     </div>
@@ -111,7 +111,7 @@
     <ul style="margin:0;padding-left:1.25rem;line-height:1.8;color:var(--inti-muted)">
       <li>Jam kerja normal Senin–Jumat: <strong>07:30–16:30</strong>.</li>
       <li>Tidak ada grace period. Keterlambatan dihitung dari selisih aktual setelah 07:30.</li>
-      <li>Clock Out mencatat jam pulang aktual; lembur diproses melalui modul Overtime dan otorisasi.</li>
+      <li>Jam pulang mencatat waktu aktual; lembur diproses melalui modul pengajuan lembur dan otorisasi.</li>
     </ul>
   </div>
 
@@ -140,8 +140,8 @@
         <thead>
           <tr>
             <th>Tanggal</th>
-            <th>Clock In</th>
-            <th>Clock Out</th>
+            <th>Jam Masuk</th>
+            <th>Jam Pulang</th>
             <th>Keterlambatan</th>
             <th>Durasi</th>
             <th>Status</th>
@@ -187,7 +187,7 @@
                 <span class="inti-badge inti-badge-warning">Band {{ $prompt['band_code'] }}</span>
             </div>
             <div class="inti-alert inti-alert-info">
-                Clock In <strong>{{ substr($prompt['clock_in'],0,5) }}</strong> · Clock Out <strong>{{ substr($prompt['clock_out'],0,5) }}</strong> ·
+                Jam masuk <strong>{{ substr($prompt['clock_in'],0,5) }}</strong> · Jam pulang <strong>{{ substr($prompt['clock_out'],0,5) }}</strong> ·
                 Jam lembur <strong>{{ $prompt['start_time'] }}–{{ $prompt['end_time'] }}</strong>.
             </div>
             <p class="inti-subtitle" style="margin-top:1rem">Jika <strong>Ya</strong>, sistem membuka halaman pengajuan lembur. Jika <strong>Tidak</strong>, presensi tetap tercatat sebagai hadir dan tidak ada pengajuan lembur dibuat.</p>

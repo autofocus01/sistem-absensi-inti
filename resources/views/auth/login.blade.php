@@ -31,7 +31,7 @@
         </div>
 
         <div class="inti-auth-field">
-            <label for="password">Password</label>
+            <label for="password">Kata sandi</label>
             <input id="password"
                    class="inti-auth-input @error('password') is-invalid @enderror"
                    type="password"
@@ -46,18 +46,18 @@
         <div class="inti-auth-options">
             <label for="remember_me" class="inti-auth-checkbox">
                 <input id="remember_me" type="checkbox" name="remember">
-                <span>{{ __('Remember me') }}</span>
+                <span>Ingat saya</span>
             </label>
 
             @if (Route::has('password.request'))
                 <a class="inti-auth-link" href="{{ route('password.request') }}">
-                    {{ __('Forgot your password?') }}
+                    Lupa kata sandi?
                 </a>
             @endif
         </div>
 
         <button type="submit" class="inti-auth-submit">
-            {{ __('Log in') }}
+            Masuk
         </button>
     </form>
 </x-guest-layout>

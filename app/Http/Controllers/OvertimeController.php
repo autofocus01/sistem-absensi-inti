@@ -40,20 +40,17 @@ class OvertimeController extends Controller
 
         $bandCode = $employee->band_code;
         $eligible = $this->eligibilityService->isEligible($bandCode);
-        $draft = session('overtime.draft');
-
-        // Band 2 dan 3 adalah satu-satunya band yang memiliki hak
-        // mengajukan lembur. Direct access ke halaman pengajuan oleh
-        // band lain harus ditolak, sedangkan Band 2/3 tetap dapat membuka
-        // halaman walaupun presensi hari ini belum lengkap.
         abort_unless(
             $eligible,
             403,
             'Pengajuan lembur hanya tersedia untuk Band Code 2 atau 3.'
         );
 
-        $date = isset($draft['date'])
-            ? Carbon::parse($draft['date'])
+        // AttendanceLog adalah sumber kebenaran. Jangan gunakan nilai waktu
+        // atau hasil kalkulasi lama dari session sebagai evidence terbaru.
+        $sessionDraft = session('overtime.draft');
+        $date = isset($sessionDraft['date'])
+            ? Carbon::parse($sessionDraft['date'])
             : $this->clock->now();
 
         $attendance = AttendanceLog::query()
@@ -75,40 +72,52 @@ class OvertimeController extends Controller
         }
 
         $policy = $this->policyResolver->resolve($date);
-        $clockIn = Carbon::parse($date->toDateString() . ' ' . $attendance->jam_masuk);
-        $clockOut = Carbon::parse($date->toDateString() . ' ' . $attendance->jam_pulang);
-        $normalEnd = Carbon::parse($date->toDateString() . ' ' . ($policy['normal_end'] ?? '16:30:00'));
-        $actualWorkMinutes = max(0, $clockIn->diffInMinutes($clockOut));
+        $dateString = $date->toDateString();
+        $clockIn = Carbon::parse($dateString . ' ' . $attendance->jam_masuk);
+        $clockOut = Carbon::parse($dateString . ' ' . $attendance->jam_pulang);
+        $normalEnd = Carbon::parse($dateString . ' ' . ($policy['normal_end'] ?? '16:30:00'));
+        $actualWorkMinutes = max(0, (int) $clockIn->diffInMinutes($clockOut));
+        $isWorkday = ($policy['day_type'] ?? 'WORKDAY') === 'WORKDAY';
 
-        $available = $policy['day_type'] === 'WORKDAY'
+        // Weekday: perlu melewati 16:30 dan memenuhi minimal 8 jam aktual.
+        // Weekend/libur: aturan minimum mengikuti policy, tanpa gate 8 jam.
+        $available = $isWorkday
             ? $clockOut->greaterThan($normalEnd) && $actualWorkMinutes >= 480
             : $actualWorkMinutes >= (int) ($policy['minimum_minutes'] ?? 30);
 
         if (! $available) {
             session()->forget('overtime.draft');
+
+            return view('overtime.index', [
+                'employee' => $employee->loadMissing('division'),
+                'bandCode' => $bandCode,
+                'overtimeEligible' => true,
+                'overtimeAvailable' => false,
+                'overtimeDraft' => null,
+                'availabilityMessage' => $isWorkday && ! $clockOut->greaterThan($normalEnd)
+                    ? 'Clock-out pada atau sebelum 16:30 tidak menghasilkan waktu lembur hari kerja.'
+                    : 'Presensi hari ini belum memenuhi prasyarat pengajuan lembur.',
+            ]);
         }
 
-        $startTime = $policy['day_type'] === 'WORKDAY'
-            ? $normalEnd->format('H:i')
-            : $clockIn->format('H:i');
-
-        $previewStart = $policy['day_type'] === 'WORKDAY'
-            ? $normalEnd
-            : $clockIn;
-
+        $startTime = $isWorkday ? $normalEnd->format('H:i') : $clockIn->format('H:i');
+        $previewStart = $isWorkday ? $normalEnd->copy() : $clockIn->copy();
         $previewCalculation = $this->calculator->calculate(
             $date,
             $previewStart,
-            $clockOut,
+            $clockOut->copy(),
             $policy
         );
 
-        $draft = $draft ?: [
-            'date' => $date->toDateString(),
+        // Selalu membangun ulang draft dari evidence terkini. Sebelumnya,
+        // session draft lama dapat mempertahankan nilai OT 0 walau Clock-out
+        // sudah berubah menjadi 18:00 atau lebih.
+        $draft = [
+            'date' => $dateString,
             'clock_in' => $attendance->jam_masuk,
             'clock_out' => $attendance->jam_pulang,
             'band_code' => (int) $bandCode,
-            'day_type' => $policy['day_type'],
+            'day_type' => $policy['day_type'] ?? 'WORKDAY',
             'start_time' => $startTime,
             'end_time' => $clockOut->format('H:i'),
             'actual_work_minutes' => $actualWorkMinutes,
@@ -120,13 +129,15 @@ class OvertimeController extends Controller
             'excess_minutes' => (int) ($previewCalculation['excess_minutes'] ?? 0),
         ];
 
+        session(['overtime.draft' => $draft]);
+
         return view('overtime.index', [
             'employee' => $employee->loadMissing('division'),
             'bandCode' => $bandCode,
             'overtimeEligible' => true,
-            'overtimeAvailable' => $available,
-            'overtimeDraft' => $available ? $draft : null,
-            'availabilityMessage' => $available ? null : 'Tidak terdapat waktu lembur yang memenuhi prasyarat pengajuan pada hari ini.',
+            'overtimeAvailable' => true,
+            'overtimeDraft' => $draft,
+            'availabilityMessage' => null,
         ]);
     }
 

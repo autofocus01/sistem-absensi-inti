@@ -355,7 +355,7 @@
                 class="profile-button profile-button-secondary shrink-0"
             >
                 <span class="material-symbols-outlined text-[18px]">arrow_back</span>
-                <span class="hidden sm:inline">Kembali ke Dashboard</span>
+                <span class="hidden sm:inline">Kembali ke Dasbor</span>
                 <span class="sm:hidden">Kembali</span>
             </a>
         </div>

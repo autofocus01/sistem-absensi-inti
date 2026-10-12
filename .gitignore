@@ -34,3 +34,10 @@ Thumbs.db
 *.dump.gz
 database/backups/
 storage/backups/
+/.env
+/.env.*
+!/.env.example
+/storage/logs/*.log
+/database/*.sqlite
+/database/*.sqlite-*
+/storage/app/private/*

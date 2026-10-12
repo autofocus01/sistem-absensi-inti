@@ -11,7 +11,7 @@
   <div class="inti-page-header">
     <div>
       <div class="inti-eyebrow">Sistem Absensi & Lembur PT. INTI</div>
-      <h1 class="inti-title">Dashboard</h1>
+      <h1 class="inti-title">Dasbor</h1>
       <p class="inti-subtitle">
         Ringkasan akses dan aktivitas sesuai peran Anda.
       </p>
@@ -141,7 +141,7 @@
       >
         <div class="inti-kpi-label">Presensi Pribadi</div>
         <div class="inti-kpi-value">Absensi Saya</div>
-        <div class="inti-kpi-meta">Clock In / Clock Out</div>
+        <div class="inti-kpi-meta">Jam Masuk / Jam Pulang</div>
       </a>
 
 

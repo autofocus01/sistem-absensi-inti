@@ -11,7 +11,7 @@
                     <span class="material-symbols-outlined text-[16px]">science</span> MODE DEMO AKTIF
                 </div>
                 <h1 class="font-headline-lg text-headline-lg text-primary mt-3">Kontrol Waktu Presentasi</h1>
-                <p class="font-body-md text-body-md text-on-surface-variant mt-1">Gunakan waktu simulasi untuk mencoba Clock In → Clock Out → Lembur tanpa menunggu jam kerja nyata.</p>
+                <p class="font-body-md text-body-md text-on-surface-variant mt-1">Gunakan waktu simulasi untuk mencoba jam masuk → jam pulang → lembur tanpa menunggu jam kerja nyata.</p>
             </div>
             <div class="text-left md:text-right">
                 <div class="text-xs text-on-surface-variant">Waktu aplikasi</div>
@@ -58,8 +58,8 @@
     <div class="bg-surface-container-lowest rounded-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] p-space-xl">
         <h2 class="font-headline-sm text-headline-sm text-primary">Skenario Lembur</h2>
         <ol class="mt-4 space-y-3 text-sm text-on-surface-variant list-decimal list-inside">
-            <li>Set <strong>07:30</strong>, lalu Clock In sebagai Karyawan.</li>
-            <li>Set <strong>18:00</strong>, lalu Clock Out.</li>
+            <li>Set <strong>07:30</strong>, lalu catat jam masuk sebagai Karyawan.</li>
+            <li>Set <strong>18:00</strong>, lalu catat jam pulang.</li>
             <li>Ajukan lembur dari menu Pengajuan Lembur.</li>
             <li>Login VP → Setujui.</li>
             <li>Login HR → Verifikasi Final, atau <strong>Kembalikan ke VP</strong> jika ingin mendemokan anomaly.</li>

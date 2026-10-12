@@ -7,24 +7,11 @@ use Illuminate\Http\Request;
 
 class AuditLogController extends Controller
 {
-    /**
-     * Audit Trail
-     *
-     * Akses:
-     * - HR
-     * - Administrator Sistem
-     *
-     * Data audit bersifat read-only dari halaman ini.
-     */
     public function index(Request $request)
     {
-        $user = $request->user();
-
         abort_unless(
-            $user && (
-                $user->isHrAdmin() ||
-                $user->isAdminSistem()
-            ),
+            $request->user()?->isHrAdmin()
+            || $request->user()?->isAdminSistem(),
             403
         );
 
@@ -32,11 +19,6 @@ class AuditLogController extends Controller
             ->with('user')
             ->latest();
 
-        /*
-        |--------------------------------------------------------------------------
-        | FILTER ACTION
-        |--------------------------------------------------------------------------
-        */
         if ($request->filled('action')) {
             $query->where(
                 'action',
@@ -44,11 +26,6 @@ class AuditLogController extends Controller
             );
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | FILTER SUBJECT TYPE
-        |--------------------------------------------------------------------------
-        */
         if ($request->filled('subject_type')) {
             $query->where(
                 'subject_type',
@@ -56,11 +33,6 @@ class AuditLogController extends Controller
             );
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | FILTER DATE FROM
-        |--------------------------------------------------------------------------
-        */
         if ($request->filled('from')) {
             $query->whereDate(
                 'created_at',
@@ -69,11 +41,6 @@ class AuditLogController extends Controller
             );
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | FILTER DATE UNTIL
-        |--------------------------------------------------------------------------
-        */
         if ($request->filled('until')) {
             $query->whereDate(
                 'created_at',
@@ -82,17 +49,10 @@ class AuditLogController extends Controller
             );
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | PAGINATION
-        |--------------------------------------------------------------------------
-        */
-        $logs = $query
-            ->paginate(25)
-            ->withQueryString();
-
         return view('audit-logs.index', [
-            'logs' => $logs,
+            'logs' => $query
+                ->paginate(25)
+                ->withQueryString(),
 
             'filters' => $request->only([
                 'action',
