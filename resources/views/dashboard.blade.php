@@ -53,7 +53,6 @@
 
     <div
       class="inti-kpi-grid"
-      style="grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:1rem"
     >
 
       <a

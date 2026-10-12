@@ -311,7 +311,7 @@
             </div>
 
 
-            <div class="vp-table-wrap mt-space-base">
+            <div class="vp-table-wrap mt-space-base inti-responsive-scroll">
 
                 <table class="vp-table">
 

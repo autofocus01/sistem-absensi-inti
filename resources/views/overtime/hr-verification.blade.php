@@ -203,7 +203,7 @@
             </div>
 
 
-            <div class="hr-table-wrap mt-space-base">
+            <div class="hr-table-wrap mt-space-base inti-responsive-scroll">
 
                 <table class="hr-table w-full text-left">
 

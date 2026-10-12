@@ -206,7 +206,7 @@
             </div>
 
 
-            <div class="vp-history-table-wrap mt-space-base">
+            <div class="vp-history-table-wrap mt-space-base inti-responsive-scroll">
 
                 <table class="vp-history-table text-left">
 

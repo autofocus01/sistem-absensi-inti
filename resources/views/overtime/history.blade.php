@@ -242,7 +242,7 @@
             </div>
 
 
-            <div class="ot-history-table-wrap mt-space-base">
+            <div class="ot-history-table-wrap mt-space-base inti-responsive-scroll">
 
                 <table class="ot-history-table text-left">
 
