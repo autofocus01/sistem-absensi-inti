@@ -12,7 +12,9 @@
     $totalRows = (int) ($preview['total_rows'] ?? 0);
 @endphp
 
-<div class="max-w-7xl mx-auto space-y-6">
+<div class="inti-page">
+
+<div class="space-y-6">
 
     <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div>

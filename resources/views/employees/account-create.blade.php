@@ -2,6 +2,8 @@
 @section('title', 'Buat Akun Karyawan')
 
 @section('content')
+<div class="inti-page">
+
 <div class="max-w-2xl mx-auto">
   <div class="flex flex-col gap-1 pb-space-lg">
     <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">MANAJEMEN AKUN &bull; SDM</span>

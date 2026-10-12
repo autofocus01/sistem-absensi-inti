@@ -3,6 +3,8 @@
 @section('title', 'Kontrol Waktu Demo - PT. INTI')
 
 @section('content')
+<div class="inti-page">
+
 <div class="flex flex-col gap-space-lg w-full max-w-5xl">
     <div class="rounded-xl border border-amber-200 bg-amber-50 p-space-xl">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-space-md">
@@ -70,5 +72,7 @@
             <button class="px-4 py-2.5 rounded-lg border border-outline-variant text-primary font-title-sm hover:bg-surface-container-low">Reset Waktu ke Sistem</button>
         </form>
     </div>
+</div>
+
 </div>
 @endsection

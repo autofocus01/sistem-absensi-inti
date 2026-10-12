@@ -6,7 +6,7 @@
 @section('content')
 <div class="inti-page p1-hr-governance">
 
-    <div class="max-w-5xl mx-auto space-y-6">
+    <div class="space-y-6">
 
         {{-- HEADER --}}
         <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">

@@ -170,6 +170,8 @@
     $totalOvertimeRows = (int) ($totalLogLembur ?? 0);
 @endphp
 
+<div class="inti-page">
+
 <div class="team-recap-page flex flex-col gap-space-base">
 
     {{-- =========================================================
@@ -1098,6 +1100,8 @@
         </div>
 
     </section>
+
+</div>
 
 </div>
 

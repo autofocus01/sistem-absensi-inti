@@ -182,6 +182,8 @@
             ->count();
 @endphp
 
+<div class="inti-page">
+
 <div class="timesheet-page flex flex-col gap-space-base">
 
     {{-- ============================================================
@@ -968,4 +970,7 @@
     </section>
 
 </div>
+
+</div>
+
 @endsection
