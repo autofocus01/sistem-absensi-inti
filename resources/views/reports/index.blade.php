@@ -1,9 +1,5 @@
 @extends('layouts.absensi')
 
-@section('p1_head')
-    <link rel="stylesheet" href="{{ asset('css/p1-design-system.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/p1-hr-governance.css') }}">
-@endsection
 
 @section('title', 'Laporan HR - PT. INTI')
 
