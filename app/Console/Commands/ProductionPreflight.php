@@ -21,6 +21,13 @@ class ProductionPreflight extends Command
         $checks['APP_ENV'] = in_array((string) config('app.env'), ['production','staging','local'], true);
         $checks['APP_KEY'] = filled(config('app.key'));
         $checks['APP_DEBUG'] = ! (bool) config('app.debug') || in_array((string) config('app.env'), ['local','testing'], true);
+
+        // Demo clock hanya boleh aktif pada lingkungan local/testing. Pada
+        // production/staging, DEMO_MODE=true membuka manipulasi waktu presensi
+        // lewat UI /demo sehingga harus menggagalkan preflight.
+        $demoEnabled = (bool) config('demo.enabled', env('DEMO_MODE', false));
+        $checks['DEMO_MODE_DISABLED'] = ! $demoEnabled
+            || in_array((string) config('app.env'), ['local','testing'], true);
         if (! $this->option('no-db')) {
             try { DB::connection()->getPdo(); $checks['DB_CONNECTION'] = true; } catch (\Throwable $e) { $checks['DB_CONNECTION'] = false; }
             foreach (['users','employees','divisions','attendance_logs','overtime_submissions','holiday_calendars','legal_overtime_rules','company_overtime_rules','audit_logs','overtime_policy_snapshots'] as $table) {
