@@ -184,7 +184,9 @@
         <button type="submit" class="w-full flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-error hover:bg-error/10 text-left"><span class="material-symbols-outlined text-[18px]">logout</span>Keluar</button>
       </form>
     </div>
-    <div class="mt-2 px-2 pt-2 border-t border-surface-container-low text-[11px] text-on-surface-variant">Rekap Absensi Terverifikasi · {{ $namaBulan }} {{ $tahun }}</div>
+    <!-- Notifikasi sesi aktif -->
+<div class="font-xxs text-on-surface-variant mb-1">Sesi: Direktur</div>
+<div class="mt-2 px-2 pt-2 border-t border-surface-container-low text-[11px] text-on-surface-variant">Rekap Absensi Terverifikasi · {{ $namaBulan }} {{ $tahun }}</div>
   </div>
 </aside>
 

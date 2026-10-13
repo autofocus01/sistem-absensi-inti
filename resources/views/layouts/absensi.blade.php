@@ -742,6 +742,11 @@
           {{ auth()->user()->email }}
         </div>
 
+        <!-- Notifikasi sesi aktif -->
+        <div class="font-xxs text-on-surface-variant ml-2">
+            Sesi: {{ ucfirst(auth()->user()->role) }}
+        </div>
+
       </div>
 
     </div>
