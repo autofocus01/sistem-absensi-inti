@@ -393,6 +393,83 @@
         </div>
       </div>
 
+      {{-- KUALITAS DATA (Fase 3): asal angka & integritas data --}}
+      <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg mb-space-xl border border-surface-container-low">
+        <div class="flex items-center justify-between pb-space-base border-b border-surface-container-low">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary text-[22px]">fact_check</span>
+            <h2 class="font-headline-md text-headline-md text-primary">Kualitas Data</h2>
+          </div>
+          <span class="font-label-sm text-label-sm text-on-surface-variant">Asal angka &amp; integritas periode {{ $namaBulan }} {{ $tahun }}</span>
+        </div>
+
+        @php($totalSumber = $kualitasData['sumberTotal'])
+        @php($pctLangsung = $kualitasData['pctLangsung'])
+        @php($pctImpor = $kualitasData['pctImpor'])
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-space-md mt-space-base">
+          {{-- Impor terakhir --}}
+          <div class="p-space-base rounded-xl bg-surface-container-low">
+            <div class="flex items-center gap-2 pb-space-xs">
+              <span class="material-symbols-outlined text-primary text-[18px]">upload_file</span>
+              <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Impor Terakhir</span>
+            </div>
+            @if($kualitasData['imporTerakhir'])
+              @php($impor = $kualitasData['imporTerakhir'])
+              <div class="font-title-sm text-title-sm text-primary truncate" title="{{ $impor->nama_file }}">{!! \Illuminate\Support\Str::limit($impor->nama_file, 34) !!}</div>
+              <div class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+                {{ $impor->created_at->format('d M Y H:i') }} &bull; {{ $impor->user?->name ?? 'Operator' }}
+              </div>
+              <div class="font-body-sm text-body-sm mt-1 flex flex-wrap items-center gap-2">
+                <span class="inline-flex px-2 py-0.5 rounded-full bg-primary-container/30 text-primary text-xs font-semibold">{{ $impor->berhasil }} masuk</span>
+                <span class="inline-flex px-2 py-0.5 rounded-full {{ $impor->gagal > 0 ? 'bg-amber-100 text-amber-800' : 'bg-surface-container-low text-on-surface-variant' }} text-xs font-semibold">{{ $impor->gagal }} gagal</span>
+                @if($impor->duplikat)<span class="inline-flex px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold">File terulang</span>@endif
+              </div>
+            @else
+              <div class="font-title-sm text-title-sm text-on-surface-variant">Belum ada impor</div>
+              <div class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Semua data berasal dari clock-in sistem.</div>
+            @endif
+          </div>
+
+          {{-- Komposisi sumber data --}}
+          <div class="p-space-base rounded-xl bg-surface-container-low">
+            <div class="flex items-center gap-2 pb-space-xs">
+              <span class="material-symbols-outlined text-primary text-[18px]">hub</span>
+              <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Sumber Data Bulan Ini</span>
+            </div>
+            <div class="font-headline-lg text-headline-lg text-primary tabular-nums">{{ $totalSumber }} <span class="font-body-md text-body-md text-on-surface-variant">baris</span></div>
+            <div class="mt-2 h-2 w-full rounded-full bg-surface-container-low overflow-hidden flex">
+              <div class="bg-primary h-full" style="width: {{ $pctLangsung }}%"></div>
+              <div class="bg-amber-400 h-full" style="width: {{ $pctImpor }}%"></div>
+            </div>
+            <div class="font-body-sm text-body-sm text-on-surface-variant mt-1.5">
+              Langsung (aplikasi/mesin): <strong class="text-primary">{{ $pctLangsung }}%</strong>
+              &bull; Impor file: <strong class="text-amber-700">{{ $pctImpor }}%</strong>
+            </div>
+          </div>
+
+          {{-- Error impor pending --}}
+          <div class="p-space-base rounded-xl bg-surface-container-low">
+            <div class="flex items-center gap-2 pb-space-xs">
+              <span class="material-symbols-outlined {{ $kualitasData['errorImportPending'] > 0 ? 'text-error' : 'text-primary' }} text-[18px]">report</span>
+              <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Baris Impor Bermasalah</span>
+            </div>
+            <div class="font-headline-lg text-headline-lg {{ $kualitasData['errorImportPending'] > 0 ? 'text-error' : 'text-primary' }} tabular-nums">{{ $kualitasData['errorImportPending'] }}</div>
+            <div class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Belum ditindaklanjuti HR (semua periode)</div>
+          </div>
+
+          {{-- Anomali open --}}
+          <div class="p-space-base rounded-xl bg-surface-container-low">
+            <div class="flex items-center gap-2 pb-space-xs">
+              <span class="material-symbols-outlined {{ $kualitasData['anomaliOpen'] > 0 ? 'text-error' : 'text-primary' }} text-[18px]">warning</span>
+              <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Anomali Belum Ditinjau</span>
+            </div>
+            <div class="font-headline-lg text-headline-lg {{ $kualitasData['anomaliOpen'] > 0 ? 'text-error' : 'text-primary' }} tabular-nums">{{ $kualitasData['anomaliOpen'] }}</div>
+            <div class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Pada periode {{ $namaBulan }} {{ $tahun }}</div>
+          </div>
+        </div>
+      </div>
+
       {{-- Tren Kehadiran & Alpha 6 Bulan Terakhir --}}
       <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg mb-space-xl border border-surface-container-low">
         <div class="flex items-center justify-between pb-space-base border-b border-surface-container-low">
@@ -647,8 +724,8 @@
             <div><h2 class="font-headline-md text-headline-md text-primary">Presensi Hari Ini</h2><p class="text-sm text-on-surface-variant">Snapshot presensi seluruh karyawan pada hari ini.</p></div>
             <span class="px-3 py-1 rounded-full bg-secondary-container text-on-surface text-xs font-semibold">Snapshot · <span id="director-live-date">-- -- ----</span> · <span id="director-live-time">--:--:--</span> WIB</span>
           </div>
-          <div class="overflow-x-auto mt-4 direktur-responsive-table"><table class="w-full text-left min-w-[900px]"><thead><tr class="bg-surface-container-low text-xs uppercase tracking-wider text-on-surface-variant"><th class="py-3 px-4">Karyawan</th><th class="py-3 px-4">Band</th><th class="py-3 px-4">Divisi</th><th class="py-3 px-4">Jam Masuk</th><th class="py-3 px-4">Jam Pulang</th><th class="py-3 px-4">Status</th></tr></thead><tbody class="divide-y divide-surface-container-low">
-          @forelse($realtimeRows as $row)<tr><td class="py-3 px-4 font-semibold">{{ $row['nama'] }}<div class="text-xs text-on-surface-variant">{{ $row['nipeg'] }}</div></td><td class="py-3 px-4"><span class="inline-flex px-2 py-0.5 rounded-full bg-primary-container/30 text-primary text-xs font-semibold">{{ $row['band'] !== null ? 'Band ' . $row['band'] : '-' }}</span></td><td class="py-3 px-4">{{ $row['divisi'] }}</td><td class="py-3 px-4">{{ $row['jam_masuk'] ? substr($row['jam_masuk'],0,5) : '--:--' }}</td><td class="py-3 px-4">{{ $row['jam_pulang'] ? substr($row['jam_pulang'],0,5) : '--:--' }}</td><td class="py-3 px-4">{{ $row['status_hari_ini'] }}</td></tr>@empty<tr><td colspan="6" class="py-8 text-center text-on-surface-variant">Belum ada presensi hari ini.</td></tr>@endforelse
+          <div class="overflow-x-auto mt-4 direktur-responsive-table"><table class="w-full text-left min-w-[900px]"><thead><tr class="bg-surface-container-low text-xs uppercase tracking-wider text-on-surface-variant"><th class="py-3 px-4">Karyawan</th><th class="py-3 px-4">Band</th><th class="py-3 px-4">Divisi</th><th class="py-3 px-4">Jam Masuk</th><th class="py-3 px-4">Jam Pulang</th><th class="py-3 px-4">Status</th><th class="py-3 px-4">Sumber</th></tr></thead><tbody class="divide-y divide-surface-container-low">
+          @forelse($realtimeRows as $row)<tr><td class="py-3 px-4 font-semibold">{{ $row['nama'] }}<div class="text-xs text-on-surface-variant">{{ $row['nipeg'] }}</div></td><td class="py-3 px-4"><span class="inline-flex px-2 py-0.5 rounded-full bg-primary-container/30 text-primary text-xs font-semibold">{{ $row['band'] !== null ? 'Band ' . $row['band'] : '-' }}</span></td><td class="py-3 px-4">{{ $row['divisi'] }}</td><td class="py-3 px-4">{{ $row['jam_masuk'] ? substr($row['jam_masuk'],0,5) : '--:--' }}</td><td class="py-3 px-4">{{ $row['jam_pulang'] ? substr($row['jam_pulang'],0,5) : '--:--' }}</td><td class="py-3 px-4">{{ $row['status_hari_ini'] }}</td><td class="py-3 px-4">@if($row['sumber'] ?? null)<span class="inline-flex px-2 py-0.5 rounded-full {{ $row['sumber_badge'] }} text-xs font-semibold">{{ $row['sumber_label'] }}</span>@else<span class="text-on-surface-variant">-</span>@endif</td></tr>@empty<tr><td colspan="7" class="py-8 text-center text-on-surface-variant">Belum ada presensi hari ini.</td></tr>@endforelse
           </tbody></table></div>
         </div>
       </div>
@@ -656,8 +733,8 @@
       <div id="tab-history" class="hidden mt-space-xl scroll-mt-24">
         <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg border border-surface-container-low">
           <div class="pb-space-base border-b border-surface-container-low"><h2 class="font-headline-md text-headline-md text-primary">Riwayat Presensi</h2><p class="text-sm text-on-surface-variant">Riwayat presensi seluruh karyawan untuk periode terpilih.</p></div>
-          <div class="overflow-x-auto mt-4 direktur-responsive-table"><table class="w-full text-left min-w-[1100px]"><thead><tr class="bg-surface-container-low text-xs uppercase tracking-wider text-on-surface-variant"><th class="py-3 px-4">Tanggal</th><th class="py-3 px-4">Karyawan</th><th class="py-3 px-4">NIPEG</th><th class="py-3 px-4">Band</th><th class="py-3 px-4">Divisi</th><th class="py-3 px-4">Masuk</th><th class="py-3 px-4">Pulang</th><th class="py-3 px-4">Durasi</th><th class="py-3 px-4">Status</th></tr></thead><tbody class="divide-y divide-surface-container-low">
-          @forelse($historyRows->take(50) as $row)<tr><td class="py-3 px-4">{{ $row['tanggal']->format('d') }} {{ $namaBulanMap[(int) $row['tanggal']->format('n')] }} {{ $row['tanggal']->format('Y') }}</td><td class="py-3 px-4 font-semibold">{{ $row['nama'] }}</td><td class="py-3 px-4">{{ $row['nipeg'] }}</td><td class="py-3 px-4"><span class="inline-flex px-2 py-0.5 rounded-full bg-primary-container/30 text-primary text-xs font-semibold">{{ $row['band'] !== null ? 'Band ' . $row['band'] : '-' }}</span></td><td class="py-3 px-4">{{ $row['divisi'] }}</td><td class="py-3 px-4">{{ $row['jam_masuk'] ? substr($row['jam_masuk'],0,5) : '--:--' }}</td><td class="py-3 px-4">{{ $row['jam_pulang'] ? substr($row['jam_pulang'],0,5) : '--:--' }}</td><td class="py-3 px-4">{{ $row['durasi'] }}</td><td class="py-3 px-4">{{ $row['status'] }}</td></tr>@empty<tr><td colspan="9" class="py-8 text-center text-on-surface-variant">Belum ada riwayat pada periode terpilih.</td></tr>@endforelse
+          <div class="overflow-x-auto mt-4 direktur-responsive-table"><table class="w-full text-left min-w-[1100px]"><thead><tr class="bg-surface-container-low text-xs uppercase tracking-wider text-on-surface-variant"><th class="py-3 px-4">Tanggal</th><th class="py-3 px-4">Karyawan</th><th class="py-3 px-4">NIPEG</th><th class="py-3 px-4">Band</th><th class="py-3 px-4">Divisi</th><th class="py-3 px-4">Masuk</th><th class="py-3 px-4">Pulang</th><th class="py-3 px-4">Durasi</th><th class="py-3 px-4">Status</th><th class="py-3 px-4">Sumber</th></tr></thead><tbody class="divide-y divide-surface-container-low">
+          @forelse($historyRows->take(50) as $row)<tr><td class="py-3 px-4">{{ $row['tanggal']->format('d') }} {{ $namaBulanMap[(int) $row['tanggal']->format('n')] }} {{ $row['tanggal']->format('Y') }}</td><td class="py-3 px-4 font-semibold">{{ $row['nama'] }}</td><td class="py-3 px-4">{{ $row['nipeg'] }}</td><td class="py-3 px-4"><span class="inline-flex px-2 py-0.5 rounded-full bg-primary-container/30 text-primary text-xs font-semibold">{{ $row['band'] !== null ? 'Band ' . $row['band'] : '-' }}</span></td><td class="py-3 px-4">{{ $row['divisi'] }}</td><td class="py-3 px-4">{{ $row['jam_masuk'] ? substr($row['jam_masuk'],0,5) : '--:--' }}</td><td class="py-3 px-4">{{ $row['jam_pulang'] ? substr($row['jam_pulang'],0,5) : '--:--' }}</td><td class="py-3 px-4">{{ $row['durasi'] }}</td><td class="py-3 px-4">{{ $row['status'] }}</td><td class="py-3 px-4"><span class="inline-flex px-2 py-0.5 rounded-full {{ $row['sumber_badge'] }} text-xs font-semibold">{{ $row['sumber_label'] }}</span></td></tr>@empty<tr><td colspan="10" class="py-8 text-center text-on-surface-variant">Belum ada riwayat pada periode terpilih.</td></tr>@endforelse
           </tbody></table></div>
           @if($historyRows->count() > 50)<div class="mt-3 text-xs text-on-surface-variant">Menampilkan 50 dari {{ $historyRows->count() }} baris. Gunakan filter periode/divisi untuk mempersempit data.</div>@endif
         </div>

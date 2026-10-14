@@ -56,6 +56,12 @@
                             dan
                             {{ count(session('import_result.errors', [])) }} baris bermasalah.
                         </p>
+
+                        @if (session('import_result.peringatan'))
+                            <p class="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
+                                {{ session('import_result.peringatan') }}
+                            </p>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -274,6 +280,83 @@
                     </div>
                 </form>
 
+            </div>
+        </section>
+
+        {{-- RIWAYAT IMPOR (PROVENANCE) --}}
+        <section class="inti-card overflow-hidden">
+            <div class="border-b border-slate-200 px-5 py-4">
+                <h2 class="text-base font-semibold text-slate-900">
+                    Riwayat Impor
+                </h2>
+
+                <p class="mt-1 text-xs leading-5 text-slate-500">
+                    Jejak file yang pernah di-commit — nama file asli, operator, waktu,
+                    dan jumlah baris. Menjadi rujukan saat data dipertanyakan.
+                </p>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm min-w-[760px]">
+                    <thead>
+                        <tr class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+                            <th class="py-3 px-5">File</th>
+                            <th class="py-3 px-5">Operator</th>
+                            <th class="py-3 px-5">Waktu</th>
+                            <th class="py-3 px-5">Format</th>
+                            <th class="py-3 px-5 text-right">Baris Masuk</th>
+                            <th class="py-3 px-5 text-right">Gagal</th>
+                            <th class="py-3 px-5">Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody class="divide-y divide-slate-100">
+                        @forelse(($batches ?? collect()) as $batch)
+                            <tr>
+                                <td class="py-3 px-5 font-medium text-slate-900">
+                                    {{ $batch->nama_file }}
+                                </td>
+
+                                <td class="py-3 px-5 text-slate-600">
+                                    {{ $batch->user?->name ?? '-' }}
+                                </td>
+
+                                <td class="py-3 px-5 text-slate-600">
+                                    {{ $batch->created_at->format('d M Y H:i') }}
+                                </td>
+
+                                <td class="py-3 px-5 text-slate-600">
+                                    {{ $batch->format ? ucfirst($batch->format) : '-' }}
+                                </td>
+
+                                <td class="py-3 px-5 text-right">{{ $batch->berhasil }}</td>
+                                <td class="py-3 px-5 text-right">{{ $batch->gagal }}</td>
+
+                                <td class="py-3 px-5">
+                                    @if ($batch->duplikat)
+                                        <span class="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                                            File terulang
+                                        </span>
+                                    @elseif ($batch->gagal > 0)
+                                        <span class="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                                            Sebagian
+                                        </span>
+                                    @else
+                                        <span class="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+                                            Bersih
+                                        </span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="7" class="py-6 text-center text-sm text-slate-500">
+                                    Belum ada impor yang di-commit.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </section>
 

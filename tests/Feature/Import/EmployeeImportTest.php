@@ -92,3 +92,41 @@ it('rejects duplicate NIPEG inside one file', function () {
 
     expect(Employee::where('nipeg', '90010004')->exists())->toBeFalse();
 });
+
+/*
+|--------------------------------------------------------------------------
+| FASE 1: PROVENANCE — import master karyawan juga wajib mencatat batch
+| (nama file asli, sha256, operator, jumlah baris).
+|--------------------------------------------------------------------------
+*/
+it('records provenance batch for master karyawan import', function () {
+    Storage::fake('local');
+    $user = makeEmployeeImportHr();
+    $division = Division::create(['nama' => 'Divisi Provenance', 'lini' => 'SEVP']);
+
+    $csv = implode("\n", [
+        'NIPEG,Nama,Jenis Kelamin,Jabatan,No HP,Alamat,Divisi',
+        '90020001,Karyawan Provenance,L,Staff,081200000001,Bandung,Divisi Provenance',
+    ]);
+    $file = UploadedFile::fake()->createWithContent('master-karyawan.csv', $csv);
+
+    $this->actingAs($user)
+        ->post(route('employees.import.preview'), ['file' => $file])
+        ->assertOk();
+
+    $this->actingAs($user)
+        ->post(route('employees.import.commit'))
+        ->assertRedirect(route('employees.import'))
+        ->assertSessionHas('import_result.batch');
+
+    $batch = \App\Models\ImportBatch::latest('id')->first();
+    expect($batch)->not->toBeNull();
+    expect($batch->jenis)->toBe('master_karyawan');
+    expect($batch->nama_file)->toBe('master-karyawan.csv');
+    expect($batch->file_hash)->toHaveLength(64);
+    expect($batch->user_id)->toBe($user->id);
+    expect($batch->total_baris)->toBe(1);
+    expect($batch->berhasil)->toBe(1);
+    expect($batch->gagal)->toBe(0);
+    expect($batch->duplikat)->toBeFalse();
+});

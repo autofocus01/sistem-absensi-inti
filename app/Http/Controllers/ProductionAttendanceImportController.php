@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ImportBatch;
 use App\Services\Attendance\ProductionAttendanceImportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,7 +17,14 @@ class ProductionAttendanceImportController extends Controller
     public function index(Request $request): View
     {
         abort_unless($request->user()?->isHrAdmin(), 403);
-        return view('attendance.import.index');
+        $batches = ImportBatch::query()
+            ->where('jenis', ImportBatch::JENIS_ABSENSI)
+            ->with('user')
+            ->latest('id')
+            ->take(5)
+            ->get();
+
+        return view('attendance.import.index', compact('batches'));
     }
 
     public function preview(Request $request): View|RedirectResponse
@@ -24,10 +32,21 @@ class ProductionAttendanceImportController extends Controller
         abort_unless($request->user()?->isHrAdmin(), 403);
         $validated = $request->validate(['file'=>['required','file','mimes:xlsx,xls,csv','max:10240']]);
         try {
-            $path = $this->imports->store($validated['file']);
+            $file = $validated['file'];
+            // Provenance dihitung SEBELUM store() memindahkan file sementara.
+            $provenance = [
+                'file_name' => $file->getClientOriginalName(),
+                'file_hash' => hash_file('sha256', $file->getRealPath()) ?: '',
+            ];
+            $path = $this->imports->store($file);
             $preview = $this->imports->preview($path);
             session([
-                'attendance_import' => ['path' => $path, 'user_id' => $request->user()->id, 'created_at' => now()->timestamp],
+                'attendance_import' => [
+                    'path' => $path,
+                    'user_id' => $request->user()->id,
+                    'created_at' => now()->timestamp,
+                    ...$provenance,
+                ],
                 'attendance_import_path' => $path,
             ]);
             return view('attendance.import.preview', compact('preview'));
@@ -48,7 +67,10 @@ class ProductionAttendanceImportController extends Controller
         }
         if ($path === '') return back()->withErrors(['file'=>'Sesi preview import tidak ditemukan. Upload ulang file.']);
         try {
-            $result = $this->imports->commit($path, $request->user()->id);
+            $result = $this->imports->commit($path, $request->user()->id, [
+                'file_name' => (string) ($meta['file_name'] ?? 'file_import'),
+                'file_hash' => (string) ($meta['file_hash'] ?? ''),
+            ]);
             $this->imports->forget($path);
             $request->session()->forget(['attendance_import', 'attendance_import_path']);
             return redirect()->route('attendance.import.production')->with('import_result', $result);

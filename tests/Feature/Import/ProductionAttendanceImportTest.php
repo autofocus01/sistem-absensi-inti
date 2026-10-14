@@ -142,3 +142,51 @@ it('syncs attendance recap after a successful import commit', function () {
     expect($recap)->not->toBeNull('AttendanceRecap harus tersinkron setelah commit import.');
     expect($recap->hadir)->toBeGreaterThanOrEqual(1);
 });
+
+/*
+|--------------------------------------------------------------------------
+| FASE 1: PROVENANCE — setiap commit impor harus mencatat batch-nya
+| (nama file asli, sha256, operator, jumlah baris) dan menandai file
+| yang pernah diimpor sebelumnya (deteksi duplikat via hash isi file).
+|--------------------------------------------------------------------------
+*/
+it('records import batch provenance and flags a re-imported file', function () {
+    Storage::fake('local');
+    $user = makeHrImportUser();
+    $employee = makeImportEmployee();
+
+    $csv = "NIP,Tanggal,Jam Masuk,Jam Pulang\n{$employee->nipeg},2026-09-25,07:30,16:30\n";
+
+    $file = UploadedFile::fake()->createWithContent('absensi-provenance.csv', $csv);
+    $this->actingAs($user)->post(route('attendance.import.production.preview'), ['file' => $file])->assertOk();
+    $this->actingAs($user)
+        ->post(route('attendance.import.production.commit'))
+        ->assertRedirect(route('attendance.import.production'))
+        ->assertSessionHas('import_result.batch');
+
+    $batch = \App\Models\ImportBatch::latest('id')->first();
+    expect($batch)->not->toBeNull();
+    expect($batch->jenis)->toBe('absensi_harian');
+    expect($batch->nama_file)->toBe('absensi-provenance.csv');
+    expect($batch->file_hash)->toHaveLength(64);
+    expect($batch->user_id)->toBe($user->id);
+    expect($batch->format)->toBe('paired');
+    expect($batch->total_baris)->toBe(1);
+    expect($batch->berhasil)->toBe(1);
+    expect($batch->gagal)->toBe(0);
+    expect($batch->periode)->toBe(['2026-09']);
+    expect($batch->duplikat)->toBeFalse();
+
+    // File dengan isi identik diimpor ulang -> batch kedua ditandai duplikat.
+    $file2 = UploadedFile::fake()->createWithContent('absensi-provenance.csv', $csv);
+    $this->actingAs($user)->post(route('attendance.import.production.preview'), ['file' => $file2])->assertOk();
+    $this->actingAs($user)
+        ->post(route('attendance.import.production.commit'))
+        ->assertRedirect(route('attendance.import.production'))
+        ->assertSessionHas('import_result.peringatan');
+
+    $batches = \App\Models\ImportBatch::latest('id')->get();
+    expect($batches)->toHaveCount(2);
+    expect($batches->first()->duplikat)->toBeTrue();
+    expect($batches->last()->duplikat)->toBeFalse();
+});

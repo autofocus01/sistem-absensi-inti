@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\AttendanceRecap;
 use App\Models\AttendanceAnomaly;
+use App\Models\AttendanceImportError;
 use App\Models\AttendanceLog;
 use App\Models\Division;
 use App\Models\Employee;
+use App\Models\ImportBatch;
 use App\Services\Overtime\OvertimeReportingService;
 use App\Services\Period\PeriodOptionsService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -206,6 +208,9 @@ class DirekturDashboardController extends Controller
                 'band' => $employee->band_code,
                 'jam_masuk' => $attendance?->jam_masuk,
                 'jam_pulang' => $attendance?->jam_pulang,
+                'sumber' => $attendance?->sumber,
+                'sumber_label' => $this->sumberBadge($attendance?->sumber)[0],
+                'sumber_badge' => $this->sumberBadge($attendance?->sumber)[1],
                 'status_hari_ini' => $attendance ? ($attendance->jam_pulang ? 'Selesai' : 'Sedang Bekerja') : 'Belum Presensi',
                 'persen_kehadiran' => round((float) ($recap?->persen_kehadiran ?? 0), 1),
                 'telat_hari' => (int) ($recap?->telat_hari ?? 0),
@@ -250,6 +255,9 @@ class DirekturDashboardController extends Controller
                 'divisi' => $log->employee?->division?->nama ?? '-',
                 'jam_masuk' => $log->jam_masuk,
                 'jam_pulang' => $log->jam_pulang,
+                'sumber' => $log->sumber,
+                'sumber_label' => $this->sumberBadge($log->sumber)[0],
+                'sumber_badge' => $this->sumberBadge($log->sumber)[1],
                 'status' => $log->status(),
                 'telat' => (int) $log->menitTelat(),
                 'durasi' => $log->durasiKerjaFormat(),
@@ -273,6 +281,49 @@ class DirekturDashboardController extends Controller
                 ];
             })
             ->values();
+
+        /*
+         * KUALITAS DATA (Fase 3) — indikator integritas angka yang
+         * ditampilkan Direksi: asal data, impor terakhir, error pending,
+         * dan anomali yang belum ditindaklanjuti.
+         */
+        $sumberCounts = AttendanceLog::query()
+            ->whereBetween('tanggal', [
+                Carbon::create($tahun, $bulan, 1)->toDateString(),
+                Carbon::create($tahun, $bulan, 1)->endOfMonth()->toDateString(),
+            ])
+            ->whereIn('employee_id', $employees->pluck('id'))
+            ->groupBy('sumber')
+            ->selectRaw('sumber, COUNT(*) as total')
+            ->pluck('total', 'sumber');
+
+        $imporTerakhir = ImportBatch::query()
+            ->where('jenis', ImportBatch::JENIS_ABSENSI)
+            ->with('user')
+            ->latest('id')
+            ->first();
+
+        $errorImportPending = AttendanceImportError::query()
+            ->where('jenis', 'absensi_harian')
+            ->where('status', 'pending')
+            ->count();
+
+        $kualitasData = [
+            'sumberCounts' => $sumberCounts,
+            'sumberTotal' => (int) $sumberCounts->sum(),
+            'sumberLangsung' => (int) $sumberCounts->sum() - (int) ($sumberCounts['import_production'] ?? 0),
+            'imporTerakhir' => $imporTerakhir,
+            'errorImportPending' => $errorImportPending,
+            'anomaliOpen' => $monthAnomalies->where('status', 'OPEN')->count(),
+            'kelengkapanRekap' => $kelengkapanRekap,
+            'karyawanDenganRekap' => $karyawanDenganRekap,
+        ];
+
+        $totalSumber = $kualitasData['sumberTotal'];
+        $kualitasData['pctLangsung'] = $totalSumber > 0
+            ? round($kualitasData['sumberLangsung'] / $totalSumber * 100)
+            : 0;
+        $kualitasData['pctImpor'] = $totalSumber > 0 ? 100 - $kualitasData['pctLangsung'] : 0;
 
         return [
             'tahun'             => $tahun,
@@ -308,7 +359,24 @@ class DirekturDashboardController extends Controller
             'realtimeRows'      => $realtimeRows,
             'historyRows'       => $historyRows,
             'anomalyByDivision' => $anomalyByDivision,
+            'kualitasData'      => $kualitasData,
         ];
+    }
+
+    /**
+     * Label + kelas badge untuk kolom Sumber (provenance per baris).
+     *
+     * @return array{0: string, 1: string}
+     */
+    private function sumberBadge(?string $sumber): array
+    {
+        return match ($sumber) {
+            'self_service' => ['Aplikasi', 'bg-primary-container/30 text-primary'],
+            'import_production' => ['Impor', 'bg-amber-100 text-amber-800'],
+            'mesin_fingerprint' => ['Fingerprint', 'bg-primary-container/30 text-primary'],
+            'face_id' => ['Face ID', 'bg-primary-container/30 text-primary'],
+            default => ['-', 'text-on-surface-variant'],
+        };
     }
 
     public function exportExcel(Request $request)

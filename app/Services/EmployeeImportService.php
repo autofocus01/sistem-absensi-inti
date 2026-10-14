@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Division;
 use App\Models\Employee;
+use App\Models\ImportBatch;
 use App\Services\Audit\AuditLogService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -79,7 +80,12 @@ class EmployeeImportService
         ];
     }
 
-    public function commit(string $path, int $userId): array
+    /**
+     * @param  array{file_name?: string, file_hash?: string}|null  $meta
+     *         Provenance file dari controller (nama asli + sha256).
+     *         Opsional agar pemanggilan lama (test/service) tetap aman.
+     */
+    public function commit(string $path, int $userId, ?array $meta = null): array
     {
         [$rows, $headers] = $this->rows($path);
         $success = 0;
@@ -145,7 +151,57 @@ class EmployeeImportService
             );
         });
 
-        return compact('success', 'created', 'updated', 'errors');
+        $batch = $this->recordBatch($meta, $userId, count($rows), $success, count($errors));
+
+        return [
+            'success' => $success,
+            'created' => $created,
+            'updated' => $updated,
+            'errors' => $errors,
+            'batch' => $batch,
+            'peringatan' => $batch['duplikat']
+                ? 'File ini pernah diimpor sebelumnya. Data lama ditimpa dengan isi file terbaru (lihat Riwayat Impor).'
+                : null,
+        ];
+    }
+
+    /**
+     * Catat provenance batch impor master karyawan (Fase 1).
+     *
+     * @return array{nama_file: string, waktu: string, duplikat: bool, berhasil: int, gagal: int}
+     */
+    private function recordBatch(?array $meta, int $userId, int $totalBaris, int $berhasil, int $gagal): array
+    {
+        $meta ??= [];
+        $namaFile = (string) ($meta['file_name'] ?? 'file_import');
+        $fileHash = (string) ($meta['file_hash'] ?? '');
+
+        $duplikat = $fileHash !== ''
+            && ImportBatch::query()
+                ->where('jenis', ImportBatch::JENIS_KARYAWAN)
+                ->where('file_hash', $fileHash)
+                ->exists();
+
+        $batch = ImportBatch::create([
+            'user_id' => $userId,
+            'jenis' => ImportBatch::JENIS_KARYAWAN,
+            'nama_file' => $namaFile,
+            'file_hash' => $fileHash,
+            'format' => null,
+            'total_baris' => $totalBaris,
+            'berhasil' => $berhasil,
+            'gagal' => $gagal,
+            'periode' => null,
+            'duplikat' => $duplikat,
+        ]);
+
+        return [
+            'nama_file' => $batch->nama_file,
+            'waktu' => $batch->created_at->format('d M Y H:i'),
+            'duplikat' => $duplikat,
+            'berhasil' => $berhasil,
+            'gagal' => $gagal,
+        ];
     }
 
     public function forget(string $path): void

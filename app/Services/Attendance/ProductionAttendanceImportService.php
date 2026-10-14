@@ -5,6 +5,7 @@ namespace App\Services\Attendance;
 use App\Models\AttendanceImportError;
 use App\Models\AttendanceLog;
 use App\Models\Employee;
+use App\Models\ImportBatch;
 use App\Services\Audit\AuditLogService;
 use App\Services\Attendance\AttendanceRecapSyncService;
 use Carbon\Carbon;
@@ -125,7 +126,12 @@ class ProductionAttendanceImportService
         return $result;
     }
 
-    public function commit(string $path, int $userId): array
+    /**
+     * @param  array{file_name?: string, file_hash?: string}|null  $meta
+     *         Provenance file dari controller (nama asli + sha256).
+     *         Opsional agar pemanggilan lama (test/service) tetap aman.
+     */
+    public function commit(string $path, int $userId, ?array $meta = null): array
     {
         $this->employeeCache = [];
 
@@ -207,9 +213,62 @@ class ProductionAttendanceImportService
             }
         }
 
+        $batch = $this->recordBatch($meta, $userId, $format, count($rows), $success, count($errors), array_keys($syncPeriods));
+
         return [
             'success' => $success,
             'errors' => $errors,
+            'batch' => $batch,
+            'peringatan' => $batch['duplikat']
+                ? 'File ini pernah diimpor sebelumnya. Data lama ditimpa dengan isi file terbaru (lihat Riwayat Impor).'
+                : null,
+        ];
+    }
+
+    /**
+     * Catat provenance batch impor (Fase 1): file siapa, kapan, berapa
+     * baris masuk/gagal, dan apakah isi file ini pernah diproses sebelumnya.
+     *
+     * @return array{nama_file: string, waktu: string, duplikat: bool, berhasil: int, gagal: int}
+     */
+    private function recordBatch(
+        ?array $meta,
+        int $userId,
+        string $format,
+        int $totalBaris,
+        int $berhasil,
+        int $gagal,
+        array $periode
+    ): array {
+        $meta ??= [];
+        $namaFile = (string) ($meta['file_name'] ?? 'file_import');
+        $fileHash = (string) ($meta['file_hash'] ?? '');
+
+        $duplikat = $fileHash !== ''
+            && ImportBatch::query()
+                ->where('jenis', ImportBatch::JENIS_ABSENSI)
+                ->where('file_hash', $fileHash)
+                ->exists();
+
+        $batch = ImportBatch::create([
+            'user_id' => $userId,
+            'jenis' => ImportBatch::JENIS_ABSENSI,
+            'nama_file' => $namaFile,
+            'file_hash' => $fileHash,
+            'format' => $format,
+            'total_baris' => $totalBaris,
+            'berhasil' => $berhasil,
+            'gagal' => $gagal,
+            'periode' => $periode,
+            'duplikat' => $duplikat,
+        ]);
+
+        return [
+            'nama_file' => $batch->nama_file,
+            'waktu' => $batch->created_at->format('d M Y H:i'),
+            'duplikat' => $duplikat,
+            'berhasil' => $berhasil,
+            'gagal' => $gagal,
         ];
     }
 
