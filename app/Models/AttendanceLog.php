@@ -80,7 +80,7 @@ class AttendanceLog extends Model
         );
 
         return $masukAktual->greaterThan($masukNormal)
-            ? $masukNormal->diffInMinutes($masukAktual)
+            ? (int) $masukNormal->diffInMinutes($masukAktual)
             : 0;
     }
 

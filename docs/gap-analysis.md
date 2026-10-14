@@ -1,6 +1,6 @@
 # Gap Analysis per Fitur — INTI Presence
 
-> Basis evaluasi: kode + 163 test Pest (498 asersi) per 14 Okt 2026.
+> Basis evaluasi: kode + 170 test Pest (663 asersi) per 14 Okt 2026.
 > Metodologi: setiap angka dikelaskan menjadi **(1) transaksional** — lahir dari
 > workflow sistem, **(2) eksternal** — masuk dari luar (file/perangkat), atau
 > **(3) turunan** — dihitung dari yang lain. Klasifikasi inilah yang menentukan
@@ -17,7 +17,7 @@
 | 3 | Impor master karyawan | Eksternal | ✅ Matang **+ Fase 1** | CREATE/UPDATE preview, validasi divisi, anti NIPEG ganda, **provenance batch** | — |
 | 4 | Rekap kehadiran | Turunan | ✅ Matang | Invariant jumlah hari, sinkron event-driven (clock & impor), perbaikan rekap stale | **Belum ada scheduler pengaman harian** (hanya manual + event-driven) |
 | 5 | Status cuti/sakit/izin/perdin/alpha | Eksternal (manual) | ⚠️ Fase 2 | Sudah ada invariant jumlah hari; perubahan HR teraudit | **Berupa counter bulinan tanpa dokumen/persetujuan di sistem** — sumber misskomunikasi terbesar |
-| 6 | Lembur | Transaksional | ✅ Matang | Alur karyawan→VP→HR penuh, consent evidence, kuota kebijakan, audit lengkap | — |
+| 6 | Lembur | Transaksional | ✅ Matang **+ impor SPKL** | Alur karyawan→VP→HR penuh, consent evidence, kuota kebijakan, audit lengkap; **impor file SPKL perusahaan (HC_SPKL + HC_SPKL_PERSON) dengan provenance, deduplikasi NOSPKL, dan perhitungan pipeline produksi** | Durasi SPKL hanya berupa menit (LAMA) — jam mulai/selesai diturunkan (17:00 + LAMA) |
 | 7 | Anomali presensi | Turunan (scan manual) | ✅ Matang | Scan teraudit, alur resolve + catatan | Scan masih dipicu manual, bukan terjadwal |
 | 8 | Dashboard Direktur | Turunan | ✅ Matang **+ Fase 3** | Read-only, export, **kartu Kualitas Data**, **badge sumber per baris** (Sistem/Impor/Fingerprint/Face ID) | — |
 | 9 | Realtime "hari ini" | Turunan | ✅ Cukup | Snapshot + jam berjalan | **Realtime sejati** butuh integrasi mesin (Fase 4, terblokir akses) |
@@ -76,10 +76,28 @@ tab realtime sebenarnya "harian terjadwal".
 
 ## 5. Bukti kualitas
 
-- **163/163 test Pest lulus, 498 asersi** — termasuk 3 test baru:
-  provenance impor absensi (batch + flag terulang), provenance impor master
-  karyawan, indikator kualitas + badge sumber dashboard direktur.
+- **170/170 test Pest lulus, 663 asersi** — termasuk 5 test baru
+  impor lembur SPKL (happy path + provenance, baris NIP tidak
+  dikenal, deduplikasi impor ulang, penolakan non-eligible & kebijakan
+  belum berlaku, RBAC 403) dan 3 test provenance Fase 1.
 - `php artisan optimize:clear` / `optimize` / `route:list` normal.
-- Smoke test live (server `php artisan serve` :8000): login direktur → dashboard
-  menampilkan header + kartu Kualitas Data; login HR → kedua halaman import
-  menampilkan bagian Riwayat Impor.
+- Smoke test live (server `php artisan serve` :8000): dashboard
+  direktur, halaman verifikasi & impor HR (termasuk **Impor Lembur**
+  baru), import absensi & karyawan, error import, timesheet karyawan,
+  dan halaman VP — semuanya 200.
+
+## 6. Integrasi file perusahaan (data UAT, 14 Okt 2026)
+
+Tiga file Excel perusahaan dimuat ke data UAT dengan keputusan
+kepemilikan data:
+
+| File | Jalur muat | Keputusan |
+|------|-----------|-----------|
+| `Dummy_Kehadiran_Karyawan_Agustus_2026.xlsx` (973 baris) | Impor absensi produksi (provenance `import_batches`) | **File log menang** untuk Agustus: hadir/telat dihitung dari log asli (924 hari-hadir; 49 baris tgl 25 Agu adalah hari libur, tidak dihitung hadir) |
+| `Rekap_Kehadiran_2026.xlsx` (50 karyawan × Jul+Agu) | Counter HR (perdin/cuti/sakit/ijin) | **Juli**: log direkonstruksi agar hadir & telat persis sesuai rekap (50/50 rekap identik dengan file). **Agustus**: counter dimuat sejauh muat ruang (hadir dari log asli) — 20 dari 117 hari counter muat, sisanya dibuang dengan catatan karena kedua file saling bertentangan |
+| `Dummy_Pengajuan_Lembur_Agustus_2026.xlsx` (24 SPKL, 98 person-row) | Impor lembur SPKL (fitur baru) | 98/98 pengajuan masuk sebagai `VERIFIED_HR`, 105,5 jam dikenali, seluruhnya terhubung ke log absensi asli Agustus |
+
+Persiapan pendukung: aturan lembur perusahaan berlaku sejak
+2026-01-01 (agar Agustus tercakup), akun UAT untuk seluruh 50
+karyawan (`karyawan.{nipeg}@test.local`), dan penyelarasan
+`band_code` master karyawan dengan `KODEBAND` pada file SPKL.

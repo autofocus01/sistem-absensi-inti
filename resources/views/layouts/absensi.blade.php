@@ -579,6 +579,19 @@
 
           @endif
 
+          @if (Route::has('overtime.import'))
+
+            <a
+              href="{{ route('overtime.import') }}"
+              class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
+              {{ request()->routeIs('overtime.import*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}"
+            >
+              <span class="material-symbols-outlined text-[20px]">schedule</span>
+              Import Lembur
+            </a>
+
+          @endif
+
           @if (Route::has('overtime.hr.verification'))
 
             <a

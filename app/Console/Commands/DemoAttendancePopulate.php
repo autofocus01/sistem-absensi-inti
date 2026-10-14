@@ -511,6 +511,10 @@ class DemoAttendancePopulate extends Command
 
         $submitterUsers = User::query()
             ->where('role', 'karyawan')
+            // Hanya akun demo (karyawan.band*) yang diregenerasi. Akun
+            // karyawan lain — termasuk hasil bulk seeder dan pemilik lembur
+            // impor SPKL — tidak ikut agar volume data demo tetap stabil.
+            ->where('email', 'like', 'karyawan.band%')
             ->with('employee')
             ->get()
             ->filter(fn (User $user) => $user->employee && $eligibility->canSubmit($user->employee))

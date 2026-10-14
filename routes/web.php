@@ -13,6 +13,7 @@ use App\Http\Controllers\ProductionAttendanceImportController;
 use App\Http\Controllers\TimesheetController;
 use App\Http\Controllers\TeamRecapController;
 use App\Http\Controllers\OvertimeController;
+use App\Http\Controllers\OvertimeImportController;
 use App\Http\Controllers\ProductionReportController;
 use App\Http\Controllers\MyAttendanceController;
 use App\Http\Controllers\AuditLogController;
@@ -551,6 +552,42 @@ Route::middleware([
                 'commit',
             ]
         )->name('attendance.import.production.commit');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | OVERTIME SPKL IMPORT
+        |--------------------------------------------------------------------------
+        |
+        | Import pengajuan lembur dari file SPKL (Surat Perintah Kerja Lembur).
+        |
+        */
+
+        Route::get(
+            '/overtime/import',
+            [
+                OvertimeImportController::class,
+                'index',
+            ]
+        )->name('overtime.import');
+
+
+        Route::post(
+            '/overtime/import/preview',
+            [
+                OvertimeImportController::class,
+                'preview',
+            ]
+        )->name('overtime.import.preview');
+
+
+        Route::post(
+            '/overtime/import/commit',
+            [
+                OvertimeImportController::class,
+                'commit',
+            ]
+        )->name('overtime.import.commit');
 
 
         /*

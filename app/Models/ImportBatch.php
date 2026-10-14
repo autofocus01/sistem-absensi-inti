@@ -25,6 +25,7 @@ class ImportBatch extends Model
 
     public const JENIS_ABSENSI = 'absensi_harian';
     public const JENIS_KARYAWAN = 'master_karyawan';
+    public const JENIS_LEMBUR = 'lembur';
 
     public function user(): BelongsTo
     {

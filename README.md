@@ -42,6 +42,7 @@ Buka alamat lokal yang ditampilkan oleh Laravel. Jangan mengunggah `.env` ke Git
 
 - Presensi dan timesheet
 - Pengajuan lembur dan alur persetujuan VP → verifikasi HR
+- Impor file presensi (Excel/CSV) dan impor file SPKL lembur, dengan provenance dan riwayat impor
 - Rekap presensi dan laporan
 - Pengelolaan data karyawan dan akun sesuai peran
 - Dashboard eksekutif dan pemantauan anomali

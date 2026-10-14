@@ -95,7 +95,9 @@ class OvertimePolicySeeder extends Seeder
                     'requires_request' => true,
                     'requires_vp_approval' => true,
                     'requires_hr_approval' => true,
-                    'effective_from' => '2026-09-18',
+                    // Berlaku sejak awal 2026 agar riwayat lembur Agustus (file
+                    // SPKL asli perusahaan) ikut terhitung oleh policy engine.
+                    'effective_from' => '2026-01-01',
                     'status' => 'active',
                     'source_document' => 'Kebijakan internal PT INTI - baseline proyek',
                 ])

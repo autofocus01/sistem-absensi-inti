@@ -14,6 +14,7 @@
 │  B. Impor file Excel/CSV (HR)                                            │
 │  C. Data legacy perangkat (face_id / mesin_fingerprint)                  │
 │  D. Input manual HR (form rekap, cuti/sakit/izin/perdin/alpha)           │
+│  E. Impor file SPKL lembur (HC_SPKL + HC_SPKL_PERSON)                    │
 └──────────────┬──────────────────────────────────────────────────────────┘
                ▼
 ┌──────────────────────────┐   ┌───────────────────────────────────────┐
@@ -135,6 +136,33 @@ Tahapan:
 Didukung: kebijakan lembur per band (kuota harian/mingguan), kalender hari libur.
 Semua transisi teraudit (`OT_SUBMITTED`, `VP_*`, `HR_*`).
 
+#### E2. Impor lembur SPKL (eksternal — file SPKL perusahaan)
+
+| Asal | `OvertimeImportController` → `SpklOvertimeImportService` |
+|------|------|
+| Route | `GET /overtime/import` (+ `/preview`, `/commit`) — hanya `hr_admin` |
+
+- File sumber: Excel `.xlsx` dua sheet — `HC_SPKL` (induk: nomor,
+  keterangan, tanggal, status persetujuan) dan `HC_SPKL_PERSON`
+  (rincian: NIPEG + durasi `LAMA` dalam menit).
+- Alur identik impor absensi: upload → provenance (nama asli + sha256)
+  → preview (database belum berubah) → commit dalam satu transaksi.
+- Setiap baris PERSON → satu pengajuan: durasi dihitung lewat
+  `OvertimePolicyResolver` + `OvertimeCalculationService` (pipeline produksi),
+  lengkap dengan `overtime_policy_snapshots` + audit trail
+  (`OT_SUBMITTED`/`VP_APPROVED`/`HR_VERIFIED`).
+- Status dari file: `TGLTERIMASDM` terisi → `VERIFIED_HR`,
+  `TGLTERIMAVP` → `APPROVED_VP`, tanpa keduanya → `PENDING_VP`.
+  Approver/verifier diambil dari akun VP/HR sistem (divisi yang sama).
+- **Deduplikasi**: `source_ref` = nomor SPKL. File yang sama
+  (sha256) atau baris (NIPEG+tanggal+SPKL sama) yang diimpor ulang
+  **dilewati dengan peringatan**, tidak menggandakan pengajuan.
+- `attendance_log_id` dikaitkan bila ada log absensi pada tanggal
+  yang sama (rekonsiliasi lembur ↔ presensi).
+- Baris bermasalah (NIPEG tak dikenal, akun belum ada, band tidak
+  eligible, kebijakan belum berlaku, durasi di bawah minimum)
+  dilaporkan per baris pada preview; baris valid tetap di-commit.
+
 ### F. Anomali (dipicu manual, teraudit)
 
 `AttendanceAnomalyService::sync()` dijalankan HR lewat tombol scan
@@ -159,7 +187,7 @@ Dicatat pada setiap commit impor (Fase 1, 14 Okt 2026):
 
 | Kolom | Arti |
 |-------|------|
-| `jenis` | `absensi_harian` / `master_karyawan` |
+| `jenis` | `absensi_harian` / `master_karyawan` / `lembur` |
 | `nama_file` | nama file **asli** dari pengunggah |
 | `file_hash` | sha256 isi file — dasar deteksi file terulang |
 | `format` | `paired` / `scan` (absensi) |
@@ -168,7 +196,7 @@ Dicatat pada setiap commit impor (Fase 1, 14 Okt 2026):
 | `duplikat` | `true` bila isi file ini pernah diimpor sebelumnya |
 | `user_id` | operator (tanpa FK — tetap teringat walau akun dihapus) |
 
-Tampil di UI: **Riwayat Impor** pada kedua halaman import HR, peringatan "File ini
+Tampil di UI: **Riwayat Impor** pada ketiga halaman import HR, peringatan "File ini
 pernah diimpor sebelumnya" pada flash hasil commit, dan kartu **Impor Terakhir**
 di dashboard direktur.
 
@@ -178,6 +206,7 @@ di dashboard direktur.
 |------|--------|--------------|
 | Clock in/out | `CLOCK_IN`, `CLOCK_OUT` | ✓ |
 | Impor absensi | `ATTENDANCE_IMPORTED`, `ATTENDANCE_IMPORT_COMMITTED` | ✓ / ringkasan |
+| Impor lembur SPKL | `OT_SUBMITTED`, `VP_APPROVED`, `HR_VERIFIED` | ✓ (before→after per transisi) |
 | Impor karyawan | `EMPLOYEE_IMPORTED_CREATED/UPDATED`, `EMPLOYEE_IMPORT_COMMITTED` | ✓ / ringkasan |
 | CRUD karyawan/divisi | `EMPLOYEE_*`, `DIVISION_*` | ✓ |
 | Rekap HR | `ATTENDANCE_RECAP_CREATED/UPDATED/DELETED` | ✓ |
@@ -198,6 +227,6 @@ historis tidak hilang saat akun dihapus (komentar di migrasi).
 | `attendance_import_errors` | Antrean baris bermasalah dari impor |
 | `import_batches` | Provenance commit impor |
 | `attendance_anomalies` | Anomali hasil scan HR |
-| `overtime_submissions` (+ tabel kebijakan) | Alur lembur berpersetujuan |
+| `overtime_submissions` (+ tabel kebijakan) | Alur lembur berpersetujuan; `source_ref` = nomor SPKL asal impor |
 | `holiday_calendars` | Hari kerja/libur |
 | `audit_logs` | Jejak audit semua aksi mutasi |

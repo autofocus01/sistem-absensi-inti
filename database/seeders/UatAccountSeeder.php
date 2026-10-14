@@ -31,10 +31,36 @@ class UatAccountSeeder extends Seeder
     {
         $this->seedKaryawanAccounts();
         $this->seedStructuralAccounts();
+        $this->seedBulkKaryawanAccounts();
 
         $this->command?->info(
             'Akun UAT karyawan dan akun struktural (VP, VP Hukum, HR, Direktur) berhasil disiapkan.'
         );
+    }
+
+    /**
+     * Seluruh karyawan yang belum punya akun mendapatkan akun UAT
+     * (karyawan.{nipeg}@test.local, password "password").
+     *
+     * Agar seluruh alur lembur — termasuk pengajuan yang berasal dari
+     * impor file SPKL — dapat diuji end-to-end oleh siapa pun pemilik NIPEG.
+     */
+    private function seedBulkKaryawanAccounts(): void
+    {
+        Employee::query()
+            ->whereNull('user_id')
+            ->whereNotIn('nipeg', ['80000001', '80000002']) // akun struktural VP
+            ->get()
+            ->each(function (Employee $employee) {
+                $user = $this->upsertUser(
+                    email: 'karyawan.' . $employee->nipeg . '@test.local',
+                    name: $employee->nama,
+                    role: 'karyawan',
+                );
+
+                $employee->user()->associate($user);
+                $employee->save();
+            });
     }
 
     private function seedKaryawanAccounts(): void
