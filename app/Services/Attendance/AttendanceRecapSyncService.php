@@ -19,7 +19,7 @@ class AttendanceRecapSyncService
         $holidayDates = HolidayCalendar::query()
             ->whereBetween('tanggal', [$periodStart->toDateString(), $periodEnd->toDateString()])
             ->where('is_active', true)
-            ->where('jenis', 'NATIONAL_HOLIDAY')
+            ->whereIn('jenis', ['NATIONAL_HOLIDAY', 'CUTI_BERSAMA'])
             ->pluck('tanggal')
             ->map(fn ($date) => Carbon::parse($date)->toDateString())
             ->flip();

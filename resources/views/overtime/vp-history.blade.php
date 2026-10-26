@@ -3,6 +3,10 @@
 
 @section('title', 'Riwayat Keputusan VP - PT. INTI')
 
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/p1-overtime.css') }}?v={{ filemtime(public_path('css/p1-overtime.css')) }}">
+@endpush
+
 @section('content')
 
 <div class="vp-history-page inti-page p1-hr-governance">
@@ -38,11 +42,11 @@
 
                     </div>
 
-                    <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">
+                    <h1 class="inti-title">
                         Riwayat Keputusan VP
                     </h1>
 
-                    <p class="mt-1 max-w-3xl font-body-md text-body-md text-on-surface-variant">
+                    <p class="inti-subtitle max-w-3xl">
                         Rekam keputusan lembur yang telah dibuat oleh akun VP
                         untuk anggota divisinya.
                     </p>

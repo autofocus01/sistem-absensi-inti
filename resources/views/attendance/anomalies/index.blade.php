@@ -15,11 +15,7 @@
                 <div>
                     <div class="flex flex-wrap items-center gap-2 mb-2">
 
-                        <span class="inline-flex items-center gap-1.5
-                                     px-3 py-1 rounded-full
-                                     bg-error-container text-error
-                                     font-label-sm text-label-sm
-                                     uppercase tracking-wider">
+                        <span class="inti-badge inti-badge-lg inti-badge-danger">
 
                             <span class="material-symbols-outlined text-[15px]">
                                 fact_check
@@ -28,11 +24,7 @@
                             Governance HR
                         </span>
 
-                        <span class="inline-flex items-center gap-1.5
-                                     px-3 py-1 rounded-full
-                                     bg-surface-container
-                                     text-on-surface-variant
-                                     font-label-sm text-label-sm">
+                        <span class="inti-badge inti-badge-lg inti-badge-neutral">
 
                             <span class="material-symbols-outlined text-[15px]">
                                 shield
@@ -43,13 +35,11 @@
 
                     </div>
 
-                    <h1 class="font-headline-lg text-headline-lg
-                               text-primary tracking-tight">
+                    <h1 class="inti-title">
                         Review Anomali
                     </h1>
 
-                    <p class="font-body-md text-body-md
-                              text-on-surface-variant mt-2 max-w-3xl">
+                    <p class="inti-subtitle max-w-3xl">
                         Temuan presensi dan lembur yang perlu ditinjau
                         dan ditindaklanjuti oleh HR.
                     </p>

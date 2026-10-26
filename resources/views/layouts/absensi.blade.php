@@ -20,9 +20,10 @@
 <link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="{{ asset('css/p1-design-system.css') }}">
+<link rel="stylesheet" href="{{ asset('css/p1-design-system.css') }}?v={{ filemtime(public_path('css/p1-design-system.css')) }}">
 <link rel="stylesheet" href="{{ asset('css/p1-responsive-enterprise.css') }}">
 <link rel="stylesheet" href="{{ asset('css/p1-hr-governance.css') }}">
+@stack('styles')
 
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -478,6 +479,15 @@
         <nav class="flex flex-col gap-space-xs">
 
           <a
+            href="{{ route('dashboard') }}"
+            class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
+            {{ request()->routeIs('dashboard') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}"
+          >
+            <span class="material-symbols-outlined text-[20px]">dashboard</span>
+            Dashboard
+          </a>
+
+          <a
             href="{{ route('employees.index') }}"
             class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
             {{ request()->routeIs('employees.*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}"
@@ -655,6 +665,15 @@
         <nav class="flex flex-col gap-space-xs">
 
           <a
+            href="{{ route('dashboard') }}"
+            class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
+            {{ request()->routeIs('dashboard') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}"
+          >
+            <span class="material-symbols-outlined text-[20px]">dashboard</span>
+            Dashboard
+          </a>
+
+          <a
             href="{{ route('admin.accounts.index') }}"
             class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm
             {{ request()->routeIs('admin.accounts.*') ? 'bg-primary-container text-on-primary' : 'text-on-surface hover:bg-surface-container-low' }}"
@@ -755,10 +774,10 @@
           {{ auth()->user()->email }}
         </div>
 
-        <!-- Notifikasi sesi aktif -->
+        <!-- Notifikasi sesi aktif
         <div class="font-xxs text-on-surface-variant ml-2">
             Sesi: {{ ucfirst(auth()->user()->role) }}
-        </div>
+        </div> -->
 
       </div>
 

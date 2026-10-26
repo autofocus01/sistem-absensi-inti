@@ -116,10 +116,9 @@
     <img src="{{ asset('images/logo-inti.png') }}" alt="PT. INTI" class="welcome-logo">
 
     <span class="inti-eyebrow">Sistem Informasi Presensi &amp; Lembur</span>
-    <h1 class="welcome-title">Selamat datang di Portal Karyawan</h1>
+    <h1 class="welcome-title">Selamat datang di Portal Internal</h1>
     <p class="welcome-subtitle">
-        Presensi, timesheet, pengajuan lembur, persetujuan VP, verifikasi HR, dan rekap —
-        semua dalam satu portal terpadu.
+        — semua dalam satu portal terpadu —
     </p>
 
     <div class="welcome-cta">
@@ -131,35 +130,35 @@
         @else
             <a href="{{ route('login') }}" class="inti-btn inti-btn-primary">
                 <span class="material-symbols-outlined" style="font-size:18px;">login</span>
-                Masuk ke Portal
+                <!-- Masuk ke Portal -->
             </a>
-            @if (Route::has('register'))
+            <!-- @if (Route::has('register'))
                 <a href="{{ route('register') }}" class="inti-btn inti-btn-secondary">
                     Buat Akun
                 </a>
-            @endif
+            @endif -->
         @endauth
     </div>
 
     <div class="welcome-features">
         <div class="inti-card welcome-feature">
-            <span class="material-symbols-outlined">schedule</span>
+            <span class="material-symbols-outlined">SCHEDULE</span>
             <h3>Presensi &amp; Timesheet</h3>
             <p>Catat clock in/out, riwayat kehadiran, dan rekap otomatis.</p>
         </div>
         <div class="inti-card welcome-feature">
-            <span class="material-symbols-outlined">timer</span>
+            <span class="material-symbols-outlined">TIMER</span>
             <h3>Pengajuan Lembur</h3>
             <p>Ajukan lembur, disetujui VP, diverifikasi HR dengan aturan yang jelas.</p>
         </div>
         <div class="inti-card welcome-feature">
-            <span class="material-symbols-outlined">insights</span>
+            <span class="material-symbols-outlined">INSIGHTS</span>
             <h3>Dashboard &amp; Laporan</h3>
             <p>Pantau tren kehadiran, anomali, dan ekspor laporan untuk direksi.</p>
         </div>
     </div>
 
-    <p class="welcome-footer">Sistem Absensi &amp; Lembur PT. INTI &middot; Portal internal karyawan</p>
+    <p class="welcome-footer">Sistem Absensi &amp; Lembur PT. INTI &middot; Portal Internal</p>
 </main>
 
 </body>

@@ -22,9 +22,23 @@ class HolidayCalendarService
         return $holiday?->isNationalHoliday() ?? false;
     }
 
+    public function isCutiBersama(CarbonInterface $date): bool
+    {
+        $holiday = $this->find($date);
+
+        return $holiday?->isCutiBersama() ?? false;
+    }
+
+    public function isHoliday(CarbonInterface $date): bool
+    {
+        $holiday = $this->find($date);
+
+        return $holiday?->isHoliday() ?? false;
+    }
+
     public function dayType(CarbonInterface $date): string
     {
-        if ($this->isNationalHoliday($date)) {
+        if ($this->isHoliday($date)) {
             return 'NATIONAL_HOLIDAY';
         }
 

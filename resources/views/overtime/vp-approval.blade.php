@@ -3,6 +3,10 @@
 
 @section('title', 'Persetujuan Lembur VP — PT. INTI')
 
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/p1-overtime.css') }}?v={{ filemtime(public_path('css/p1-overtime.css')) }}">
+@endpush
+
 @section('content')
 
 <div class="vp-approval-page inti-page p1-hr-governance">
@@ -18,14 +22,14 @@
 
                     <div class="flex flex-wrap items-center gap-2 mb-2">
 
-                        <span class="vp-status bg-primary-container/40 text-primary">
+                        <span class="inti-badge inti-badge-lg inti-badge-info">
                             <span class="material-symbols-outlined text-[15px]">
                                 admin_panel_settings
                             </span>
                             OTORISASI VP DIVISI
                         </span>
 
-                        <span class="vp-status bg-secondary-container/50 text-secondary">
+                        <span class="inti-badge inti-badge-lg inti-badge-neutral">
                             <span class="material-symbols-outlined text-[15px]">
                                 domain
                             </span>
@@ -34,11 +38,11 @@
 
                     </div>
 
-                    <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">
+                    <h1 class="inti-title">
                         Persetujuan Lembur
                     </h1>
 
-                    <p class="mt-1 max-w-3xl font-body-md text-body-md text-on-surface-variant">
+                    <p class="inti-subtitle max-w-3xl">
                         Tinjau pengajuan lembur dalam cakupan divisi Anda sebelum diteruskan
                         ke proses verifikasi HR.
                     </p>
@@ -597,7 +601,7 @@ async function loadVpPendingData() {
 
             const statusBadge = returned
                 ? `
-                    <span class="vp-status bg-error/10 text-error">
+                    <span class="inti-badge inti-badge-danger">
                         <span class="material-symbols-outlined text-[15px]">
                             replay
                         </span>
@@ -605,7 +609,7 @@ async function loadVpPendingData() {
                     </span>
                   `
                 : `
-                    <span class="vp-status bg-amber-100 text-amber-800">
+                    <span class="inti-badge inti-badge-warning">
                         <span class="material-symbols-outlined text-[15px]">
                             schedule
                         </span>
@@ -777,7 +781,7 @@ async function loadVpPendingData() {
 
                     {{-- DURASI AKTUAL, DIAKUI, DAN EXCESS --}}
                     <td class="py-4 px-space-base align-top">
-                        <div class="vp-duration-main font-title-lg text-title-lg text-on-surface">
+                        <div class="font-title-lg text-title-lg text-on-surface">
                             ${esc(actualDurationLabel)}
                         </div>
                         <div class="vp-duration-meta">

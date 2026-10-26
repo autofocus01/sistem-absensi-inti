@@ -34,6 +34,62 @@
         </a>
     </div>
 
+    {{-- INFO ATTENDANCE RULES --}}
+    <div class="inti-card overflow-hidden mb-6">
+        <div class="border-b border-slate-200 px-5 py-4">
+            <h2 class="text-base font-semibold text-slate-900">
+                Aturan Kehadiran
+            </h2>
+
+            <p class="mt-1 text-xs leading-5 text-slate-500">
+                Total hari kerja = Hadir + Perdin + Cuti + Sakit + Ijin + Alpha
+            </p>
+        </div>
+
+        <div class="p-5 sm:p-6 grid grid-cols-2 gap-4">
+
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <h3 class="font-title-sm text-title-sm text-primary mb-2">Hadir</h3>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">
+                    Hari hadir tanpa alisan
+                </p>
+            </div>
+
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <h3 class="font-title-sm text-title-sm text-primary mb-2">Alfa / Mangkir</h3>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">
+                    Kehadiran tanpa izin
+                </p>
+            </div>
+
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <h3 class="font-title-sm text-title-sm text-primary mb-2">Izin</h3>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">
+                    Kehadiran dengan izin resmi
+                </p>
+            </div>
+
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <h3 class="font-title-sm text-title-sm text-primary mb-2">Sakit</h3>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">
+                    Kehadiran karena sakit
+                </p>
+            </div>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <h3 class="font-title-sm text-title-sm text-primary mb-2">Sisa Status</h3>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <strong>Perdin</strong> - Perdin
+                </div>
+                <div>
+                    <strong>Alpha</strong> - Tidak hadir
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- VALIDATION SUMMARY --}}
     @if ($errors->any())
         <div

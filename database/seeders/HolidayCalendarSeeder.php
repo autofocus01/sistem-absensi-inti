@@ -98,6 +98,32 @@ class HolidayCalendarSeeder extends Seeder
             );
         }
 
+        // Cuti bersama 2026 (SKB 3 Menteri). Diselaraskan dengan aturan
+        // pemerintah/BUMN: hari libur nasional + cuti bersama = hari libur.
+        // Daftar ini dapat disesuaikan oleh HR bila SKB resmi berbeda.
+        $cutiBersama = [
+            ['tanggal' => '2026-02-16', 'nama' => 'Cuti Bersama Tahun Baru Imlek 2577 Kongzili'],
+            ['tanggal' => '2026-03-20', 'nama' => 'Cuti Bersama Hari Suci Nyepi'],
+            ['tanggal' => '2026-03-23', 'nama' => 'Cuti Bersama Idulfitri 1447 H'],
+            ['tanggal' => '2026-03-24', 'nama' => 'Cuti Bersama Idulfitri 1447 H'],
+            ['tanggal' => '2026-12-24', 'nama' => 'Cuti Bersama Kelahiran Yesus Kristus'],
+        ];
+
+        foreach ($cutiBersama as $holiday) {
+            HolidayCalendar::updateOrCreate(
+                [
+                    'tanggal' => $holiday['tanggal'],
+                ],
+                [
+                    ...$holiday,
+                    'jenis' => 'CUTI_BERSAMA',
+                    'is_active' => true,
+                    'source_document' => 'SKB 3 Menteri 2026 (Cuti Bersama)',
+                    'notes' => 'Cuti bersama. Verifikasi terhadap SKB resmi; dapat dinonaktifkan oleh HR.',
+                ]
+            );
+        }
+
         // Tetap tersedia untuk UAT Demo Mode, tetapi tidak boleh dianggap
         // sebagai bagian dari kalender produksi resmi.
         if (! app()->environment('production')) {

@@ -3,6 +3,10 @@
 
 @section('title', 'Verifikasi Lembur HR - PT. INTI')
 
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/p1-overtime.css') }}?v={{ filemtime(public_path('css/p1-overtime.css')) }}">
+@endpush
+
 @section('content')
 
 <div class="hr-verification-page inti-page p1-hr-governance">
@@ -20,7 +24,7 @@
 
                     <div class="flex flex-wrap items-center gap-2 mb-2">
 
-                        <span class="hr-status-badge bg-secondary-container text-on-secondary-container">
+                        <span class="inti-badge inti-badge-lg inti-badge-neutral">
                             <span class="material-symbols-outlined text-[15px]">
                                 admin_panel_settings
                             </span>
@@ -28,7 +32,7 @@
                             MODUL HR ADMIN
                         </span>
 
-                        <span class="hr-status-badge bg-primary-container/40 text-primary">
+                        <span class="inti-badge inti-badge-lg inti-badge-info">
                             <span class="material-symbols-outlined text-[15px]">
                                 verified
                             </span>
@@ -38,11 +42,11 @@
 
                     </div>
 
-                    <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">
+                    <h1 class="inti-title">
                         Verifikasi Jam Lembur
                     </h1>
 
-                    <p class="mt-1 max-w-3xl font-body-md text-body-md text-on-surface-variant">
+                    <p class="inti-subtitle max-w-3xl">
                         Verifikasi akhir pengajuan lembur yang telah disetujui VP
                         dengan mencocokkan permohonan terhadap jam aktual.
                     </p>
@@ -518,7 +522,7 @@ function loadHrPendingData() {
                             ${
                                 bandCode
                                     ? `
-                                        <span class="hr-status-badge bg-primary-container/30 text-primary">
+                                        <span class="inti-badge inti-badge-info">
                                             ${bandCode}
                                         </span>
                                       `
@@ -568,7 +572,7 @@ function loadHrPendingData() {
                     <td class="py-4 px-space-base align-top">
 
                         <span
-                            class="hr-status-badge bg-secondary-container/50 text-secondary"
+                            class="inti-badge inti-badge-success"
                             title="Disetujui oleh ${escapeHtml(vpName)}"
                         >
 

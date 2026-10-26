@@ -31,7 +31,7 @@
         </div>
 
         <div class="inti-auth-field">
-            <label for="password">Kata sandi</label>
+            <label for="password">Password</label>
             <input id="password"
                    class="inti-auth-input @error('password') is-invalid @enderror"
                    type="password"
@@ -51,7 +51,7 @@
 
             @if (Route::has('password.request'))
                 <a class="inti-auth-link" href="{{ route('password.request') }}">
-                    Lupa kata sandi?
+                    Lupa Password?
                 </a>
             @endif
         </div>

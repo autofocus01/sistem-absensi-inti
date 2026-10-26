@@ -66,6 +66,9 @@ body { background: var(--inti-background); color: var(--inti-text); }
 .inti-badge-danger { color:#a71919; background:#ffe5e1; }
 .inti-badge-info { color:#174d78; background:#e5effa; }
 .inti-badge-neutral { color:#43474d; background:#eef0f4; }
+.inti-badge-primary { color:#ffffff; background:var(--inti-primary-container); }
+.inti-badge-lg { min-height:26px; padding:4px 10px; gap:6px; }
+.inti-badge .material-symbols-outlined { font-size:15px; line-height:1; }
 
 /* Alerts */
 .inti-alert { display:flex; align-items:flex-start; gap:12px; padding:14px 16px; border-radius:10px; border:1px solid; font-size:14px; line-height:20px; }
@@ -156,6 +159,7 @@ html.dark .inti-badge-warning { color:#ffd38a; background:#493518; }
 html.dark .inti-badge-danger { color:#ffb0a9; background:#4a2426; }
 html.dark .inti-badge-info { color:#a9d7ff; background:#18344b; }
 html.dark .inti-badge-neutral { color:#d5deea; background:#2a3647; }
+html.dark .inti-badge-primary { color:#f8fbff; background:#355b7f; }
 html.dark .inti-alert-success { color:#9cefe3; background:#123832; border-color:#285d56; }
 html.dark .inti-alert-warning { color:#ffd995; background:#3d2e17; border-color:#6e5526; }
 html.dark .inti-alert-danger { color:#ffb5ae; background:#422225; border-color:#6b3538; }

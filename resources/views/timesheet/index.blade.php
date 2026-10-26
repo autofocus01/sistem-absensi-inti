@@ -193,24 +193,24 @@
 
         <div class="min-w-0">
             <div class="flex flex-wrap items-center gap-2 mb-2">
-                <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-[0.12em]">
+                <span class="inti-eyebrow">
                     RIWAYAT &amp; TIMESHEET
                 </span>
 
                 @if ($hrMode)
-                    <span class="timesheet-badge bg-primary-container/40 text-primary">
+                    <span class="inti-badge inti-badge-lg inti-badge-info">
                         <span class="material-symbols-outlined text-[15px]">admin_panel_settings</span>
                         HR
                     </span>
                 @elseif ($vpMode)
-                    <span class="timesheet-badge bg-primary-container/40 text-primary">
+                    <span class="inti-badge inti-badge-lg inti-badge-info">
                         <span class="material-symbols-outlined text-[15px]">groups</span>
                         VP Divisi
                     </span>
                 @endif
             </div>
 
-            <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">
+            <h1 class="inti-title">
                 @if ($hrMode)
                     Timesheet Administrasi
                 @elseif ($vpMode)
@@ -220,7 +220,7 @@
                 @endif
             </h1>
 
-            <p class="mt-1 max-w-3xl font-body-md text-body-md text-on-surface-variant">
+            <p class="inti-subtitle max-w-3xl">
                 @if ($hrMode)
                     Rekap presensi dan lembur resmi seluruh karyawan berdasarkan periode yang dipilih.
                 @elseif ($vpMode)

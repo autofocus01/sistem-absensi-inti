@@ -18,16 +18,16 @@
                         summarize
                     </span>
 
-                    <span class="text-[11px] font-extrabold uppercase tracking-[0.12em] text-on-surface-variant">
+                    <span class="inti-eyebrow">
                         REPORTING • HR
                     </span>
                 </div>
 
-                <h1 class="font-headline-lg text-headline-lg tracking-tight text-primary">
+                <h1 class="inti-title">
                     Laporan HR
                 </h1>
 
-                <p class="mt-1 max-w-3xl text-sm leading-6 text-on-surface-variant">
+                <p class="inti-subtitle max-w-3xl">
                     Rekap presensi dan lembur resmi yang telah diverifikasi HR berdasarkan periode dan divisi.
                 </p>
             </div>

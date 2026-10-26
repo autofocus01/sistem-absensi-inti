@@ -179,6 +179,40 @@
             </div>
         </section>
 
+        {{-- INFO FILE SPKL --}}
+        <section class="inti-card overflow-hidden">
+            <div class="border-b border-slate-200 px-5 py-4">
+                <h2 class="text-base font-semibold text-slate-900">
+                    Format File SPKL
+                </h2>
+
+                <p class="mt-1 text-xs leading-5 text-slate-500">
+                    Pastikan file SPKL memiliki struktur berikut:
+                </p>
+            </div>
+
+            <div class="p-5 sm:p-6 grid grid-cols-2 gap-4">
+
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <h3 class="font-title-sm text-title-sm text-primary mb-2">Induk (HC_SPKL)</h3>
+                    <ul class="space-y-1 text-sm text-on-surface-variant">
+                        <li>Berisi 98 data pengajuan lembur</li>
+                        <li>Setiap baris = 1 pengajuan lembur</li>
+                        <li>Kolom: NIPEG, Nama, Golongan, Jol, Alasan</li>
+                    </ul>
+                </div>
+
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <h3 class="font-title-sm text-title-sm text-primary mb-2">Rincian (HC_SPKL_PERSON)</h3>
+                    <ul class="space-y-1 text-sm text-on-surface-variant">
+                        <li>Berisi detail per karyawan lembur</li>
+                        <li>Setiap baris = 1 baris rincian</li>
+                        <li>Setelah di-commit, terhubung ke absensi</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
         {{-- RIWAYAT IMPOR (PROVENANCE) --}}
         <section class="inti-card overflow-hidden">
             <div class="border-b border-slate-200 px-5 py-4">

@@ -123,7 +123,7 @@ class TeamRecapController extends Controller
         $liburNasionalTanggal = HolidayCalendar::query()
             ->whereBetween('tanggal', [$periodeMulai->toDateString(), $periodeAkhir->toDateString()])
             ->where('is_active', true)
-            ->where('jenis', 'NATIONAL_HOLIDAY')
+            ->whereIn('jenis', ['NATIONAL_HOLIDAY', 'CUTI_BERSAMA'])
             ->pluck('tanggal')
             ->map(fn ($date) => \Carbon\Carbon::parse($date)->toDateString())
             ->flip();

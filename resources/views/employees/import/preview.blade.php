@@ -18,15 +18,15 @@
 
     <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div>
-            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
+            <span class="inti-eyebrow">
                 MASTER DATA
             </span>
 
-            <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight mt-1">
+            <h1 class="inti-title">
                 Preview Import Karyawan
             </h1>
 
-            <p class="font-body-md text-body-md text-on-surface-variant mt-1">
+            <p class="inti-subtitle">
                 Periksa hasil validasi sebelum melakukan commit ke master karyawan.
             </p>
         </div>

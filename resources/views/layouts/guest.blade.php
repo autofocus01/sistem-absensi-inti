@@ -18,14 +18,14 @@
                 <img src="{{ asset('images/logo-inti.png') }}" alt="PT. INTI" class="inti-auth-logo">
             </div>
             <div class="inti-auth-brand-name">Sistem Absensi PT. INTI</div>
-            <div class="inti-auth-brand-caption">Absensi, monitoring, dan lembur</div>
+            <!-- <div class="inti-auth-brand-caption">Absensi, monitoring, dan lembur</div> -->
         </div>
 
         <section class="inti-auth-card" aria-label="Portal internal PT. INTI">
             {{ $slot }}
         </section>
 
-        <p class="inti-auth-footer">Sistem Absensi &amp; Lembur PT. INTI</p>
+        <!-- <p class="inti-auth-footer">Sistem Absensi &amp; Lembur PT. INTI</p> -->
     </main>
 </body>
 </html>

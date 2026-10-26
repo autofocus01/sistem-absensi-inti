@@ -11,12 +11,12 @@
     document.documentElement.dataset.theme = theme;
   })();
 </script>
-<title>Dasbor Direktur Utama - PT. INTI</title>
+<title>Dashboard Direktur Utama - PT. INTI</title>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
 <link href="https://fonts.googleapis.com" rel="preconnect">
 <link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{{ asset('css/p1-design-system.css') }}">
+<link rel="stylesheet" href="{{ asset('css/p1-design-system.css') }}?v={{ filemtime(public_path('css/p1-design-system.css')) }}">
 <link rel="stylesheet" href="{{ asset('css/p1-responsive-enterprise.css') }}">
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -159,7 +159,7 @@
         </button>
         <button type="button" onclick="showTab('realtime')" id="nav-realtime"
                 class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm text-left text-on-surface hover:bg-surface-container-low">
-          <span class="material-symbols-outlined text-[18px] mr-2">today</span> Presensi Hari Ini
+          <span class="material-symbols-outlined text-[18px] mr-2">sensors</span> Realtime
         </button>
         <button type="button" onclick="showTab('history')" id="nav-history"
                 class="flex items-center gap-2 px-space-md py-space-sm rounded-lg font-title-sm text-title-sm text-left text-on-surface hover:bg-surface-container-low">
@@ -170,29 +170,29 @@
   </div>
 
   <div class="border-t border-surface-container-low p-space-md bg-surface-container-lowest shrink-0">
-    <a href="{{ route('profile.edit') }}" class="flex items-center gap-2 rounded-lg px-1 py-2 text-on-surface hover:bg-surface-container-low transition-colors">
+    <!-- <a href="{{ route('profile.edit') }}" class="flex items-center gap-2 rounded-lg px-1 py-2 text-on-surface hover:bg-surface-container-low transition-colors">
       <span class="w-8 h-8 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-title-sm shrink-0">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
       <span class="min-w-0 flex-1">
         <span class="block font-title-sm text-title-sm truncate">{{ auth()->user()->name }}</span>
         <span class="block font-body-sm text-body-sm text-on-surface-variant truncate">Direktur Utama</span>
       </span>
-    </a>
-    <div class="flex flex-col gap-1 mt-1">
+    </a> -->
+    <!-- <div class="flex flex-col gap-1 mt-1">
       <a href="{{ route('profile.edit') }}" class="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-on-surface hover:bg-surface-container-low"><span class="material-symbols-outlined text-[18px]">account_circle</span>Profil Saya</a>
       <form method="POST" action="{{ route('logout') }}">
         @csrf
         <button type="submit" class="w-full flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-error hover:bg-error/10 text-left"><span class="material-symbols-outlined text-[18px]">logout</span>Keluar</button>
       </form>
-    </div>
+    </div> -->
     <!-- Notifikasi sesi aktif -->
-<div class="font-xxs text-on-surface-variant mb-1">Sesi: Direktur</div>
+<!-- <div class="font-xxs text-on-surface-variant mb-1">Sesi: Direktur</div> -->
 <div class="mt-2 px-2 pt-2 border-t border-surface-container-low text-[11px] text-on-surface-variant">Rekap Absensi Terverifikasi · {{ $namaBulan }} {{ $tahun }}</div>
   </div>
 </aside>
 
 <div class="md:pl-72 flex flex-col min-h-screen">
   <header class="direktur-topbar fixed top-0 left-0 md:left-72 right-0 h-20 z-30 flex items-center justify-between px-4 md:px-space-xl">
-    <div class="direktur-topbar__brand flex items-center gap-3 min-w-0">
+    <div class="flex items-center gap-3 min-w-0">
       <button onclick="toggleSidebar()" class="direktur-topbar__menu md:hidden p-2 -ml-2 rounded-lg" aria-label="Buka menu">
         <span class="material-symbols-outlined text-[22px]">menu</span>
       </button>
@@ -268,8 +268,8 @@
   <main class="w-full pt-28 px-4 md:px-space-xl pb-space-2xl bg-background flex-1">
 
     <div class="flex flex-col gap-1 pb-space-base">
-      <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Monitoring &amp; Rekap Absensi &bull; Portal Direksi PT. INTI</span>
-      <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">Dashboard Eksekutif Direktur Utama</h1>
+      <span class="inti-eyebrow">Monitoring &amp; Rekap Absensi &bull; Portal Direksi PT. INTI</span>
+      <h1 class="inti-title">Dashboard Eksekutif Direktur Utama</h1>
     </div>
 
     @if (session('status'))
@@ -416,7 +416,7 @@
             </div>
             @if($kualitasData['imporTerakhir'])
               @php($impor = $kualitasData['imporTerakhir'])
-              <div class="font-title-sm text-title-sm text-primary truncate" title="{{ $impor->nama_file }}">{!! \Illuminate\Support\Str::limit($impor->nama_file, 34) !!}</div>
+              <div class="font-title-sm text-title-sm text-primary truncate" title="{{ $impor->nama_file }}">{{ \Illuminate\Support\Str::limit($impor->nama_file, 34) }}</div>
               <div class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
                 {{ $impor->created_at->format('d M Y H:i') }} &bull; {{ $impor->user?->name ?? 'Operator' }}
               </div>

@@ -1,0 +1,561 @@
+/*
+ * PT INTI — Overtime pages visual layer (VP approval, VP history, HR verification, employee history).
+ * Presentation-only. Restored from the inline <style> blocks that were removed in commit 36ff3b5
+ * without being extracted, leaving ~50 custom classes undefined.
+ */
+
+/* ===== VP Approval ===== */
+    .vp-approval-page {
+        min-width: 0;
+    }
+
+    .vp-card {
+        border: 1px solid rgba(15, 23, 42, .07);
+        box-shadow: 0 1px 3px rgba(15, 23, 42, .04);
+    }
+
+    .vp-kpi {
+        min-height: 126px;
+    }
+
+    .vp-ticket {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 30px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        background: var(--surface-container, #f1f5f9);
+        color: var(--primary, #1d4ed8);
+        font-size: 12px;
+        line-height: 1.1;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .vp-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        min-height: 30px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        line-height: 1.1;
+        font-weight: 800;
+        white-space: nowrap;
+        letter-spacing: .01em;
+    }
+
+    .vp-table-wrap {
+        width: 100%;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+    }
+
+    .vp-table {
+        width: 100%;
+        min-width: 1180px;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .vp-table tbody tr {
+        transition: background-color 140ms ease;
+    }
+
+    .vp-table tbody tr:hover {
+        background: rgba(15, 23, 42, .025);
+    }
+
+    .vp-action-btn {
+        min-height: 42px;
+        transition:
+            background-color 150ms ease,
+            border-color 150ms ease,
+            opacity 150ms ease,
+            box-shadow 150ms ease,
+            transform 150ms ease;
+    }
+
+    .vp-action-btn:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(29, 78, 216, .16);
+    }
+
+    .vp-action-btn:disabled {
+        opacity: .55;
+        cursor: not-allowed;
+    }
+
+    .vp-reason {
+        max-width: 300px;
+    }
+
+    .vp-mobile-note {
+        display: none;
+    }
+
+    .vp-state {
+        min-height: 220px;
+    }
+
+    .vp-state-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--surface-container-low, #f8fafc);
+        color: var(--on-surface-variant, #64748b);
+    }
+
+    .vp-identity-name {
+        font-weight: 700;
+        color: var(--on-surface, #0f172a);
+    }
+
+    .vp-identity-meta {
+        margin-top: 4px;
+        color: var(--on-surface-variant, #64748b);
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+    @media (max-width: 1023px) {
+        .vp-mobile-note {
+            display: flex;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .vp-kpi {
+            min-height: auto;
+        }
+
+        .vp-action-btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .vp-reason {
+            max-width: 240px;
+        }
+    }
+
+    @media (max-width: 379px) {
+        .vp-ticket,
+        .vp-status {
+            font-size: 10px;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .vp-table tbody tr,
+        .vp-action-btn {
+            transition: none;
+        }
+    }
+
+/* ===== HR Verification ===== */
+    .hr-verification-page {
+        min-width: 0;
+    }
+
+    .hr-card {
+        border: 1px solid rgba(15, 23, 42, .07);
+        box-shadow: 0 1px 3px rgba(15, 23, 42, .04);
+    }
+
+    .hr-action-btn {
+        min-height: 42px;
+        transition:
+            background-color 150ms ease,
+            border-color 150ms ease,
+            box-shadow 150ms ease,
+            transform 150ms ease;
+    }
+
+    .hr-action-btn:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(29, 78, 216, .16);
+    }
+
+    .hr-table-wrap {
+        width: 100%;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+    }
+
+    .hr-table {
+        min-width: 1120px;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .hr-table tbody tr {
+        transition: background-color 140ms ease;
+    }
+
+    .hr-table tbody tr:hover {
+        background: rgba(15, 23, 42, .025);
+    }
+
+    .hr-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        min-height: 30px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        white-space: nowrap;
+        font-size: 12px;
+        line-height: 1.1;
+        font-weight: 700;
+    }
+
+    .hr-ticket-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        min-height: 30px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        background: var(--surface-container, #f1f5f9);
+        color: var(--primary, #1d4ed8);
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .hr-reason {
+        max-width: 270px;
+    }
+
+    .hr-mobile-note {
+        display: none;
+    }
+
+    .hr-loading {
+        min-height: 180px;
+    }
+
+    .hr-state-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--surface-container-low, #f8fafc);
+        color: var(--on-surface-variant, #64748b);
+    }
+
+    @media (max-width: 1023px) {
+        .hr-mobile-note {
+            display: flex;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .hr-action-btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .hr-reason {
+            max-width: 220px;
+        }
+    }
+
+    @media (max-width: 379px) {
+        .hr-ticket-badge {
+            font-size: 11px;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .hr-action-btn,
+        .hr-table tbody tr {
+            transition: none;
+        }
+    }
+
+/* ===== Overtime History (karyawan) ===== */
+    .ot-history-page {
+        min-width: 0;
+    }
+
+    .ot-history-card {
+        border: 1px solid rgba(15, 23, 42, .07);
+        box-shadow: 0 1px 3px rgba(15, 23, 42, .04);
+    }
+
+    .ot-history-ticket {
+        display: inline-flex;
+        align-items: center;
+        min-height: 29px;
+        padding: 5px 9px;
+        border-radius: 7px;
+        background: var(--surface-container-low, #f8fafc);
+        color: var(--primary, #1d4ed8);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .ot-history-mode {
+        display: inline-flex;
+        align-items: center;
+        min-height: 26px;
+        padding: 4px 8px;
+        border-radius: 6px;
+        background: var(--surface-container-low, #f8fafc);
+        color: var(--on-surface-variant, #64748b);
+        font-size: 10px;
+        line-height: 1.1;
+        font-weight: 800;
+        letter-spacing: .04em;
+    }
+
+    .ot-history-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        min-height: 30px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        line-height: 1.2;
+        font-weight: 800;
+    }
+
+    .ot-history-note {
+        max-width: 330px;
+        border-radius: 9px;
+        padding: 10px 11px;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    .ot-history-table-wrap {
+        width: 100%;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+    }
+
+    .ot-history-table {
+        width: 100%;
+        min-width: 1080px;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .ot-history-table tbody tr {
+        transition: background-color 140ms ease;
+    }
+
+    .ot-history-table tbody tr:hover {
+        background: rgba(15, 23, 42, .025);
+    }
+
+    .ot-history-mobile-note {
+        display: none;
+    }
+
+    .ot-history-empty {
+        min-height: 260px;
+    }
+
+    .ot-history-empty-icon {
+        width: 54px;
+        height: 54px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        background: var(--surface-container-low, #f8fafc);
+        color: var(--on-surface-variant, #64748b);
+    }
+
+    .ot-history-time {
+        white-space: nowrap;
+    }
+
+    .ot-history-recognized {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        margin-top: 6px;
+        color: var(--on-surface-variant, #64748b);
+        font-size: 11px;
+    }
+
+    @media (max-width: 1023px) {
+        .ot-history-mobile-note {
+            display: flex;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .ot-history-note {
+            max-width: 240px;
+        }
+    }
+
+    @media (max-width: 379px) {
+        .ot-history-status {
+            font-size: 10px;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .ot-history-table tbody tr {
+            transition: none;
+        }
+    }
+
+/* ===== VP History ===== */
+    .vp-history-page {
+        min-width: 0;
+    }
+
+    .vp-history-card {
+        border: 1px solid rgba(15, 23, 42, .07);
+        box-shadow: 0 1px 3px rgba(15, 23, 42, .04);
+    }
+
+    .vp-history-table-wrap {
+        width: 100%;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+    }
+
+    .vp-history-table {
+        width: 100%;
+        min-width: 1120px;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .vp-history-table tbody tr {
+        transition: background-color 140ms ease;
+    }
+
+    .vp-history-table tbody tr:hover {
+        background: rgba(15, 23, 42, .025);
+    }
+
+    .vp-history-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        min-height: 30px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        line-height: 1.1;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .vp-history-ticket {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        padding: 4px 9px;
+        border-radius: 7px;
+        background: var(--surface-container-low, #f8fafc);
+        color: var(--primary, #1d4ed8);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: .01em;
+    }
+
+    .vp-history-note {
+        max-width: 280px;
+        border-radius: 9px;
+        padding: 9px 11px;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    .vp-history-mobile-note {
+        display: none;
+    }
+
+    .vp-history-empty {
+        min-height: 250px;
+    }
+
+    .vp-history-icon {
+        width: 52px;
+        height: 52px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        background: var(--surface-container-low, #f8fafc);
+        color: var(--on-surface-variant, #64748b);
+    }
+
+    .vp-history-decision {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .vp-history-current {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .vp-history-time {
+        white-space: nowrap;
+    }
+
+    @media (max-width: 1023px) {
+        .vp-history-mobile-note {
+            display: flex;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .vp-history-note {
+            max-width: 230px;
+        }
+    }
+
+    @media (max-width: 379px) {
+        .vp-history-status {
+            font-size: 10px;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .vp-history-table tbody tr {
+            transition: none;
+        }
+    }
+
+/* ===== VP Approval: duration column (gap found during UI audit) ===== */
+.vp-duration-meta {
+    margin-top: 2px;
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--inti-muted);
+}
+.vp-duration-excess {
+    color: var(--inti-error);
+    font-weight: 600;
+}

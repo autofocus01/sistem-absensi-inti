@@ -13,9 +13,7 @@
         <div class="flex flex-col gap-3">
 
             <div class="flex flex-wrap items-center gap-2">
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full
-                             bg-error text-white font-label-sm text-label-sm
-                             uppercase tracking-wider">
+                <span class="inti-badge inti-badge-lg inti-badge-danger">
                     <span class="material-symbols-outlined text-[16px]">
                         fact_check
                     </span>
@@ -23,18 +21,14 @@
                 </span>
 
                 @if($totalPending > 0)
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full
-                                 bg-error-container text-error
-                                 font-label-sm text-label-sm">
+                    <span class="inti-badge inti-badge-lg inti-badge-danger">
                         <span class="material-symbols-outlined text-[15px]">
                             warning
                         </span>
                         {{ $totalPending }} perlu ditinjau
                     </span>
                 @else
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full
-                                 bg-secondary-container/60 text-secondary
-                                 font-label-sm text-label-sm">
+                    <span class="inti-badge inti-badge-lg inti-badge-success">
                         <span class="material-symbols-outlined text-[15px]">
                             check_circle
                         </span>
@@ -44,12 +38,11 @@
             </div>
 
             <div>
-                <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">
+                <h1 class="inti-title">
                     Review Anomali Import
                 </h1>
 
-                <p class="font-body-md text-body-md text-on-surface-variant
-                          max-w-3xl mt-2">
+                <p class="inti-subtitle max-w-3xl">
                     Tinjau baris import yang ditolak sistem karena tidak memenuhi
                     aturan validasi data. Untuk rekap bulanan, HR dapat membuat
                     rekap koreksi. Untuk absensi harian, perbaikan dilakukan pada

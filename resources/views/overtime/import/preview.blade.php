@@ -7,7 +7,11 @@
 
     <div class="space-y-6">
 
-        <h1 class="text-2xl font-semibold">Preview Import Lembur</h1>
+        <div>
+          <span class="inti-eyebrow">DATA LEMBUR &bull; HR</span>
+          <h1 class="inti-title">Preview Import Lembur</h1>
+          <p class="inti-subtitle">Periksa hasil validasi sebelum melakukan commit ke pengajuan lembur.</p>
+        </div>
 
         <div class="grid gap-4 md:grid-cols-3">
             <div class="rounded-xl bg-white p-5 shadow-sm">

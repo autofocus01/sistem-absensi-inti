@@ -17,11 +17,7 @@
 
                     <div class="flex flex-wrap items-center gap-2 mb-2">
 
-                        <span class="inline-flex items-center gap-1.5
-                                     px-3 py-1 rounded-full
-                                     bg-primary-container text-on-primary
-                                     font-label-sm text-label-sm
-                                     uppercase tracking-wider">
+                        <span class="inti-badge inti-badge-lg inti-badge-primary">
 
                             <span class="material-symbols-outlined text-[15px]">
                                 manage_accounts
@@ -30,11 +26,7 @@
                             Administrasi Akun
                         </span>
 
-                        <span class="inline-flex items-center gap-1.5
-                                     px-3 py-1 rounded-full
-                                     bg-surface-container
-                                     text-on-surface-variant
-                                     font-label-sm text-label-sm">
+                        <span class="inti-badge inti-badge-lg inti-badge-neutral">
 
                             <span class="material-symbols-outlined text-[15px]">
                                 admin_panel_settings
@@ -45,13 +37,11 @@
 
                     </div>
 
-                    <h1 class="font-headline-lg text-headline-lg
-                               text-primary tracking-tight">
+                    <h1 class="inti-title">
                         Kelola Akun Karyawan
                     </h1>
 
-                    <p class="font-body-md text-body-md
-                              text-on-surface-variant mt-2 max-w-3xl">
+                    <p class="inti-subtitle max-w-3xl">
                         Administrasi akun login karyawan secara terpisah
                         dari data kepegawaian.
                     </p>

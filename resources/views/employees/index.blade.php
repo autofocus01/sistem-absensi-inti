@@ -18,16 +18,16 @@
                         badge
                     </span>
 
-                    <span class="text-[11px] font-bold uppercase tracking-[0.12em] text-on-surface-variant">
+                    <span class="inti-eyebrow">
                         DATA MASTER • SDM PT. INTI
                     </span>
                 </div>
 
-                <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">
+                <h1 class="inti-title">
                     Data Karyawan
                 </h1>
 
-                <p class="mt-1 max-w-2xl text-sm leading-6 text-on-surface-variant">
+                <p class="inti-subtitle max-w-2xl">
                     Kelola dan monitor data master karyawan, divisi, band, serta keterhubungan akun pengguna.
                 </p>
             </div>

@@ -6,9 +6,9 @@
 
 <div class="max-w-2xl mx-auto">
   <div class="flex flex-col gap-1 pb-space-lg">
-    <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">MANAJEMEN AKUN &bull; SDM</span>
-    <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">Buat Akun Karyawan</h1>
-    <p class="font-body-md text-body-md text-on-surface-variant">HR membuat akun login untuk karyawan yang sudah terdaftar pada master data.</p>
+    <span class="inti-eyebrow">MANAJEMEN AKUN &bull; SDM</span>
+    <h1 class="inti-title">Buat Akun Karyawan</h1>
+    <p class="inti-subtitle">HR membuat akun login untuk karyawan yang sudah terdaftar pada master data.</p>
   </div>
 
   <div class="bg-surface-container-lowest rounded-2xl shadow-sm p-space-xl space-y-space-lg">

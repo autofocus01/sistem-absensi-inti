@@ -14,32 +14,20 @@
             <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
 
                 <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-2 mb-2">
-                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full
-                                     bg-primary-container text-on-primary
-                                     font-label-sm text-label-sm uppercase tracking-wider">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="inti-badge inti-badge-lg inti-badge-primary">
                             <span class="material-symbols-outlined text-[15px]">
-                                badge
+                                upload_file
                             </span>
-                            Master Data
-                        </span>
-
-                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full
-                                     bg-surface-container text-on-surface-variant
-                                     font-label-sm text-label-sm">
-                            <span class="material-symbols-outlined text-[15px]">
-                                admin_panel_settings
-                            </span>
-                            HR Admin
+                            Import
                         </span>
                     </div>
 
-                    <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">
+                    <h1 class="inti-title">
                         Import Master Karyawan
                     </h1>
 
-                    <p class="font-body-md text-body-md text-on-surface-variant
-                              mt-2 max-w-3xl">
+                    <p class="inti-subtitle max-w-3xl">
                         Upload data master karyawan dalam format XLSX, XLS, atau CSV.
                         Sistem melakukan validasi dan preview terlebih dahulu sebelum
                         data dapat di-commit ke master karyawan.
